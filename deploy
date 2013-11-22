@@ -1,0 +1,25 @@
+#!/bin/bash
+
+DIST=dist
+
+mkdir $DIST
+
+case "$1" in
+    chrome)
+        cp -r src/chrome $DIST/chrome
+        cp -r src/common/{external,html,images} $DIST/chrome
+        cp -r src/common/js/* $DIST/chrome/js/
+        ;;
+    firefox)
+        cp -r src/firefox $DIST/firefox
+        cp -r src/common/{external,html,images,js} $DIST/firefox/data/
+        cp -r src/common/js/browser/base.js $DIST/firefox/lib/browser/
+        # main??
+        #cp -r common/js/main.js  firefox-addon/lib/
+        ;;
+    clean)
+        rm -rf $DIST
+        ;;
+    *)
+        echo use deploy {chrome,firefox,clean}
+esac
