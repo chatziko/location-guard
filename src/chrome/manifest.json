@@ -13,7 +13,7 @@
 	"manifest_version": 2,
 
 	"background": {
-		"scripts": ["js/util.js", "js/browser/base.js", "js/browser/current.js", "js/main.js"],
+		"scripts": ["js/util.js", "js/browser_base.js", "js/browser.js", "js/main.js"],
 		"persistent": false
 	},
 
@@ -29,7 +29,7 @@
 	},
 
 	"content_scripts": [{
-		"js": ["js/util.js", "js/browser/base.js", "js/browser/current.js", "js/laplace.js", "js/content.js"],
+		"js": ["js/util.js", "js/browser_base.js", "js/browser.js", "js/laplace.js", "js/content.js"],
 		"matches": ["\u003Call_urls\u003E"],
 		"run_at": "document_start"
 	}]
