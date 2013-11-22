@@ -1,0 +1,55 @@
+<html>
+<head>
+	<title>Location Guard</title>
+	<style>
+	body {
+		background-color: #FDFDF5;
+		font-size: 11px;
+		font-family: verdana;
+		margin: 3px;
+		white-space: nowrap;	/* no wrap, widht is computed automatically */
+	}
+	#title {
+		padding: 7px;
+		font-size: 12px;
+		font-weight: bold;
+		border-radius: 4px;
+		margin-bottom: 4px;
+	}
+	#container { position: absolute }
+	</style>
+
+	<script src="/external/jquery/jquery.min.js"></script>
+	<script src="/external/jquery/jquery-ui.min.js"></script>
+	<link rel="stylesheet" href="/external/jquery/jquery-ui.min.css">
+
+	<script src="/js/util.js"></script>
+	<script src="/js/browser/base.js"></script>
+	<script src="/js/browser/current.js"></script>
+	<script src="/js/popup.js"></script>
+</head>
+<body>
+	<!-- the best way to auto resize the popup is to use a container div with position:absolte, and then set the body's width/height to those of the container using js -->
+	<div id="container">
+	<div id="title" class="ui-state-hover">
+		Using obfuscated location
+	</div>
+
+	<ul id="menu">
+		<li id="setLevel"><a href="#">Set level for this domain</a>
+			<ul>
+				<li id="fixed"><a href="#">Use fixed location</a></li>
+				<li id="high"><a href="#">High</a></li>
+				<li id="medium"><a href="#">Medium</a></li>
+				<li id="low"><a href="#">Low</a></li>
+				<li id="real"><a href="#">Use real location</a></li>
+			</ul>
+		</li>
+		<li id="faq"><a href="#">What is this?</a></li>
+		<li id="options"><a href="#">Options</a></li>
+		<li id="hideIcon"><a href="#">Hide icon</a></li>
+		<li id="pause"><a href="#">Pause Location Guard</a></li>
+	</ul>
+	</div>
+</body>
+</html>
