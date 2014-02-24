@@ -166,3 +166,6 @@ function blog(a, b) {
 	Browser.log(a, b);
 }
 
+if (typeof exports != "undefined") {
+    exports.Browser = Browser;
+}
