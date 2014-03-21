@@ -26,7 +26,8 @@ function CPC() {
 	var cpc = this;
 	window.addEventListener("message", function(event) {
 		var data = event.data;
-		if(!(event.source == window && data.callId)) return;		// we only care about messages from the same window, and having callId
+		if(!(// event.source == window &&             // FF: this doesn't work on FF
+                     data.callId)) return;		// we only care about messages from the same window, and having callId
 
 		if(data.method) {
 			/* message call */
