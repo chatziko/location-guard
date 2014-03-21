@@ -1,151 +1,153 @@
 // implements browser_base.js
 
+// this should not bother chrome
 if (typeof exports != "undefined") {
-    var Browser = require("./browser_base").Browser;
+    var Browser = require("browser_base").Browser;
 }
 
-Browser.calls = [];
 Browser.init = function (script) { 
     Browser._script = script;
-    Browser.storage._init();
+    Browser.log('initializing');
 
     switch(script) {
     case 'main':
 	this._main_script();
+        Browser.gui._init();
 	break;
 
     case 'content':
 
-        self.on("message", function(msg) {
-            Browser.listener(null,msg);
-        });
-
-	// to avoid asking for the 'tabs' permission, we get the tab's url
-	// from the content script
-
-	// Browser.rpc.register('getUrl', function(tabId, replyHandler) {
-	//     replyHandler(window.location.href);
-	// });
-
+        extension.onMessage.addListener(Browser.handleMessage);
 	break;
     }
+    Browser.gui.refreshAllIcons();
+    Browser.storage._init();
 };
 
 Browser._main_script = function() {
     Browser.workers = [];
 
+    var array = require('sdk/util/array');
     var data = require("sdk/self").data;
-    var pageMod = require("sdk/page-mod");
-    
-    pageMod.PageMod({
-        include: ["*"],
-        contentScriptFile: [data.url("util.js"), data.url("browser_base.js"), data.url("browser.js"), data.url("content.js")],
+
+    const { createMessageChannel, messageContentScriptFile } = require('messaging');
+    var pagemod = require("sdk/page-mod").PageMod({
+        include: ['*'],
+        attachTo: ["top"],//excludes iframes
+        contentScriptWhen: 'start', // TODO THIS IS TRICKY
+        contentScriptFile: [messageContentScriptFile, 
+                            data.url("js/util.js"), 
+                            data.url("js/browser_base.js"), 
+                            data.url("js/browser.js"), 
+                            data.url("js/laplace.js"),
+                            data.url("js/content.js")],
+        contentScriptOptions: {
+            channelName: 'whatever you want',
+            // Set the following to false if you want to communicate between
+            // the "extension" and a content script instead of the page.
+            endAtPage: false
+        },
+
         onAttach: function(worker) {
-            Browser.workers.push(worker);
+            worker["channel"] = createMessageChannel(pagemod.contentScriptOptions, worker.port);
+            worker.channel.onMessage.addListener(Browser.handleMessage);
+                                            
+            array.add(Browser.workers, worker);
             status();
-            worker.on('message', function(msg) {
-                Browser.listener(worker.tab.id,msg);
+            worker.on('pageshow', function() { array.add(Browser.workers, this); status();});
+            worker.on('pagehide', function() { array.remove(Browser.workers, this); status();});
+            worker.on('detach', function() { array.remove(Browser.workers, this); status();});
+
+            worker.tab.on('activate', function(tab){
+                Browser.log(tab.url + ' activated');
+                Browser.gui.refreshIcon(null);//tabId is ignored
             });
-            worker.on('detach', function() {
-                var index = Browser.workers.indexOf(worker);
-                if (index !== -1) Browser.workers.splice(index, 1);
-                status();
+            worker.tab.on('pageShow', function(tab){
+                Browser.log(tab.url + ' pageShow');
+                Browser.gui.refreshIcon(null);//tabId is ignored
             });
         }
     });
 
-var status = function () {
-    console.error('# of workers: ' + Browser.workers.length);
-    for (var i=0; i<Browser.workers.length; i++) {
-        console.error(Browser.workers[i].tab.url);
-    }     
+    var pagemod = require("sdk/page-mod").PageMod({
+        include: [data.url("options.html*")],
+//        attachTo: ["top"], //excludes iframes
+        contentScriptWhen: 'start', // sets up comm. before running the page scripts
+        contentScriptFile: [messageContentScriptFile], 
+        contentScriptOptions: {
+            channelName: 'whatever you want',
+            endAtPage: true //sets up communication with the page, not its content script
+        },
+        onAttach: function(worker) {
+            worker["channel"] = createMessageChannel(pagemod.contentScriptOptions, worker.port);
+            worker.channel.onMessage.addListener(Browser.handleMessage);
+                                            
+            array.add(Browser.workers, worker);
+            status();
+            worker.on('pageshow', function() { array.add(Browser.workers, this); status();});
+            worker.on('pagehide', function() { array.remove(Browser.workers, this); status();});
+            worker.on('detach', function() { array.remove(Browser.workers, this); status();});
+
+            worker.tab.on('activate', function(tab){
+                Browser.log(tab.url + ' activated');
+                Browser.gui.refreshIcon(null);//tabId is ignored
+            });
+            worker.tab.on('pageShow', function(tab){
+                Browser.log(tab.url + ' pageShow');
+                Browser.gui.refreshIcon(null);//tabId is ignored
+            });
+        }
+    });
+
+
+    var status = function () {
+        Browser.log('# of workers: ' + Browser.workers.length);
+        for (var i=0; i<Browser.workers.length; i++) {
+            Browser.log('#'+ i + ": " + Browser.workers[i].tab.url);
+        }     
+    }
+
+
+
+    // fire browser.install/update events
+    //
+    // chrome.runtime.onInstalled.addListener(function(details) {
+    // 	if(details.reason == "install")
+    // 		Util.events.fire('browser.install');
+
+    // 	else if(details.reason == "update")
+    // 		Util.events.fire('browser.update');
+    // });
 }
 
 
-	// fire browser.install/update events
-	//
-	// chrome.runtime.onInstalled.addListener(function(details) {
-	// 	if(details.reason == "install")
-	// 		Util.events.fire('browser.install');
-
-	// 	else if(details.reason == "update")
-	// 		Util.events.fire('browser.update');
-	// });
-
-	// some operations cannot be done by other scripts, so we set
-	// handlers to do them in the main script
-	//
-	// Browser.rpc.register('refreshIcon', function(tabId) {
-	// 	Browser.gui.refreshIcon(tabId);
-	// });
-}
-
-
-Browser.listener = function(sender, msg) {
-
-    if (this.calls[msg.msgId]) { //i'm the original sender
-        console.error('finishing my cb');
-        var cb = this.calls[msg.msgId];
-        delete this.calls[msg.msgId];
-        if (cb) cb.apply(null,[msg.msg]); 
-    }
-    else {
-        var recipient = null;
-        var logString = "";
-        if (sender) { //send to a tab
-            for (var i=0; i<this.workers.length; i++) {
-                if (this.workers[i].tab.id == sender) { 
-                    logString = 'tab <-> main ['+msg.msgId+']';
-                    recipient = this.workers[i];
-                }
-            }
-        }
-        else {//send to main
-            logString = 'main <-> tab['+sender+']  ['+msg.msgId+']';
-            recipient = self;
-        }
-        var sendResponse = function(response) {
-            console.error(logString);
-            recipient.postMessage({msgId : msg.msgId, msg : response});
-        }
-        Browser.handleMessage(msg.msg,sender,sendResponse); //handle message
-    }
-};
+//// low level communication
 
 var id = function (msg,sender,sendResponse){sendResponse(msg)};
 Browser.messageHandlers = {};
 Browser.messageHandlers['id'] = id;
+
 Browser.handleMessage = function(msg,sender,sendResponse) {
-    if (!msg.type) console.error('No message type');
-    console.error('message type ' + msg.type);
-    Browser.messageHandlers[msg.type].apply(null,[msg.data,sender,sendResponse]);
+    // Browser.log('handling: ' + JSON.stringify(msg) + 
+    //             '\n from :'+ JSON.stringify(sender) + 
+    //             '\n response :'+ JSON.stringify(sendResponse));
+    Browser.messageHandlers[msg.type].apply(null,[msg.message,sender,sendResponse]);
 }
 
-var cnt = 0;
-Browser._makeId = function(){
-    cnt = cnt +1;
-    if (Browser._script == 'main') {return 'main_' + cnt}
-    else {return 'content_'+cnt}
-}
-
-Browser.sendMessage = function (tabId, message, cb) {
+Browser.sendMessage = function (tabId, type, message, cb) {
     if (Browser._script == 'main'){
-        for (var i=0; i<this.workers.length; i++) {
-            if (this.workers[i].tab.id == tabId) { 
-                console.error('main -> tab[' + this.workers[i].tab.url) + ']';
-                var msgId = Browser._makeId();
-                this.workers[i].postMessage({msgId : msgId, msg : message});
-                if (cb) this.calls[msgId] = cb;
-//                console.error('#cbs main ' + this.calls.length);
+        for (var i=0; i<Browser.workers.length; i++) {
+            if (Browser.workers[i].tab.id == tabId) { 
+                // Browser.log('-> ' + Browser.workers[i].tab.url + JSON.stringify(message));
+                Browser.workers[i].channel.sendMessage({'type': type, 'message': message},cb);
             }
+            else {if (i == Browser.workers.length) Browser.log('no destination '+tabId)}
         }    
     }
+    // content or popup
     else {
-        var msgId = Browser._makeId();
-        console.error('tab -> main ['+msgId+']');
-        self.postMessage({msgId : msgId, msg : message});
-        if (cb) this.calls[msgId] = cb;
-//        console.error('#cbs tab ' + this.calls.length);
+        // Browser.log(' -> main' + JSON.stringify(message));
+        extension.sendMessage({'type': type, 'message': message},cb);
     }
 };
 
@@ -160,7 +162,6 @@ Browser.rpc.register = function(name, handler) {
     if(!this._methods) {
 	this._methods = {};
         Browser.messageHandlers['rpc'] = Browser.rpc._listener;
-	//chrome.runtime.onMessage.addListener(this._listener);
     }
     this._methods[name] = handler;
 }
@@ -171,20 +172,23 @@ Browser.rpc.register = function(name, handler) {
 Browser.rpc._listener = function(message, tabId, replyHandler) {
 	//blog("RPC: got message", [message, sender, replyHandler]);
 
-	var handler = Browser.rpc._methods[message.method];
-	if(!handler) return;
-
-	// add tabId and replyHandler to the arguments
-	var args = message.args || [];
-	args.push(tabId, replyHandler);
-
-	return handler.apply(null, args);
+    var handler = Browser.rpc._methods[message.method];
+    if(!handler) {
+        Browser.log('No handler for '+message.method);
+        return;
+    }
+    
+    // add tabId and replyHandler to the arguments
+    var args = message.args || [];
+    args.push(tabId, replyHandler);
+    
+    handler.apply(null, args);
 };
 
 Browser.rpc.call = function(tabId, name, args, cb) {
     var message = { method: name, args: args };
 
-    Browser.sendMessage(tabId,{type: 'rpc', data : message}, cb)
+    Browser.sendMessage(tabId, 'rpc', message, cb)
 }
 
 
@@ -196,26 +200,26 @@ Browser.storage._init = function(){
         
         var ss = require("sdk/simple-storage").storage;
         
-        
         Browser.storage.get = function(cb) {
             var st = ss[Browser.storage._key];
             
             // default values
             if(!st) {
+//            Browser.log('initializing settings');
 	        st = Browser.storage._default;
 	        Browser.storage.set(st);
             }
-            console.log('returning st');
+//            Browser.log('returning st');
             cb(st);
         };
 
         Browser.storage.set = function(st) {
-            console.error('saving st');
+//            Browser.log('setting st');
             ss[Browser.storage._key] = st;
         };
 
         Browser.storage.clear = function() {
-            console.error('clear st');
+//            Browser.log('clearing st');
             delete ss[Browser.storage._key];
         };
 
@@ -233,17 +237,21 @@ Browser.storage._init = function(){
         });
 
     }
+    // content and popup
     else{
         
         Browser.storage.get = function(cb) {
+//            Browser.log('getting state');
             Browser.rpc.call(null,'storage.get',null,cb);
         }
 
         Browser.storage.set = function(st) {
+//            Browser.log('setting state');
             Browser.rpc.call(null,'storage.set',[st]);
         }
 
         Browser.storage.clear = function() {
+//            Browser.log('clearing state');
             Browser.rpc.call(null,'storage.clear');
         }
 
@@ -252,89 +260,166 @@ Browser.storage._init = function(){
 
 
 //////////////////// gui ///////////////////////////
-//
-//
-// Browser.gui.refreshIcon = function(tabId) {
-// 	if(Browser._script == 'content') {
-// 		// cannot do it in the content script, delegate to the main
-// 		// in this case tabId can be null, the main script will get the tabId
-// 		// from the rpc call
 
-// 		Browser.rpc.call(null, 'refreshIcon');
-// 		return;
-// 	}
+Browser.gui._init = function(){
 
-// 	Browser.rpc.call(tabId, "getIconInfo", [], function(info) {
-// 		if(!info || info.hidden) {
-// 			chrome.pageAction.hide(tabId);
+    var array = require('sdk/util/array');
 
-// 		} else {
-// 			chrome.pageAction.setIcon({
-// 				tabId: tabId,
-// 				path: {
-// 					19: '/images/' + (info.private ? 'pin_19.png' : 'pin_disabled_19.png'),
-// 					38: '/images/' + (info.private ? 'pin_38.png' : 'pin_disabled_38.png')
-// 				}
-// 			});
-// 			chrome.pageAction.setTitle({
-// 				tabId: tabId,
-// 				title: info.title
-// 			});
-// 			chrome.pageAction.show(tabId);
-// 		}
-// 	});
-// };
+    Browser.gui["badge"] = {
+        theBadge : null,
+        visible : false,
+        enabled : false,
+        disable : function() {  // visible but disabled
+            Browser.log('disabling button');
+            if (!Browser.gui.badge.visible) {
+                this.enable();
+            }
+            this.enabled = false;
+            Browser.gui.badge.theBadge.setIcon({path: 'images/pin_disabled_38.png'});
+            Browser.gui.badge.theBadge.setTitle({title : 'Location Guard is paused'});
+        },
+        enable : function(level) {     // visible and enabled
+            Browser.log('enabling button');
+	    var title = 
+                level == 'real'	? "Using your real location" :
+		level == 'fixed'? "Using a fixed location" :
+		"Privacy level: " + level;
 
-// Browser.gui.refreshAllIcons = function() {
-// 	chrome.tabs.query({}, function(tabs) {
-// 		for(var i = 0; i < tabs.length; i++)
-// 			Browser.gui.refreshIcon(tabs[i].id);
-// 	});
-// };
+            if (!Browser.gui.badge.visible) {
+                Browser.gui.badge.visible = true;
 
-// Browser.gui.showOptions = function(anchor) {
-// 	var baseUrl = chrome.extension.getURL('html/options.html');
-// 	var fullUrl = baseUrl + (anchor || '');
+                Browser.gui.badge.theBadge = require('browserAction').BrowserAction({
+                    default_icon: 'images/pin_38.png',
+                    default_title: title,
+                    default_popup: 'popup.html',
+                });
+                Browser.gui.badge.theBadge.onMessage.addListener(Browser.handleMessage);
+                array.add(Browser.workers, {"tab" : {"id" : "popup", "url" : "popup"}, 'channel': Browser.gui.badge.theBadge});
+            }
+            Browser.gui.badge.enabled = true;
+            Browser.gui.badge.theBadge.setIcon({path: 'images/pin_38.png'});
+            Browser.gui.badge.theBadge.setTitle({title : title});
+        },
+        hide : function() {
+            Browser.log('hiding button');
+            if (Browser.gui.badge.visible) {
+                Browser.gui.badge.visible = false;
+                Browser.gui.badge.enabled = false;
+                Browser.gui.badge.theBadge.destroy();
+                array.remove(Browser.workers, {"tab" : {"id" : "popup", "url" : "popup"}, 'channel': Browser.gui.badge.theBadge});
+            }
+        },   
+    };
 
-// 	chrome.tabs.query({ url: baseUrl }, function(tabs) {
-// 		blog("tabs",tabs);
-// 		if (tabs.length)
-// 			chrome.tabs.update(tabs[0].id, { active: true, url: fullUrl });
-// 		else
-// 			chrome.tabs.create({ url: fullUrl });
-// 	});
-// };
+    var tabs = require("sdk/tabs");
 
-// Browser.gui.getActiveTabUrl = function(handler) {
-// 	chrome.tabs.query(
-// 		{ active: true,               // Select active tabs
-// 		  lastFocusedWindow: true     // In the current window
-// 		}, function(tabs) {
-// 			// there can be only one;
-// 			// we call getUrl from the content script
-// 			//
-// 			Browser.rpc.call(tabs[0].id, 'getUrl', [], function(url) {
-// 				handler(url);
-// 			});
-// 		}
-// 	);
-// };
+    Browser.gui._getActiveTab = function(){
+        Browser.log('active tab: '+tabs.activeTab.url);
+        return tabs.activeTab;
+    }
+    
+    Browser.rpc.register('getActiveTabUrl', function(tabId, replyHandler) {
+        var tab = Browser.gui._getActiveTab();
+        replyHandler(tab.url);
+    });
+
+    Browser.rpc.register('refreshIcon', function(tabId) {
+    	Browser.gui.refreshIcon(tabId);
+    });
+
+    var data = require("sdk/self").data;
+
+    var showOptions = function(anchor){
+        var url = data.url('options.html') + (anchor || '');
+        tabs.open(url);
+
+	// var baseUrl = chrome.extension.getURL('html/options.html');
+	// var fullUrl = baseUrl + (anchor || '');
+	// chrome.tabs.query({ url: baseUrl }, function(tabs) {
+	// 	blog("tabs",tabs);
+	// 	if (tabs.length)
+	// 		chrome.tabs.update(tabs[0].id, { active: true, url: fullUrl });
+	// 	else
+	// 		chrome.tabs.create({ url: fullUrl });
+	// });
+    }
+
+    Browser.rpc.register('showOptions', function(anchor) {
+        // popup
+        showOptions(anchor);
+    });
+
+
+    var prefsModule = require("sdk/simple-prefs");
+    prefsModule.on("optionButton", function() {
+        console.log("options was clicked");
+        showOptions();
+    })
+
+}
+
+// this was used to test nested rpc calls with content script
+// Browser.rpc.call(tab.id, 'test',null, function(inf){Browser.log('finally displaying: ' + inf);});
+
+
+Browser.gui.refreshIcon = function(tabId) {
+    Browser.log('refreshing icon');
+    if(Browser._script == 'main') {
+
+        var tab = Browser.gui._getActiveTab();
+
+        Browser.rpc.call(tab.id,'apiCalled',null,function(apiCalled){
+
+            Browser.storage.get(function(st) {
+	        var domain = require("./util").Util.extractDomain(tab.url);
+	        var level = st.domainLevel[domain] || st.defaultLevel;
+                Browser.log('got state for iconInfo ' + JSON.stringify(st) + 
+                            " \ndomain " + JSON.stringify(domain) + 
+                            " \nlevel " + JSON.stringify(level) +
+                            " \napiCalled: " + apiCalled);
+	        if(st.hideIcon || !apiCalled) {
+                    Browser.gui.badge.hide();
+	        } else { 
+                    if (st.paused) {
+                        Browser.gui.badge.disable();
+                    }
+                    else {
+                        Browser.gui.badge.enable(level);
+                    }
+	        }
+	    });
+        })
+    }
+    // content popup
+    else {
+	// cannot do it in the content script, delegate to the main
+	// in this case tabId can be null, the main script will get the tabId
+	// from the rpc call
+        
+	Browser.rpc.call(null, 'refreshIcon', null);
+    }
+};
+
+Browser.gui.refreshAllIcons = function() {Browser.gui.refreshIcon(null)};
+
+Browser.gui.showOptions = function(anchor) {
+    // popup
+    Browser.rpc.call(null,'showOptions',[anchor],null);
+};
+
+Browser.gui.getActiveTabUrl = function(handler) {
+    // popup
+    Browser.rpc.call(null,'getActiveTabUrl',[],handler)
+}
 
 
 // in chrome, apart from the current console, we also log to the background page, if possible and loaded
 //
-// Browser.log = function(a, b) {
-// 	if(!Browser.debugging) return;
-
-// 	console.log(a, b);
-
-// 	var bp;
-// 	if(chrome.extension && chrome.extension.getBackgroundPage)
-// 		bp = chrome.extension.getBackgroundPage();
-
-// 	if(bp && bp.console != console)		// avoid logging twice
-// 		bp.console.log(a, b);
-// }
+Browser.log = function(a, b) {
+    if(!Browser.debugging) return;
+    
+    console.error(Browser._script + ": " + a, b);
+}
 
 
 

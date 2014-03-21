@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -e
+
 DIST=dist
 
 case "$1" in
@@ -12,7 +14,8 @@ case "$1" in
     firefox)
         mkdir -p $DIST
         cp -r src/firefox $DIST/firefox
-        cp -r src/common/{external,html,images,js} $DIST/firefox/data/
+        cp -r src/common/{external,images,js} $DIST/firefox/data/
+        cp -r src/common/html/* $DIST/firefox/data/
         cp -r $DIST/firefox/lib/browser.js $DIST/firefox/data/js/
         cp -r src/common/js/{browser_base,util}.js $DIST/firefox/lib/
         # main??
