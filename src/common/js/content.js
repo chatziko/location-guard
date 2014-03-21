@@ -201,23 +201,6 @@ function addNoise(position, handler) {
 }
 
 Browser.init('content');
-
-Browser.rpc.register('getIconInfo', function(tabId, replyHandler) {
-	Browser.storage.get(function(st) {
-		var domain = Util.extractDomain(window.location.href);
-		var level = st.domainLevel[domain] || st.defaultLevel;
-
-		var info = {
-			hidden:  st.hideIcon || !apiCalled,
-			private: !st.paused && level != 'real',
-			title:
-				st.paused		? "Location Guard is paused" :
-				level == 'real'	? "Using your real location" :
-				level == 'fixed'? "Using a fixed location" :
-				"Privacy level: " + level
-		};
-		replyHandler(info);
-	});
-	return true;	// indicate that we plan to send a reply later
+Browser.rpc.register('apiCalled', function(tabId, replyHandler) {
+    replyHandler(apiCalled);
 });
-

@@ -130,26 +130,45 @@ Browser.gui.refreshIcon = function(tabId) {
 		Browser.rpc.call(null, 'refreshIcon');
 		return;
 	}
+        Browser.rpc.call(tabId,'apiCalled',[],function(apiCalled){
 
-	Browser.rpc.call(tabId, "getIconInfo", [], function(info) {
-		if(!info || info.hidden) {
+            Browser.storage.get(function(st) {
+
+                Browser.rpc.call(tabId,'getUrl',[],function(url){
+                
+	            var domain = Util.extractDomain(url);
+	            var level = st.domainLevel[domain] || st.defaultLevel;
+                    
+                    var info = {
+                        hidden:  st.hideIcon || !apiCalled,
+                        private: !st.paused && level != 'real',
+                        title:
+                        st.paused               ? "Location Guard is paused" :
+                            level == 'real' ? "Using your real location" :
+                            level == 'fixed'? "Using a fixed location" :
+                            "Privacy level: " + level
+                    };
+                    
+		    if(!info || info.hidden) {
 			chrome.pageAction.hide(tabId);
-
-		} else {
+                        
+		    } else {
 			chrome.pageAction.setIcon({
-				tabId: tabId,
-				path: {
-					19: '/images/' + (info.private ? 'pin_19.png' : 'pin_disabled_19.png'),
-					38: '/images/' + (info.private ? 'pin_38.png' : 'pin_disabled_38.png')
-				}
+			    tabId: tabId,
+			    path: {
+				19: '/images/' + (info.private ? 'pin_19.png' : 'pin_disabled_19.png'),
+				38: '/images/' + (info.private ? 'pin_38.png' : 'pin_disabled_38.png')
+			    }
 			});
 			chrome.pageAction.setTitle({
-				tabId: tabId,
-				title: info.title
+			    tabId: tabId,
+			    title: info.title
 			});
 			chrome.pageAction.show(tabId);
-		}
-	});
+		    }
+	        });
+            });
+        });
 };
 
 Browser.gui.refreshAllIcons = function() {
