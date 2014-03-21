@@ -2,12 +2,15 @@
 // Here we only handle the install/update events
 // Browser-specific functionality for the main script, if needed, is added by browser/*.js
 //
-blog('starting');
 
+console.log('starting');
 var Browser = require("./browser").Browser;
+
 Browser.init('main');
 
+
 var Util = require("./util").Util;
+
 Util.events.addListener('browser.install', function() {
 	// show FAQ on first install
 	Browser.gui.showOptions('#faq');
