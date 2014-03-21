@@ -94,12 +94,13 @@ if(document.documentElement.tagName.toLowerCase() == 'html') { // only for html
 	var script = document.createElement('script');
 	script.appendChild(document.createTextNode(inject));
 
-	var parent = document.head || document.body || document.documentElement;
-	var firstChild = (parent.childNodes && (parent.childNodes.length > 0)) ? parent.childNodes[0] : null;
+        // FF: there is another variables in the scope named parent, this causes a very hard to catch bug
+	var parent_ = document.head || document.body || document.documentElement;
+	var firstChild = (parent_.childNodes && (parent_.childNodes.length > 0)) ? parent_.childNodes[0] : null;
 	if(firstChild)
-		parent.insertBefore(script, firstChild);
+		parent_.insertBefore(script, firstChild);
 	else
-		parent.appendChild(script);
+		parent_.appendChild(script);
 }
 
 var apiCalled = false;		// true means that an API call has already happened, so we need to show the icon
@@ -131,10 +132,22 @@ cpc.register('getNoisyPosition', function(options, replyHandler) {
 		//
 		navigator.geolocation.getCurrentPosition(
 			function(position) {
-				// clone, modifying/sending the native object returns error
-				addNoise(Util.clone(position), function(noisy) {
+			    // clone, modifying/sending the native object returns error
+                            //FF: position is XRayWrapper and Util.clone fails
+                            var clonedPosition = 
+                                {'coords' : 
+                                 {'latitude': position.coords.latitude, 
+                                  'longitude': position.coords.longitude,
+                                  'altitude' : position.coords.altitude,
+                                  'accuracy' : position.coords.accuracy,
+                                  'altitudeAccuracy' : position.coords.altitudeAccuracy,
+                                  'heading' : position.coords.heading,
+                                  'speed' : position.coords.speed,
+                                 }};
+
+			    addNoise(clonedPosition, function(noisy) {
 					replyHandler(true, noisy);	
-				});
+			    });
 			},
 			function(error) {
 				replyHandler(false, Util.clone(error));		// clone, sending the native object returns error
