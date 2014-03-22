@@ -1,13 +1,13 @@
 {
   "name": "location-guard",
   "fullName": "location-guard",
-  "id": "jid1-HdwPLukcGQeOSg",
+  "id": "jid1-HdwPLukcGQeOSh",
   "description": "Hide your geographic location from websites.",
-  "author": "Konstantinos Chatzikokolakis <kostas@chatzi.org>",
-  "contributors": ["Marco Stronati <marco@stronati.org>"],
+  "author": "Konstantinos Chatzikokolakis (http://www.lix.polytechnique.fr/~kostas/) <kostas@chatzi.org>",
+  "contributors": ["Marco Stronati (http://stronati.org) <marco@stronati.org>"],
   "icon" : "data/images/pin_38.png",
   "license": "MPL 2.0",
-  "version": "0.1",
+  "version": "1.0.6",
   "dependencies" : ["browser-action"],
   "preferences" : [{ 
           "type": "control", 
