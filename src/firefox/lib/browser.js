@@ -9,28 +9,53 @@ Browser.init = function (script) {
     Browser._script = script;
     Browser.log('initializing');
 
+    Browser.storage._init();
+
     switch(script) {
     case 'main':
-	this._main_script();
+	Browser._main_script();
         Browser.gui._init();
+        Browser._install_update();
 	break;
 
     case 'content':
-
+        // sets up low level communication
         extension.onMessage.addListener(Browser.handleMessage);
 	break;
     }
     Browser.gui.refreshAllIcons();
-    Browser.storage._init();
+
 };
 
+// handle installation and upgrade 
+Browser._install_update = function(){
+    
+    var self = require("sdk/self");
+    var Util = require("./util").Util;
+
+    if(self.loadReason == "install") {
+	Browser.gui.showOptions('#faq');
+    }
+    else if(self.loadReason == "upgrade"){
+	Browser.storage.get(function(st) {
+	    if(st.fixedPosNoAPI == null)
+		st.fixedPosNoAPI = true;
+            
+	    Browser.storage.set(st);
+	});
+    }
+}
+
 Browser._main_script = function() {
+
     Browser.workers = [];
 
     var array = require('sdk/util/array');
     var data = require("sdk/self").data;
-
     const { createMessageChannel, messageContentScriptFile } = require('messaging');
+
+    // user tabs
+
     var pagemod = require("sdk/page-mod").PageMod({
         include: ['*'],
         attachTo: ["top"],//excludes iframes
@@ -68,6 +93,8 @@ Browser._main_script = function() {
             });
         }
     });
+
+    // options page
 
     var pagemod = require("sdk/page-mod").PageMod({
         include: [data.url("options.html*")],
@@ -108,16 +135,6 @@ Browser._main_script = function() {
     }
 
 
-
-    // fire browser.install/update events
-    //
-    // chrome.runtime.onInstalled.addListener(function(details) {
-    // 	if(details.reason == "install")
-    // 		Util.events.fire('browser.install');
-
-    // 	else if(details.reason == "update")
-    // 		Util.events.fire('browser.update');
-    // });
 }
 
 
@@ -205,21 +222,21 @@ Browser.storage._init = function(){
             
             // default values
             if(!st) {
-//            Browser.log('initializing settings');
+            // Browser.log('initializing settings');
 	        st = Browser.storage._default;
 	        Browser.storage.set(st);
             }
-//            Browser.log('returning st');
+            // Browser.log('returning st');
             cb(st);
         };
 
         Browser.storage.set = function(st) {
-//            Browser.log('setting st');
+            // Browser.log('setting st');
             ss[Browser.storage._key] = st;
         };
 
         Browser.storage.clear = function() {
-//            Browser.log('clearing st');
+            // Browser.log('clearing st');
             delete ss[Browser.storage._key];
         };
 
@@ -227,7 +244,6 @@ Browser.storage._init = function(){
             Browser.storage.get(replyHandler);
         });
 
-        //BUG somebody need to call reply handler
         Browser.rpc.register('storage.set',function(st,tabId,replyHandler){
             Browser.storage.set(st);
             replyHandler();
@@ -241,17 +257,17 @@ Browser.storage._init = function(){
     else{
         
         Browser.storage.get = function(cb) {
-//            Browser.log('getting state');
+            // Browser.log('getting state');
             Browser.rpc.call(null,'storage.get',null,cb);
         }
 
         Browser.storage.set = function(st) {
-//            Browser.log('setting state');
+            // Browser.log('setting state');
             Browser.rpc.call(null,'storage.set',[st]);
         }
 
         Browser.storage.clear = function() {
-//            Browser.log('clearing state');
+            // Browser.log('clearing state');
             Browser.rpc.call(null,'storage.clear');
         }
 
@@ -261,6 +277,7 @@ Browser.storage._init = function(){
 
 //////////////////// gui ///////////////////////////
 
+// only called by main
 Browser.gui._init = function(){
 
     var array = require('sdk/util/array');
@@ -329,7 +346,7 @@ Browser.gui._init = function(){
 
     var data = require("sdk/self").data;
 
-    var showOptions = function(anchor){
+    Browser.gui._showOptions = function(anchor){
         var url = data.url('options.html') + (anchor || '');
         tabs.open(url);
 
@@ -345,15 +362,15 @@ Browser.gui._init = function(){
     }
 
     Browser.rpc.register('showOptions', function(anchor) {
-        // popup
-        showOptions(anchor);
+        Browser.log('showing options');        
+        Browser.gui._showOptions(anchor);
     });
 
 
     var prefsModule = require("sdk/simple-prefs");
     prefsModule.on("optionButton", function() {
         console.log("options was clicked");
-        showOptions();
+        Browser.gui._showOptions();
     })
 
 }
@@ -399,12 +416,16 @@ Browser.gui.refreshIcon = function(tabId) {
 Browser.gui.refreshAllIcons = function() {Browser.gui.refreshIcon(null)};
 
 Browser.gui.showOptions = function(anchor) {
-    // popup
-    Browser.rpc.call(null,'showOptions',[anchor],null);
+    Browser.log('calling showOptions');
+    if(Browser._script == 'main') {
+        Browser.gui._showOptions(anchor);
+    }
+    else {
+        Browser.rpc.call(null,'showOptions',[anchor],null);
+    }
 };
 
 Browser.gui.getActiveTabUrl = function(handler) {
-    // popup
     Browser.rpc.call(null,'getActiveTabUrl',[],handler)
 }
 
