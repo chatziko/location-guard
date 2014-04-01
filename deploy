@@ -8,14 +8,12 @@ case "$1" in
     chrome)
         mkdir -p $DIST
         cp -r src/chrome $DIST/chrome
-        cp -r src/common/{external,html,images} $DIST/chrome
-        cp -r src/common/js/* $DIST/chrome/js/
+        cp -r src/common/* $DIST/chrome
         ;;
     firefox)
         mkdir -p $DIST
         cp -r src/firefox $DIST/firefox
-        cp -r src/common/{external,images,js} $DIST/firefox/data/
-        cp -r src/common/html/* $DIST/firefox/data/
+        cp -r src/common/* $DIST/firefox/data/
         cp -r $DIST/firefox/lib/browser.js $DIST/firefox/data/js/
         cp -r src/common/js/{browser_base,util}.js $DIST/firefox/lib/
         # main??

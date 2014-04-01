@@ -17,14 +17,14 @@
 		"persistent": false
 	},
 
-	"options_page": "html/options.html",
+	"options_page": "options.html",
 
 	"page_action": {
 		"default_icon": {
 			"19": "images/pin_19.png",
 			"38": "images/pin_38.png"
 		},
-		"default_popup": "html/popup.html",
+		"default_popup": "popup.html",
 		"default_title": "Location Guard"
 	},
 

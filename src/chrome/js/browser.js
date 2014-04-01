@@ -179,7 +179,7 @@ Browser.gui.refreshAllIcons = function() {
 };
 
 Browser.gui.showOptions = function(anchor) {
-	var baseUrl = chrome.extension.getURL('html/options.html');
+	var baseUrl = chrome.extension.getURL('options.html');
 	var fullUrl = baseUrl + (anchor || '');
 
 	chrome.tabs.query({ url: baseUrl }, function(tabs) {
