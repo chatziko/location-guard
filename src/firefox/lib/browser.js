@@ -1,9 +1,6 @@
 // implements browser_base.js
 
-// this should not bother chrome
-if (typeof exports != "undefined") {
-    var Browser = require("browser_base").Browser;
-}
+var Browser = require("browser_base").Browser;
 
 Browser.init = function (script) { 
     Browser._script = script;
@@ -31,7 +28,7 @@ Browser.init = function (script) {
 Browser._install_update = function(){
     
     var self = require("sdk/self");
-    var Util = require("./util").Util;
+    var Util = require("util").Util;
 
     if(self.loadReason == "install") {
 	Browser.gui.showOptions('#faq');
@@ -377,7 +374,7 @@ Browser.gui.refreshIcon = function(tabId) {
 
         var tab = Browser.gui._getActiveTab();
 
-	require("./util").Util.getIconInfo(tab.id, function(info) {
+	require("util").Util.getIconInfo(tab.id, function(info) {
                 Browser.log('got info for refreshIcon: ' + JSON.stringify(info));
 	        if(info.hidden) {
                     Browser.gui.badge.hide();

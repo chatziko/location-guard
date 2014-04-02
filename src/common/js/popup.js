@@ -1,5 +1,6 @@
 blog("popup loading");
 
+var Browser = require("browser").Browser;
 Browser.init('popup');
 Browser.storage.get(function(g) { blog("settings", g) });
 
@@ -51,7 +52,7 @@ function menuAction(action) {
 
 		default:	// set level
 			Browser.storage.get(function(st) {
-				var domain = Util.extractDomain(url);
+				var domain = require("util").Util.extractDomain(url);
 				var level = action;
 				if(level == st.defaultLevel)
 					delete st.domainLevel[domain];
@@ -69,7 +70,7 @@ function menuAction(action) {
 
 function drawUI() {
 	Browser.storage.get(function(st) {
-		var domain = Util.extractDomain(url);
+		var domain = require("util").Util.extractDomain(url);
 		var level = st.domainLevel[domain] || st.defaultLevel;
 
 		// for some reason the mouse gets a mouseover event when created, so it
