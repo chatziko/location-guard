@@ -1,0 +1,7 @@
+[submodule "browser-action-jplib"]
+	path = src/firefox/packages/browser-action-jplib
+	url = https://github.com/Rob--W/browser-action-jplib.git
+
+[submodule "toolbarwidget-jplib"]
+	path = src/firefox/packages/toolbarwidget-jplib
+	url = https://github.com/Rob--W/toolbarwidget-jplib.git
