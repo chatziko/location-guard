@@ -7,12 +7,14 @@ DIST=dist
 case "$1" in
     chrome)
         mkdir -p $DIST
-        cp -r src/chrome $DIST/chrome
+        cp -r src/chrome $DIST/
         cp -r src/common/* $DIST/chrome
         ;;
     firefox)
         mkdir -p $DIST
-        cp -r src/firefox $DIST/firefox
+        mkdir -p $DIST/firefox/data
+
+        cp -r src/firefox $DIST/
         cp -r src/common/* $DIST/firefox/data/
         cp -r $DIST/firefox/lib/browser.js $DIST/firefox/data/js/
         cp -r src/common/js/{browser_base,util}.js $DIST/firefox/lib/
