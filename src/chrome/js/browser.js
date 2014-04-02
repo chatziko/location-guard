@@ -10,13 +10,6 @@ Browser.init = function(script) {
 			break;
 
 		case 'content':
-			// to avoid asking for the 'tabs' permission, we get the tab's url
-			// from the content script
-
-			Browser.rpc.register('getUrl', function(tabId, replyHandler) {
-				replyHandler(window.location.href);
-			});
-
 			break;
 	}
 };
@@ -130,45 +123,25 @@ Browser.gui.refreshIcon = function(tabId) {
 		Browser.rpc.call(null, 'refreshIcon');
 		return;
 	}
-        Browser.rpc.call(tabId,'apiCalled',[],function(apiCalled){
-
-            Browser.storage.get(function(st) {
-
-                Browser.rpc.call(tabId,'getUrl',[],function(url){
-                
-	            var domain = Util.extractDomain(url);
-	            var level = st.domainLevel[domain] || st.defaultLevel;
-                    
-                    var info = {
-                        hidden:  st.hideIcon || !apiCalled,
-                        private: !st.paused && level != 'real',
-                        title:
-                        st.paused               ? "Location Guard is paused" :
-                            level == 'real' ? "Using your real location" :
-                            level == 'fixed'? "Using a fixed location" :
-                            "Privacy level: " + level
-                    };
-                    
-		    if(!info || info.hidden) {
+	Util.getIconInfo(tabId, function(info) {
+		if(!info || info.hidden) {
 			chrome.pageAction.hide(tabId);
-                        
-		    } else {
+
+		} else {
 			chrome.pageAction.setIcon({
-			    tabId: tabId,
-			    path: {
-				19: '/images/' + (info.private ? 'pin_19.png' : 'pin_disabled_19.png'),
-				38: '/images/' + (info.private ? 'pin_38.png' : 'pin_disabled_38.png')
-			    }
+				tabId: tabId,
+				path: {
+					19: '/images/' + (info.private ? 'pin_19.png' : 'pin_disabled_19.png'),
+					38: '/images/' + (info.private ? 'pin_38.png' : 'pin_disabled_38.png')
+				}
 			});
 			chrome.pageAction.setTitle({
-			    tabId: tabId,
-			    title: info.title
+				tabId: tabId,
+				title: info.title
 			});
 			chrome.pageAction.show(tabId);
-		    }
-	        });
-            });
-        });
+		}
+	});
 };
 
 Browser.gui.refreshAllIcons = function() {
@@ -197,10 +170,10 @@ Browser.gui.getActiveTabUrl = function(handler) {
 		  lastFocusedWindow: true     // In the current window
 		}, function(tabs) {
 			// there can be only one;
-			// we call getUrl from the content script
+			// we call getUrl from the content script (avoid asking for 'tabs' permisison)
 			//
-			Browser.rpc.call(tabs[0].id, 'getUrl', [], function(url) {
-				handler(url);
+			Browser.rpc.call(tabs[0].id, 'getState', [], function(state) {
+				handler(state.url);
 			});
 		}
 	);

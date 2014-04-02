@@ -4,7 +4,7 @@
 //
 
 // FF: we need to load dependencies with require()
-if (require) {
+if (typeof require != 'undefined') {
     var Browser = require("./browser").Browser;
     var Util = require("./util").Util;
 }

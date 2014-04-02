@@ -202,6 +202,9 @@ function addNoise(position, handler) {
 }
 
 Browser.init('content');
-Browser.rpc.register('apiCalled', function(tabId, replyHandler) {
-    replyHandler(apiCalled);
+Browser.rpc.register('getState', function(tabId, replyHandler) {
+	replyHandler({
+		url: window.location.href,
+		apiCalled: apiCalled
+	});
 });

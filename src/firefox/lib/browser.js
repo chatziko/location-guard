@@ -286,21 +286,17 @@ Browser.gui._init = function(){
         theBadge : null,
         visible : false,
         enabled : false,
-        disable : function() {  // visible but disabled
+        disable : function(title) {  // visible but disabled
             Browser.log('disabling button');
             if (!Browser.gui.badge.visible) {
-                this.enable();
+                this.enable("");
             }
             this.enabled = false;
             Browser.gui.badge.theBadge.setIcon({path: 'images/pin_disabled_38.png'});
-            Browser.gui.badge.theBadge.setTitle({title : 'Location Guard is paused'});
+            Browser.gui.badge.theBadge.setTitle({title : title});
         },
-        enable : function(level) {     // visible and enabled
+        enable : function(title) {     // visible and enabled
             Browser.log('enabling button');
-	    var title = 
-                level == 'real'	? "Using your real location" :
-		level == 'fixed'? "Using a fixed location" :
-		"Privacy level: " + level;
 
             if (!Browser.gui.badge.visible) {
                 Browser.gui.badge.visible = true;
@@ -381,27 +377,19 @@ Browser.gui.refreshIcon = function(tabId) {
 
         var tab = Browser.gui._getActiveTab();
 
-        Browser.rpc.call(tab.id,'apiCalled',null,function(apiCalled){
-
-            Browser.storage.get(function(st) {
-	        var domain = require("./util").Util.extractDomain(tab.url);
-	        var level = st.domainLevel[domain] || st.defaultLevel;
-                Browser.log('got state for iconInfo ' + JSON.stringify(st) + 
-                            " \ndomain " + JSON.stringify(domain) + 
-                            " \nlevel " + JSON.stringify(level) +
-                            " \napiCalled: " + apiCalled);
-	        if(st.hideIcon || !apiCalled) {
+	require("./util").Util.getIconInfo(tab.id, function(info) {
+                Browser.log('got info for refreshIcon: ' + JSON.stringify(info));
+	        if(info.hidden) {
                     Browser.gui.badge.hide();
-	        } else { 
-                    if (st.paused) {
-                        Browser.gui.badge.disable();
+	        } else {
+                    if (!info.private) {
+                        Browser.gui.badge.disable(info.title);
                     }
                     else {
-                        Browser.gui.badge.enable(level);
+                        Browser.gui.badge.enable(info.title);
                     }
 	        }
-	    });
-        })
+	});
     }
     // content popup
     else {
