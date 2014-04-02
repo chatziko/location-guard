@@ -36,7 +36,7 @@ function saveGeneral() {
 		st.defaultLevel = $('#defaultLevel').val();
 
 		if(st.epsilon <= 0) {
-			blog('bad settings, ignoring', st);
+			Browser.log('bad settings, ignoring', st);
 			drawUI();
 			return;
 		}
@@ -99,7 +99,7 @@ function initializeLevelMap() {
 	
 	/* CircleEditor
 		.on("radiusdrag", function() { 
-			blog("a")
+			Browser.log("a")
 			var radius = Math.floor(this.getRadius());
 			$("#setRadius").slider("option", "value", radius);
 			updateRadiusText(radius);
@@ -135,7 +135,7 @@ function saveFixedPos(e) {
 
 		fixedPosMarker.setLatLng(e.latlng);
 
-		blog('saving st', st);
+		Browser.log('saving st', st);
 		Browser.storage.set(st);
 	});
 }
@@ -285,7 +285,7 @@ function showCurrentPosition() {
 				showLevelInfo();
 		},
 		function(err) {
-			blog("cannot get location", err);
+			Browser.log("cannot get location", err);
 		}
 	);
 }

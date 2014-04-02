@@ -1,8 +1,8 @@
-blog("popup loading");
-
 var Browser = require("browser").Browser;
+Browser.log("popup loading");
+
 Browser.init('popup');
-Browser.storage.get(function(g) { blog("settings", g) });
+Browser.storage.get(function(g) { Browser.log("settings", g) });
 
 // get current tab's url
 var url;

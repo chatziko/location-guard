@@ -184,7 +184,7 @@ Browser.rpc.register = function(name, handler) {
 // { method: ..., args: ... }
 //
 Browser.rpc._listener = function(message, tabId, replyHandler) {
-	//blog("RPC: got message", [message, sender, replyHandler]);
+	//Browser.log("RPC: got message", [message, sender, replyHandler]);
 
     var handler = Browser.rpc._methods[message.method];
     if(!handler) {
@@ -346,7 +346,7 @@ Browser.gui._init = function(){
 	// var baseUrl = chrome.extension.getURL('html/options.html');
 	// var fullUrl = baseUrl + (anchor || '');
 	// chrome.tabs.query({ url: baseUrl }, function(tabs) {
-	// 	blog("tabs",tabs);
+	// 	Browser.log("tabs",tabs);
 	// 	if (tabs.length)
 	// 		chrome.tabs.update(tabs[0].id, { active: true, url: fullUrl });
 	// 	else
