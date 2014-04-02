@@ -4,18 +4,14 @@
 //
 
 var Browser = require("browser").Browser;
-var Util = require("util").Util;
-
 Browser.log('starting');
 
-Browser.init('main');
-
-Util.events.addListener('browser.install', function() {
+require("util").Util.events.addListener('browser.install', function() {
 	// show FAQ on first install
 	Browser.gui.showOptions('#faq');
 });
 
-Util.events.addListener('browser.update', function() {
+require("util").Util.events.addListener('browser.update', function() {
 	// upgrade options from previous versions
 	Browser.storage.get(function(st) {
 		if(st.fixedPosNoAPI == null)
@@ -24,3 +20,5 @@ Util.events.addListener('browser.update', function() {
 		Browser.storage.set(st);
 	});
 });
+
+Browser.init('main');

@@ -31,15 +31,10 @@ Browser._install_update = function(){
     var Util = require("util").Util;
 
     if(self.loadReason == "install") {
-	Browser.gui.showOptions('#faq');
+        require("util").Util.events.fire('browser.install');
     }
     else if(self.loadReason == "upgrade"){
-	Browser.storage.get(function(st) {
-	    if(st.fixedPosNoAPI == null)
-		st.fixedPosNoAPI = true;
-            
-	    Browser.storage.set(st);
-	});
+	require("util").Util.events.fire('browser.update');
     }
 }
 
