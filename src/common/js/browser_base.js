@@ -160,3 +160,9 @@ var Browser = {
 		console.log(text, value);
 	}
 };
+
+// for quick logging
+function blog(a, b) {
+	Browser.log(a, b);
+}
+

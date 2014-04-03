@@ -53,7 +53,7 @@ Browser.rpc.register = function(name, handler) {
 // { method: ..., args: ... }
 //
 Browser.rpc._listener = function(message, sender, replyHandler) {
-	Browser.log("RPC: got message", [message, sender, replyHandler]);
+	blog("RPC: got message", [message, sender, replyHandler]);
 
 	var handler = Browser.rpc._methods[message.method];
 	if(!handler) return;
@@ -101,7 +101,7 @@ Browser.storage.get = function(cb) {
 };
 
 Browser.storage.set = function(st) {
-	Browser.log('saving st', st);
+	blog('saving st', st);
 	var items = {};
 	items[Browser.storage._key] = st;
 	chrome.storage.local.set(items);
@@ -158,7 +158,7 @@ Browser.gui.showOptions = function(anchor) {
 	var fullUrl = baseUrl + (anchor || '');
 
 	chrome.tabs.query({ url: baseUrl }, function(tabs) {
-		Browser.log("tabs",tabs);
+		blog("tabs",tabs);
 		if (tabs.length)
 			chrome.tabs.update(tabs[0].id, { active: true, url: fullUrl });
 		else

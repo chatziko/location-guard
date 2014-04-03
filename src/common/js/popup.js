@@ -1,7 +1,7 @@
-Browser.log("popup loading");
+blog("popup loading");
 
 Browser.init('popup');
-Browser.storage.get(function(g) { Browser.log("settings", g) });
+Browser.storage.get(function(g) { blog("settings", g) });
 
 // get current tab's url
 var url;

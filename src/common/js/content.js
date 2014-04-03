@@ -124,7 +124,7 @@ cpc.register('getNoisyPosition', function(options, replyHandler) {
 		if(level == 'fixed' && st.fixedPosNoAPI) {
 			var noisy = { coords: st.fixedPos, timestamp: new Date().getTime() };
 			replyHandler(true, noisy);
-			Browser.log(noisy);
+			blog(noisy);
 			return;
 		}
 
@@ -173,7 +173,7 @@ function addNoise(position, handler) {
 
 		} else if(st.cachedPos[level] && ((new Date).getTime() - st.cachedPos[level].epoch)/60000 < st.levels[level].cacheTime) {
 			position = st.cachedPos[level].position;
-			Browser.log('using cached', position);
+			blog('using cached', position);
 			
 		} else {
 			// add noise
@@ -193,7 +193,7 @@ function addNoise(position, handler) {
 			st.cachedPos[level] = { epoch: (new Date).getTime(), position: position };
 			Browser.storage.set(st);
 
-			Browser.log('noisy coords', position.coords);
+			blog('noisy coords', position.coords);
 		}
 
 		// return noisy position
