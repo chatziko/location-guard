@@ -160,5 +160,3 @@ var Browser = {
 		console.log(text, value);
 	}
 };
-
-exports.Browser = Browser;

@@ -1,7 +1,5 @@
 // implements browser_base.js
 
-var Browser = require("browser_base").Browser;
-
 Browser.init = function (script) { 
     Browser._script = script;
     Browser.log('initializing');
@@ -28,13 +26,12 @@ Browser.init = function (script) {
 Browser._install_update = function(){
     
     var self = require("sdk/self");
-    var Util = require("util").Util;
 
     if(self.loadReason == "install") {
-        require("util").Util.events.fire('browser.install');
+        Util.events.fire('browser.install');
     }
     else if(self.loadReason == "upgrade"){
-	require("util").Util.events.fire('browser.update');
+	Util.events.fire('browser.update');
     }
 }
 
@@ -369,7 +366,7 @@ Browser.gui.refreshIcon = function(tabId) {
 
         var tab = Browser.gui._getActiveTab();
 
-	require("util").Util.getIconInfo(tab.id, function(info) {
+	Util.getIconInfo(tab.id, function(info) {
                 Browser.log('got info for refreshIcon: ' + JSON.stringify(info));
 	        if(info.hidden) {
                     Browser.gui.badge.hide();
@@ -432,10 +429,3 @@ Browser.log = function(a, b) {
 //     });
 // });
 
-
-
-
-
-if (typeof exports != "undefined") {
-    exports.Browser = Browser;
-}

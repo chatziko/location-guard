@@ -1,7 +1,6 @@
 // Browser class for Google Chrome. For documentation of the various methods,
 // see browser_base.js
 //
-var Browser = require("browser_base").Browser;
 
 Browser.init = function(script) {
 	Browser._script = script;
@@ -23,10 +22,10 @@ Browser._main_script = function() {
 	//
 	chrome.runtime.onInstalled.addListener(function(details) {
 		if(details.reason == "install")
-			require("util").Util.events.fire('browser.install');
+			Util.events.fire('browser.install');
 
 		else if(details.reason == "update")
-			require("util").Util.events.fire('browser.update');
+			Util.events.fire('browser.update');
 	});
 
 	// some operations cannot be done by other scripts, so we set
@@ -126,7 +125,7 @@ Browser.gui.refreshIcon = function(tabId) {
 		return;
 	}
 
-	require("util").Util.getIconInfo(tabId, function(info) {
+	Util.getIconInfo(tabId, function(info) {
 		if(!info || info.hidden) {
 			chrome.pageAction.hide(tabId);
 

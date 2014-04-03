@@ -17,19 +17,7 @@ function(){var e="";return this.protocol()?(e+=this.protocol(),this.protocol().i
 // functionality should go to browser/*.js
 //
 
-// if exports/require are not available, implement them using a global namespace
-// (Firefox's main script provides exports/require, but Chrome and Firefox's
-// non-main scripts use a global namespace)
-//
-if(typeof exports == 'undefined') {
-	exports = {};
-
-	require = function(name) {
-		return exports;
-	}
-}
-
-var _Util = {
+var Util = {
 	extractDomain: function(url) {
 		return new Uri(url).host();
 	},
@@ -50,8 +38,6 @@ var _Util = {
 	//       Firefox has issues with nested calls (we should fix this at some point)
 	//
 	getIconInfo: function(tabId, handler) {
-		var Browser = require("browser").Browser;
-
 		Browser.rpc.call(tabId, 'getState', [], function(state) {
 			if(!state) {
 				// this is not a tab with content script loaded, hide icon
@@ -60,7 +46,7 @@ var _Util = {
 			}
 
 			Browser.storage.get(function(st) {
-				var domain = _Util.extractDomain(state.url);
+				var domain = Util.extractDomain(state.url);
 				var level = st.domainLevel[domain] || st.defaultLevel;
 
 				var info = {
@@ -96,4 +82,3 @@ var _Util = {
 	}
 };
 
-exports.Util = _Util;

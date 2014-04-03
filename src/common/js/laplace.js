@@ -137,4 +137,3 @@ PlannarLaplace.prototype.addNoise = function(epsilon, pos) {
 	return this.addPolarNoise(epsilon, pos);
 }
 
-exports.PlannarLaplace = PlannarLaplace;

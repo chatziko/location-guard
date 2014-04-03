@@ -14,7 +14,6 @@ var currentPos = {
 	longitude: 2.3569107055664062
 };
 
-var Browser = require("browser").Browser;
 Browser.init('options');
 Browser.storage.get(function(st) {
 	epsilon = st.epsilon;
@@ -229,7 +228,7 @@ function drawUI() {
 		// not when it's first displayed. So we also use the activate event of the parent tab.
 		//
 		$("#tabs").tabs({
-			active: tabIndex[require("util").Util.extractAnchor(window.location.href)],
+			active: tabIndex[Util.extractAnchor(window.location.href)],
 			activate: function(event, ui) {
 				var id = ui.newPanel.attr('id');
 				window.location.hash = id;
@@ -320,7 +319,7 @@ $(document).ready(function() {
 	});
 
 	window.onhashchange = function() {
-		$("#tabs").tabs("option", "active", tabIndex[require("util").Util.extractAnchor(window.location.href)]);
+		$("#tabs").tabs("option", "active", tabIndex[Util.extractAnchor(window.location.href)]);
 	};
 
 	drawUI();

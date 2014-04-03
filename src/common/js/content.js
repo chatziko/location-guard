@@ -104,8 +104,6 @@ if(document.documentElement.tagName.toLowerCase() == 'html') { // only for html
 		parent_.appendChild(script);
 }
 
-var Browser = require("browser").Browser;
-
 var apiCalled = false;		// true means that an API call has already happened, so we need to show the icon
 
 // methods called by the page
@@ -120,7 +118,7 @@ cpc.register('getNoisyPosition', function(options, replyHandler) {
 		// if level == 'fixed' and fixedPosNoAPI == true, then we return the
 		// fixed position without calling the geolocation API at all.
 		//
-		var domain = require("util").Util.extractDomain(window.location.href);
+		var domain = Util.extractDomain(window.location.href);
 		var level = st.domainLevel[domain] || st.defaultLevel;
 
 		if(level == 'fixed' && st.fixedPosNoAPI) {
@@ -153,7 +151,7 @@ cpc.register('getNoisyPosition', function(options, replyHandler) {
 			    });
 			},
 			function(error) {
-				replyHandler(false, require("util").Util.clone(error));		// clone, sending the native object returns error
+				replyHandler(false, Util.clone(error));		// clone, sending the native object returns error
 			},
 			options
 		);
@@ -164,7 +162,7 @@ cpc.register('getNoisyPosition', function(options, replyHandler) {
 //
 function addNoise(position, handler) {
 	Browser.storage.get(function(st) {
-		var domain = require("util").Util.extractDomain(window.location.href);
+		var domain = Util.extractDomain(window.location.href);
 		var level = st.domainLevel[domain] || st.defaultLevel;
 
 		if(st.paused || level == 'real') {
@@ -181,7 +179,6 @@ function addNoise(position, handler) {
 			// add noise
 			var epsilon = st.epsilon / st.levels[level].radius;
 
-			var PlannarLaplace = require("laplace").PlannarLaplace;
 			var pl = new PlannarLaplace();
 			var noisy = pl.addNoise(epsilon, position.coords);
 
