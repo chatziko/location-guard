@@ -1,0 +1,11 @@
+#!/bin/bash
+
+rm -rf dist/firefox
+./deploy firefox
+
+cd $FIREFOX_ADDON_DIR
+source bin/activate
+cd -
+
+cd dist/firefox
+cfx run
