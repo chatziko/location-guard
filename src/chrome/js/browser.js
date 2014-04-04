@@ -1,6 +1,7 @@
 // Browser class for Google Chrome. For documentation of the various methods,
-// see base.js
+// see browser_base.js
 //
+
 Browser.init = function(script) {
 	Browser._script = script;
 
@@ -10,13 +11,6 @@ Browser.init = function(script) {
 			break;
 
 		case 'content':
-			// to avoid asking for the 'tabs' permission, we get the tab's url
-			// from the content script
-
-			Browser.rpc.register('getUrl', function(tabId, replyHandler) {
-				replyHandler(window.location.href);
-			});
-
 			break;
 	}
 };
@@ -131,7 +125,7 @@ Browser.gui.refreshIcon = function(tabId) {
 		return;
 	}
 
-	Browser.rpc.call(tabId, "getIconInfo", [], function(info) {
+	Util.getIconInfo(tabId, function(info) {
 		if(!info || info.hidden) {
 			chrome.pageAction.hide(tabId);
 
@@ -160,7 +154,7 @@ Browser.gui.refreshAllIcons = function() {
 };
 
 Browser.gui.showOptions = function(anchor) {
-	var baseUrl = chrome.extension.getURL('html/options.html');
+	var baseUrl = chrome.extension.getURL('options.html');
 	var fullUrl = baseUrl + (anchor || '');
 
 	chrome.tabs.query({ url: baseUrl }, function(tabs) {
@@ -178,10 +172,10 @@ Browser.gui.getActiveTabUrl = function(handler) {
 		  lastFocusedWindow: true     // In the current window
 		}, function(tabs) {
 			// there can be only one;
-			// we call getUrl from the content script
+			// we call getUrl from the content script (avoid asking for 'tabs' permisison)
 			//
-			Browser.rpc.call(tabs[0].id, 'getUrl', [], function(url) {
-				handler(url);
+			Browser.rpc.call(tabs[0].id, 'getState', [], function(state) {
+				handler(state.url);
 			});
 		}
 	);

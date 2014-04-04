@@ -26,7 +26,8 @@ function CPC() {
 	var cpc = this;
 	window.addEventListener("message", function(event) {
 		var data = event.data;
-		if(!(event.source == window && data.callId)) return;		// we only care about messages from the same window, and having callId
+		if(!(// event.source == window &&             // FF: this doesn't work on FF
+                     data.callId)) return;		// we only care about messages from the same window, and having callId
 
 		if(data.method) {
 			/* message call */
@@ -94,12 +95,13 @@ if(document.documentElement.tagName.toLowerCase() == 'html') { // only for html
 	var script = document.createElement('script');
 	script.appendChild(document.createTextNode(inject));
 
-	var parent = document.head || document.body || document.documentElement;
-	var firstChild = (parent.childNodes && (parent.childNodes.length > 0)) ? parent.childNodes[0] : null;
+        // FF: there is another variables in the scope named parent, this causes a very hard to catch bug
+	var parent_ = document.head || document.body || document.documentElement;
+	var firstChild = (parent_.childNodes && (parent_.childNodes.length > 0)) ? parent_.childNodes[0] : null;
 	if(firstChild)
-		parent.insertBefore(script, firstChild);
+		parent_.insertBefore(script, firstChild);
 	else
-		parent.appendChild(script);
+		parent_.appendChild(script);
 }
 
 var apiCalled = false;		// true means that an API call has already happened, so we need to show the icon
@@ -131,10 +133,22 @@ cpc.register('getNoisyPosition', function(options, replyHandler) {
 		//
 		navigator.geolocation.getCurrentPosition(
 			function(position) {
-				// clone, modifying/sending the native object returns error
-				addNoise(Util.clone(position), function(noisy) {
+			    // clone, modifying/sending the native object returns error
+                            //FF: position is XRayWrapper and Util.clone fails
+                            var clonedPosition = 
+                                {'coords' : 
+                                 {'latitude': position.coords.latitude, 
+                                  'longitude': position.coords.longitude,
+                                  'altitude' : position.coords.altitude,
+                                  'accuracy' : position.coords.accuracy,
+                                  'altitudeAccuracy' : position.coords.altitudeAccuracy,
+                                  'heading' : position.coords.heading,
+                                  'speed' : position.coords.speed,
+                                 }};
+
+			    addNoise(clonedPosition, function(noisy) {
 					replyHandler(true, noisy);	
-				});
+			    });
 			},
 			function(error) {
 				replyHandler(false, Util.clone(error));		// clone, sending the native object returns error
@@ -188,23 +202,9 @@ function addNoise(position, handler) {
 }
 
 Browser.init('content');
-
-Browser.rpc.register('getIconInfo', function(tabId, replyHandler) {
-	Browser.storage.get(function(st) {
-		var domain = Util.extractDomain(window.location.href);
-		var level = st.domainLevel[domain] || st.defaultLevel;
-
-		var info = {
-			hidden:  st.hideIcon || !apiCalled,
-			private: !st.paused && level != 'real',
-			title:
-				st.paused		? "Location Guard is paused" :
-				level == 'real'	? "Using your real location" :
-				level == 'fixed'? "Using a fixed location" :
-				"Privacy level: " + level
-		};
-		replyHandler(info);
+Browser.rpc.register('getState', function(tabId, replyHandler) {
+	replyHandler({
+		url: window.location.href,
+		apiCalled: apiCalled
 	});
-	return true;	// indicate that we plan to send a reply later
 });
-

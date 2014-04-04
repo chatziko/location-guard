@@ -2,9 +2,8 @@
 // Here we only handle the install/update events
 // Browser-specific functionality for the main script, if needed, is added by browser/*.js
 //
-blog('starting');
 
-Browser.init('main');
+Browser.log('starting');
 
 Util.events.addListener('browser.install', function() {
 	// show FAQ on first install
@@ -20,3 +19,5 @@ Util.events.addListener('browser.update', function() {
 		Browser.storage.set(st);
 	});
 });
+
+Browser.init('main');

@@ -1,9 +1,18 @@
 {
   "name": "location-guard",
   "fullName": "location-guard",
-  "id": "jid1-HdwPLukcGQeOSg",
-  "description": "a basic add-on",
-  "author": "",
+  "id": "jid1-HdwPLukcGQeOSh",
+  "description": "Hide your geographic location from websites.",
+  "author": "Konstantinos Chatzikokolakis (http://www.lix.polytechnique.fr/~kostas/) <kostas@chatzi.org>",
+  "contributors": ["Marco Stronati (http://stronati.org) <marco@stronati.org>"],
+  "icon" : "data/images/pin_38.png",
   "license": "MPL 2.0",
-  "version": "0.1"
+  "version": "1.0.6",
+  "dependencies" : ["browser-action"],
+  "preferences" : [{ 
+          "type": "control", 
+          "label": "Options", 
+          "name": "optionButton", 
+          "title": "Options"
+      }]
 }

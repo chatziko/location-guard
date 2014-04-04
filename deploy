@@ -1,21 +1,27 @@
 #!/bin/bash
 
-DIST=dist
+set -e
 
-mkdir $DIST
+DIST=dist
 
 case "$1" in
     chrome)
-        cp -r src/chrome $DIST/chrome
-        cp -r src/common/{external,html,images} $DIST/chrome
-        cp -r src/common/js/* $DIST/chrome/js/
+        mkdir -p $DIST/chrome
+        cp -r src/common/* $DIST/chrome/
+        cp -r src/chrome $DIST/
         ;;
     firefox)
-        cp -r src/firefox $DIST/firefox
-        cp -r src/common/{external,html,images,js} $DIST/firefox/data/
-        cp -r src/common/js/browser/base.js $DIST/firefox/lib/browser/
-        # main??
-        #cp -r common/js/main.js  firefox-addon/lib/
+        mkdir -p $DIST/firefox/data $DIST/firefox/lib
+
+        cp -r src/common/* $DIST/firefox/data/
+        cp -r src/firefox $DIST/
+
+		# create lib/main.js containing data/js/{util,browser_base,browser,main}.js
+		# This avoids the use of require() as well as the duplicate files in
+		# lib/ and data/
+		#
+        cat $DIST/firefox/data/js/{util,browser_base,browser,main}.js > $DIST/firefox/lib/main.js
+        rm $DIST/firefox/data/js/main.js	# not needed, avoid duplicates
         ;;
     clean)
         rm -rf $DIST
