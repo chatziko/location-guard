@@ -6,12 +6,12 @@
 
 var Util = {
 	extractDomain: function(url) {
-            var match = /\/\/[A-Za-z0-9_.]+\//.exec(url);
-            return match[0].replace(/\//gi,""); // remove slashes used for match
+            var match = /\/\/([^\/]+)/.exec(url);
+            return match ? match[1] : "";
 	},
 	extractAnchor: function(url) {
-            var match = /#[A-Za-z0-9_]+/.exec(url);
-            return match[0].replace(/\#/gi,""); // remove # used for match
+            var match = /#(.+)/.exec(url);
+            return match ? match[1] : "";
 	},
 	clone: function(obj) {
 		return JSON.parse(JSON.stringify(obj));
