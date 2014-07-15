@@ -1,12 +1,12 @@
 # Location Guard
 
-**Location Guard** is a [Google Chrome](https://www.google.com/chrome)/[Chromium](http://www.chromium.org/) extension 
-and a [Mozilla Firefox](https://www.mozilla.org/en-US/firefox/) add-on that
+**Location Guard** is a [Google Chrome/Chromium extension](https://chrome.google.com/webstore/detail/location-guard/cfohepagpmnodfdmjliccbbigdkfcgia)
+and a [Mozilla Firefox add-on](https://addons.mozilla.org/en-US/firefox/addon/location-guard/) add-on that
 allows to protect your location while using location-aware websites, by adding controlled noise to it.
 
 ## Installation
 
-To install this extension:
+To install Location Guard:
 
 * Install it from the [Chrome Web Store](https://chrome.google.com/webstore/detail/location-guard/cfohepagpmnodfdmjliccbbigdkfcgia)
 * Install it from the [Firefox Add-ons page](https://addons.mozilla.org/en-US/firefox/addon/location-guard/)
