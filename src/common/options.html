@@ -171,9 +171,10 @@
 			<div id="faqlist">  
 				<h3><a href="">How does Location Guard work?</a></h3>  
 				<div>
-					<p>Websites can ask the browser for your location using javascript. When they do so, Google Chrome
+					<p>Websites can ask the browser for your location using javascript. When they do so, the browser
 					first asks your permission, and if you accept, it detects your location (typically by transmitting a
-					list of available wifi access points to Google's servers) and gives it to the website.</p>
+					list of available wifi access points to a geolocation provider such as Google Location Services) and
+					gives it to the website.</p>
 
 					<p>Location Guard intercepts the javascript call. The permission dialog appears as usual, and you
 					can still choose to deny. If you give permission, then Location Guard obtains your location and adds
@@ -234,7 +235,7 @@
 					<p>The default fixed position is meant as a joke. You can also modify it
 					from the <a href="#fixedPos">Fixed Position tab</a>.</p>
 
-					<p>When using a fixed position, Google Chrome's geolocation is not performed at all. This offers
+					<p>When using a fixed position, the browser's geolocation is not performed at all. This offers
 					better privacy, since the list of wifi access points is not transmitted to Google's servers.
 					However, it has the side effect that the <i>permission dialog is not displayed at all</i>.
 					This behaviour is acceptable if the fixed position is a dummy one, but it can
