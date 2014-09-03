@@ -32,11 +32,13 @@ function CPC() {
 		if(data.method) {
 			/* message call */
 			if(data.callId in cpc._calls) return;					// we made this call, the other side should reply
-			data.args.push(function() {								// pass returnHandler, used to send back the result
+
+			var dataArgs = Array.prototype.slice.call(data.args);	// cannot modify data.args in Firefox 32, clone as workaround
+			dataArgs.push(function() {								// pass returnHandler, used to send back the result
 				var args = Array.prototype.slice.call(arguments);	// arguments in real array
 				document.defaultView.postMessage({ callId: data.callId, value: args }, "*");
 			});
-			cpc._methods[data.method].apply(null, data.args)
+			cpc._methods[data.method].apply(null, dataArgs);
 
 		} else {
 			/* return value */
