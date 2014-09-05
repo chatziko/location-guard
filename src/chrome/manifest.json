@@ -31,6 +31,7 @@
 	"content_scripts": [{
 		"js": ["js/util.js", "js/browser_base.js", "js/browser.js", "js/laplace.js", "js/content.js"],
 		"matches": ["\u003Call_urls\u003E"],
-		"run_at": "document_start"
+		"run_at": "document_start",
+		"all_frames": true
 	}]
 }

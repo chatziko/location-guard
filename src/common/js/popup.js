@@ -93,12 +93,14 @@ function drawUI() {
 			level == 'fixed'? "Using a fixed location" :
 			"Privacy level: " + level
 		);
+
 		$("#pause > a").text((st.paused ? "Resume" : "Pause") + " Location Guard");
+		$("#setLevel > a").html("Set level for <b>" + domain + "</b> &gt;");
 
 		$("#setLevel,#hideIcon").toggle(!st.paused);
 
 		$("body").css("height", $("#container").height());
-		$("body").css("width", $("#container").width()+13);
+		$("body").css("width", $("#container").width());
 	});
 	});
 }
