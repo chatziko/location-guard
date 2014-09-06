@@ -3,6 +3,7 @@
 //
 var Browser = {
 	debugging: true,				// set this to false on production
+	testing: false,					// set to true to run tests on load
 
 	// Browser.init(script)
 	//
@@ -33,8 +34,8 @@ var Browser = {
 		//   tabId:         the tabId of the caller, or null if the call is made from the main script
 		//   replyHandler:  function for asynchronously returning a result by calling replyHandler(result)
 		//
-		// If handler does not immediately return a result but stores replyHandler to do it asynchronously later, it should return a true
-		// value to keep replyHandler open.
+		// IMPORTANT: If handler does not immediately return a result but stores replyHandler to do it asynchronously later,
+		// it should return a true value to keep replyHandler open.
 		//
 		register: function(name, handler) {},
 

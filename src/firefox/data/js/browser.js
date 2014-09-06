@@ -414,17 +414,3 @@ Browser.log = function() {
 	console.log(s);
 }
 
-
-// // this was used to test nested rpc calls with content script
-// Browser.rpc.call(tab.id, 'test',null, function(inf){Browser.log('finally displaying: ' + inf);});
-
-// // this was a test function, to use in content.js, to show that registering on content script side works
-// // what doesn't work is nested calls, in particular everything goes ok until replyHandler is called
-// // and the argument that arrives on the other side is null
-// Browser.rpc.register('test',function(tabId, replyHandler){
-//	   Browser.log('sending test');
-//	   Browser.storage.get(function(st) {
-//		   replyHandler('test');
-//	   });
-// });
-

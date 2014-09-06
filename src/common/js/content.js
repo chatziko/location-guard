@@ -231,3 +231,17 @@ if(!inFrame) {
 		Browser.gui.refreshIcon();
 	});
 }
+
+if(Browser.testing) {
+	// test for nested calls, and for correct passing of tabId
+	//
+	Browser.rpc.register('nestedTestContent', function(tabId, replyHandler) {
+		blog("in nestedTestContent, returning 42");
+		replyHandler(42);
+	});
+
+	blog("calling nestedTestMain");
+	Browser.rpc.call(null, 'nestedTestMain', [], function(res) {
+		blog('got from nestedTestMain', res);
+	});
+}

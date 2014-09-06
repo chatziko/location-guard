@@ -21,3 +21,22 @@ Util.events.addListener('browser.update', function() {
 });
 
 Browser.init('main');
+
+if(Browser.testing) {
+	// test for nested calls, and for correct passing of tabId
+	//
+	Browser.rpc.register('nestedTestMain', function(tabId, replyHandler) {
+		blog("in nestedTestMain, call from ", tabId, "calling back nestedTestContent");
+
+		Browser.rpc.call(tabId, 'nestedTestContent', [], function(res) {
+			blog("got from nestedTestContent", res, "multiplying by 2 and sending back");
+			replyHandler(2 * res);
+		});
+
+		// we MUST return true to signal that replyHandler will be used at a later
+		// time (when we get the reply of nestedTestContent). Returning false will
+		// fail in FF and some versions of Chrome. We mention this in the
+		// specification of Browser.rpc.register
+		return true;
+	});
+}
