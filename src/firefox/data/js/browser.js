@@ -2,7 +2,7 @@
 
 Browser.init = function (script) {
 	Browser._script = script;
-	Browser.log('initializing');
+	Browser.log('initializing', script);
 
 	Browser.storage._init();
 
@@ -13,7 +13,7 @@ Browser.init = function (script) {
 		Browser._install_update();
 		break;
 
-	case 'content':
+	default:
 		// sets up low level communication
 		extension.onMessage.addListener(Browser.handleMessage);
 		break;
@@ -64,7 +64,10 @@ Browser._main_script = function() {
 
 		onAttach: function(worker) {
 			worker["channel"] = createMessageChannel(pagemod.contentScriptOptions, worker.port);
-			worker.channel.onMessage.addListener(Browser.handleMessage);
+			worker.channel.onMessage.addListener(function(msg, sender, sendResponse) {
+				// sender is always null, we set it to worker.tab.id
+				return Browser.handleMessage(msg, worker.tab.id, sendResponse);
+			});
 
 			array.add(Browser.workers, worker);
 			status();
@@ -96,7 +99,10 @@ Browser._main_script = function() {
 		},
 		onAttach: function(worker) {
 			worker["channel"] = createMessageChannel(pagemod.contentScriptOptions, worker.port);
-			worker.channel.onMessage.addListener(Browser.handleMessage);
+			worker.channel.onMessage.addListener(function(msg, sender, sendResponse) {
+				// sender is always null, we set it to worker.tab.id
+				return Browser.handleMessage(msg, worker.tab.id, sendResponse);
+			});
 
 			array.add(Browser.workers, worker);
 			status();
@@ -133,19 +139,26 @@ var id = function (msg,sender,sendResponse){sendResponse(msg)};
 Browser.messageHandlers = {};
 Browser.messageHandlers['id'] = id;
 
+Browser._find_worker = function(tabId) {
+	for (var i = 0; i < Browser.workers.length; i++)
+		if (Browser.workers[i].tab && Browser.workers[i].tab.id == tabId)
+			return Browser.workers[i];
+	return null;
+}
+
 Browser.handleMessage = function(msg,sender,sendResponse) {
 	// Browser.log('handling: ', msg, sender, sendResponse);
-	Browser.messageHandlers[msg.type].apply(null,[msg.message,sender,sendResponse]);
+	return Browser.messageHandlers[msg.type].apply(null,[msg.message,sender,sendResponse]);
 }
 
 Browser.sendMessage = function (tabId, type, message, cb) {
-	if (Browser._script == 'main'){
-		for (var i=0; i<Browser.workers.length; i++) {
-			if (Browser.workers[i].tab.id == tabId) {
-				// Browser.log('-> ', Browser.workers[i].tab.url, message);
-				Browser.workers[i].channel.sendMessage({'type': type, 'message': message},cb);
-			}
-			else {if (i == Browser.workers.length) Browser.log('no destination '+tabId)}
+	if (Browser._script == 'main') {
+		var worker = Browser._find_worker(tabId);
+		if(worker) {
+			// Browser.log('-> ', worker.tab.url, message);
+			worker.channel.sendMessage({'type': type, 'message': message},cb);
+		} else {
+			Browser.log('no destination '+tabId);
 		}
 	}
 	// content or popup
@@ -186,7 +199,7 @@ Browser.rpc._listener = function(message, tabId, replyHandler) {
 	var args = message.args || [];
 	args.push(tabId, replyHandler);
 
-	handler.apply(null, args);
+	return handler.apply(null, args);
 };
 
 Browser.rpc.call = function(tabId, name, args, cb) {
@@ -293,7 +306,10 @@ Browser.gui._init = function(){
 					default_title: title,
 					default_popup: 'popup.html',
 				});
-				Browser.gui.badge.theBadge.onMessage.addListener(Browser.handleMessage);
+				Browser.gui.badge.theBadge.onMessage.addListener(function(msg, sender, sendResponse) {
+					// set sender = "popup" (popup worker is registed with tabId = "popup")
+					return Browser.handleMessage(msg, "popup", sendResponse);
+				});
 				array.add(Browser.workers, {"tab" : {"id" : "popup", "url" : "popup"}, 'channel': Browser.gui.badge.theBadge});
 			}
 			Browser.gui.badge.enabled = true;
@@ -306,7 +322,7 @@ Browser.gui._init = function(){
 				Browser.gui.badge.visible = false;
 				Browser.gui.badge.enabled = false;
 				Browser.gui.badge.theBadge.destroy();
-				array.remove(Browser.workers, {"tab" : {"id" : "popup", "url" : "popup"}, 'channel': Browser.gui.badge.theBadge});
+				array.remove(Browser.workers, Browser._find_worker("popup"));
 			}
 		},
 	};
