@@ -6,7 +6,7 @@ var url;
 
 function closePopup() {
 	// delay closing to allow scripts to finish executing
-	setInterval(window.close, 50);	
+	setInterval(window.close, 50);
 }
 
 function menuAction(action) {

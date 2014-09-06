@@ -71,7 +71,7 @@ var pageCode = function() {
 			// call cb1 on success, cb2 on failure
 			var f = success ? cb1 : cb2;
 			if(f) f(res);
-		});						
+		});
 	};
 
 	navigator.geolocation.watchPosition = function(cb1, cb2, options) {
@@ -100,7 +100,7 @@ if(document.documentElement.tagName.toLowerCase() == 'html') { // only for html
 	var script = document.createElement('script');
 	script.appendChild(document.createTextNode(inject));
 
-        // FF: there is another variables in the scope named parent, this causes a very hard to catch bug
+	// FF: there is another variables in the scope named parent, this causes a very hard to catch bug
 	var parent_ = document.head || document.body || document.documentElement;
 	var firstChild = (parent_.childNodes && (parent_.childNodes.length > 0)) ? parent_.childNodes[0] : null;
 	if(firstChild)
@@ -146,22 +146,23 @@ cpc.register('getNoisyPosition', function(options, replyHandler) {
 		//
 		navigator.geolocation.getCurrentPosition(
 			function(position) {
-			    // clone, modifying/sending the native object returns error
-                            //FF: position is XRayWrapper and Util.clone fails
-                            var clonedPosition = 
-                                {'coords' : 
-                                 {'latitude': position.coords.latitude, 
-                                  'longitude': position.coords.longitude,
-                                  'altitude' : position.coords.altitude,
-                                  'accuracy' : position.coords.accuracy,
-                                  'altitudeAccuracy' : position.coords.altitudeAccuracy,
-                                  'heading' : position.coords.heading,
-                                  'speed' : position.coords.speed,
-                                 }};
+				// clone, modifying/sending the native object returns error
+				//FF: position is XRayWrapper and Util.clone fails
+				var clonedPosition = {
+					coords: {
+						latitude: position.coords.latitude,
+						longitude: position.coords.longitude,
+						altitude: position.coords.altitude,
+						accuracy: position.coords.accuracy,
+						altitudeAccuracy: position.coords.altitudeAccuracy,
+						heading: position.coords.heading,
+						speed: position.coords.speed
+					}
+				};
 
-			    addNoise(clonedPosition, function(noisy) {
-					replyHandler(true, noisy);	
-			    });
+				addNoise(clonedPosition, function(noisy) {
+					replyHandler(true, noisy);
+				});
 			},
 			function(error) {
 				replyHandler(false, Util.clone(error));		// clone, sending the native object returns error
@@ -187,7 +188,7 @@ function addNoise(position, handler) {
 		} else if(st.cachedPos[level] && ((new Date).getTime() - st.cachedPos[level].epoch)/60000 < st.levels[level].cacheTime) {
 			position = st.cachedPos[level].position;
 			blog('using cached', position);
-			
+
 		} else {
 			// add noise
 			var epsilon = st.epsilon / st.levels[level].radius;
