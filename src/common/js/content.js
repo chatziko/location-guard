@@ -1,11 +1,20 @@
-// Some code runs in the content script, and some is injected in the page.
-// CPC simplifies the communication between the two.
-// It uses document.defaultView.postMessage (this is the same as window.postMessage, but in Firefox
-// document.defaultView should be used due to some compatibility issues)
-// sending a message for each call and each reply
+// CPC provides rpc functionality through window.postMessage. We use it in 2 ways:
 //
-// NOTE: this communication is not secure and could be intercepted by the page.
-//       so only a noisy location should be transmitted over CPC
+// 1. For communication between the content script and the code injected in the
+//    page (they both share the same window object).
+//    NOTE: this communication is not secure and could be intercepted by the page.
+//          so only a noisy location should be transmitted over CPC
+//
+// 2. For communication between the content script of an iframe and the content
+//    script of the top-most frame (through window.top)
+//
+// FF compatibility:
+// In Firefox < 31 window.postMessage does not work _from_ the content script
+// _to_ the page (although it works from the page to the content script), hence
+// we use document.defaultView.postMessage which is equivalent and always works.
+//
+// Thankfully, window.top.postMessage (used for iframe -> top frame communication)
+// works in all FF versions.
 //
 function CPC(targetWin) {
 	this._calls = {};
@@ -20,7 +29,7 @@ function CPC(targetWin) {
 
 		if(!args) args = [];
 
-		// window.postMessage does not work in FF < 31, document.defaultView always works
+		// window.postMessage does not work in FF < 31, window.top.postMessage always works, see above
 		if(!targetWin) targetWin = document.defaultView;
 		targetWin.postMessage({ __lg: { method: method, args: args, callId: callId } }, "*");
 	};
