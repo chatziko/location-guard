@@ -236,9 +236,9 @@ if(!inFrame) {
 if(Browser.testing) {
 	// test for nested calls, and for correct passing of tabId
 	//
-	Browser.rpc.register('nestedTestContent', function(tabId, replyHandler) {
-		blog("in nestedTestContent, returning 42");
-		replyHandler(42);
+	Browser.rpc.register('nestedTestTab', function(tabId, replyHandler) {
+		blog("in nestedTestTab, returning 'content'");
+		replyHandler("content");
 	});
 
 	blog("calling nestedTestMain");
