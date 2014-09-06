@@ -8,4 +8,5 @@ source bin/activate
 cd -
 
 cd dist/firefox
-cfx run
+cfx run $*
+#cfx run -b /usr/local/firefox-30/firefox
