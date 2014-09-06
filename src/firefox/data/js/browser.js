@@ -332,16 +332,6 @@ Browser.gui._init = function(){
 	Browser.gui._showOptions = function(anchor){
 		var url = data.url('options.html') + (anchor || '');
 		tabs.open(url);
-
-		// var baseUrl = chrome.extension.getURL('html/options.html');
-		// var fullUrl = baseUrl + (anchor || '');
-		// chrome.tabs.query({ url: baseUrl }, function(tabs) {
-		//		   blog("tabs",tabs);
-		//		   if (tabs.length)
-		//				   chrome.tabs.update(tabs[0].id, { active: true, url: fullUrl });
-		//		   else
-		//				   chrome.tabs.create({ url: fullUrl });
-		// });
 	}
 
 	Browser.rpc.register('showOptions', function(anchor) {
