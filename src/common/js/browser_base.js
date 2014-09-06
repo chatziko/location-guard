@@ -144,11 +144,11 @@ var Browser = {
 		//
 		showOptions: function(anchor) {},
 
-		// Browser.gui.getActiveTabUrl(handler)
+		// Browser.gui.getActiveCallUrl(handler)
 		//
-		// Gets the url of the active tab and passes it to 'handler'
+		// Gets the callUrl of the active tab and passes it to 'handler'
 		//
-		getActiveTabUrl: function(handler) {}
+		getActiveCallUrl: function(handler) {}
 	},
 
 	// Browser.log(text, value)

@@ -166,7 +166,7 @@ Browser.gui.showOptions = function(anchor) {
 	});
 };
 
-Browser.gui.getActiveTabUrl = function(handler) {
+Browser.gui.getActiveCallUrl = function(handler) {
 	chrome.tabs.query(
 		{ active: true,               // Select active tabs
 		  lastFocusedWindow: true     // In the current window
@@ -175,7 +175,7 @@ Browser.gui.getActiveTabUrl = function(handler) {
 			// we call getUrl from the content script (avoid asking for 'tabs' permisison)
 			//
 			Browser.rpc.call(tabs[0].id, 'getState', [], function(state) {
-				handler(state.url);
+				handler(state.callUrl);
 			});
 		}
 	);

@@ -221,7 +221,7 @@ Browser.init('content');
 if(!inFrame) {
 	Browser.rpc.register('getState', function(tabId, replyHandler) {
 		replyHandler({
-			url: callUrl,
+			callUrl: callUrl,
 			apiCalled: apiCalled
 		});
 	});

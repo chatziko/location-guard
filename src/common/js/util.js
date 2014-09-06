@@ -35,7 +35,7 @@ var Util = {
 			}
 
 			Browser.storage.get(function(st) {
-				var domain = Util.extractDomain(state.url);
+				var domain = Util.extractDomain(state.callUrl);
 				var level = st.domainLevel[domain] || st.defaultLevel;
 
 				var info = {

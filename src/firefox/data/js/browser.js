@@ -334,9 +334,15 @@ Browser.gui._init = function(){
 		return tabs.activeTab;
 	}
 
-	Browser.rpc.register('getActiveTabUrl', function(tabId, replyHandler) {
+	Browser.rpc.register('getActiveCallUrl', function(tabId, replyHandler) {
+		// Note: the callUrl might come from a frame inside the page, from a different url than tab.url
+		// We need to get it from the content script using the getState rpc call
+		//
 		var tab = Browser.gui._getActiveTab();
-		replyHandler(tab.url);
+		Browser.rpc.call(tab.id, 'getState', [], function(state) {
+			replyHandler(state.callUrl);
+		});
+		return true;	// replyHandler will be used later
 	});
 
 	Browser.rpc.register('refreshIcon', function(tabId) {
@@ -406,8 +412,8 @@ Browser.gui.showOptions = function(anchor) {
 	}
 };
 
-Browser.gui.getActiveTabUrl = function(handler) {
-	Browser.rpc.call(null,'getActiveTabUrl',[],handler)
+Browser.gui.getActiveCallUrl = function(handler) {
+	Browser.rpc.call(null, 'getActiveCallUrl', [], handler)
 }
 
 

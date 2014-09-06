@@ -79,11 +79,11 @@ function drawUI() {
 	}, 50);
 
 	// for the remaining things we need storage and url
-	Browser.gui.getActiveTabUrl(function(_url) {
+	Browser.gui.getActiveCallUrl(function(callUrl) {
 	Browser.storage.get(function(st) {
-		blog("popup: settings", st);
+		blog("popup: callUrl", callUrl, "settings", st);
 
-		url = _url;
+		url = callUrl;
 		var domain = Util.extractDomain(url);
 		var level = st.domainLevel[domain] || st.defaultLevel;
 
