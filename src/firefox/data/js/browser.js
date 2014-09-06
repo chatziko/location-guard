@@ -87,7 +87,7 @@ Browser._main_script = function() {
 
 	var pagemod = require("sdk/page-mod").PageMod({
 		include: [data.url("options.html*")],
-//		  attachTo: ["top"], //excludes iframes
+		//attachTo: ["top"], //excludes iframes
 		contentScriptWhen: 'start', // sets up comm. before running the page scripts
 		contentScriptFile: [messageContentScriptFile],
 		contentScriptOptions: {
@@ -117,10 +117,10 @@ Browser._main_script = function() {
 
 
 	var status = function () {
-		Browser.log('# of workers: ' + Browser.workers.length);
-		for (var i=0; i<Browser.workers.length; i++) {
-			Browser.log('#'+ i + ": " + Browser.workers[i].tab.url);
-		}
+		var w = [];
+		for(var i=0; i < Browser.workers.length; i++)
+			w.push(Browser.workers[i].tab.url);
+		Browser.log('workers', w);
 	}
 
 
@@ -134,9 +134,7 @@ Browser.messageHandlers = {};
 Browser.messageHandlers['id'] = id;
 
 Browser.handleMessage = function(msg,sender,sendResponse) {
-	// Browser.log('handling: ' + JSON.stringify(msg) +
-	//			   '\n from :'+ JSON.stringify(sender) +
-	//			   '\n response :'+ JSON.stringify(sendResponse));
+	// Browser.log('handling: ', msg, sender, sendResponse);
 	Browser.messageHandlers[msg.type].apply(null,[msg.message,sender,sendResponse]);
 }
 
@@ -144,7 +142,7 @@ Browser.sendMessage = function (tabId, type, message, cb) {
 	if (Browser._script == 'main'){
 		for (var i=0; i<Browser.workers.length; i++) {
 			if (Browser.workers[i].tab.id == tabId) {
-				// Browser.log('-> ' + Browser.workers[i].tab.url + JSON.stringify(message));
+				// Browser.log('-> ', Browser.workers[i].tab.url, message);
 				Browser.workers[i].channel.sendMessage({'type': type, 'message': message},cb);
 			}
 			else {if (i == Browser.workers.length) Browser.log('no destination '+tabId)}
@@ -152,7 +150,7 @@ Browser.sendMessage = function (tabId, type, message, cb) {
 	}
 	// content or popup
 	else {
-		// Browser.log(' -> main' + JSON.stringify(message));
+		// Browser.log(' -> main', message);
 		extension.sendMessage({'type': type, 'message': message},cb);
 	}
 };
@@ -176,7 +174,7 @@ Browser.rpc.register = function(name, handler) {
 // { method: ..., args: ... }
 //
 Browser.rpc._listener = function(message, tabId, replyHandler) {
-	//blog("RPC: got message", [message, sender, replyHandler]);
+	//blog("RPC: got message", message, tabId, replyHandler);
 
 	var handler = Browser.rpc._methods[message.method];
 	if(!handler) {
@@ -211,7 +209,7 @@ Browser.storage._init = function(){
 
 			// default values
 			if(!st) {
-			// Browser.log('initializing settings');
+				// Browser.log('initializing settings');
 				st = Browser.storage._default;
 				Browser.storage.set(st);
 			}
@@ -367,7 +365,7 @@ Browser.gui.refreshIcon = function(tabId) {
 		var tab = Browser.gui._getActiveTab();
 
 		Util.getIconInfo(tab.id, function(info) {
-			Browser.log('got info for refreshIcon: ' + JSON.stringify(info));
+			Browser.log('got info for refreshIcon', info);
 			if(info.hidden) {
 				Browser.gui.badge.hide();
 			} else {
@@ -407,12 +405,13 @@ Browser.gui.getActiveTabUrl = function(handler) {
 }
 
 
-// in chrome, apart from the current console, we also log to the background page, if possible and loaded
-//
-Browser.log = function(a, b) {
+Browser.log = function() {
 	if(!Browser.debugging) return;
 
-	console.error(Browser._script + ": " + a, b);
+	var s = Browser._script + ":";
+	for(var i = 0; i < arguments.length; i++)
+		s += " " + JSON.stringify(arguments[i]);
+	console.log(s);
 }
 
 

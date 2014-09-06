@@ -184,16 +184,16 @@ Browser.gui.getActiveTabUrl = function(handler) {
 
 // in chrome, apart from the current console, we also log to the background page, if possible and loaded
 //
-Browser.log = function(a, b) {
+Browser.log = function() {
 	if(!Browser.debugging) return;
 
-	console.log(a, b);
+	console.log.apply(console, arguments);
 
 	var bp;
 	if(chrome.extension && chrome.extension.getBackgroundPage)
 		bp = chrome.extension.getBackgroundPage();
 
 	if(bp && bp.console != console)		// avoid logging twice
-		bp.console.log(a, b);
+		bp.console.log.apply(bp.console, arguments);
 }
 

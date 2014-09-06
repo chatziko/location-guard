@@ -162,7 +162,7 @@ var Browser = {
 };
 
 // for quick logging
-function blog(a, b) {
-	Browser.log(a, b);
+function blog() {
+	Browser.log.apply(Browser, arguments);
 }
 
