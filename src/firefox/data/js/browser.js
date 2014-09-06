@@ -6,17 +6,10 @@ Browser.init = function (script) {
 
 	Browser.storage._init();
 
-	switch(script) {
-	case 'main':
+	if(script == 'main') {
 		Browser._main_script();
 		Browser.gui._init();
 		Browser._install_update();
-		break;
-
-	default:
-		// sets up low level communication
-		extension.onMessage.addListener(Browser.handleMessage);
-		break;
 	}
 	Browser.gui.refreshAllIcons();
 
@@ -47,7 +40,7 @@ Browser._main_script = function() {
 
 	var pagemod = require("sdk/page-mod").PageMod({
 		include: ['*'],
-		attachTo: ["top"],//excludes iframes
+		attachTo: ["top", "frame"],
 		contentScriptWhen: 'start', // TODO THIS IS TRICKY
 		contentScriptFile: [messageContentScriptFile,
 							data.url("js/util.js"),
@@ -179,6 +172,9 @@ Browser.rpc.register = function(name, handler) {
 	if(!this._methods) {
 		this._methods = {};
 		Browser.messageHandlers['rpc'] = Browser.rpc._listener;
+
+		if(Browser._script != 'main')	// the main script sets the listener on the channels it creates
+			extension.onMessage.addListener(Browser.handleMessage);
 	}
 	this._methods[name] = handler;
 }
