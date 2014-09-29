@@ -80,6 +80,12 @@ PlannarLaplace.prototype.alphaDeltaAccuracy = function(epsilon, delta) {
 	return this.inverseCumulativeGamma(epsilon, delta);
 }
 
+// returns the average distance between the real and the noisy pos
+//
+PlannarLaplace.prototype.expectedError = function(epsilon) {
+	return 2 / epsilon;
+}
+
 
 PlannarLaplace.prototype.addPolarNoise = function(epsilon, pos) {
 	//random number in [0, 2*PI)
