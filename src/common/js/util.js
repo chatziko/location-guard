@@ -6,12 +6,12 @@
 
 var Util = {
 	extractDomain: function(url) {
-            var match = /\/\/([^\/]+)/.exec(url);
-            return match ? match[1] : "";
+		var match = /\/\/([^\/]+)/.exec(url);
+		return match ? match[1] : "";
 	},
 	extractAnchor: function(url) {
-            var match = /#(.+)/.exec(url);
-            return match ? match[1] : "";
+		var match = /#(.+)/.exec(url);
+		return match ? match[1] : "";
 	},
 	clone: function(obj) {
 		return JSON.parse(JSON.stringify(obj));
@@ -35,7 +35,7 @@ var Util = {
 			}
 
 			Browser.storage.get(function(st) {
-				var domain = Util.extractDomain(state.url);
+				var domain = Util.extractDomain(state.callUrl);
 				var level = st.domainLevel[domain] || st.defaultLevel;
 
 				var info = {

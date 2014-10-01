@@ -6,7 +6,7 @@ var url;
 
 function closePopup() {
 	// delay closing to allow scripts to finish executing
-	setInterval(window.close, 50);	
+	setInterval(window.close, 50);
 }
 
 function menuAction(action) {
@@ -79,11 +79,11 @@ function drawUI() {
 	}, 50);
 
 	// for the remaining things we need storage and url
-	Browser.gui.getActiveTabUrl(function(_url) {
+	Browser.gui.getActiveCallUrl(function(callUrl) {
 	Browser.storage.get(function(st) {
-		blog("popup: settings", st);
+		blog("popup: callUrl", callUrl, "settings", st);
 
-		url = _url;
+		url = callUrl;
 		var domain = Util.extractDomain(url);
 		var level = st.domainLevel[domain] || st.defaultLevel;
 
@@ -93,15 +93,31 @@ function drawUI() {
 			level == 'fixed'? "Using a fixed location" :
 			"Privacy level: " + level
 		);
+
 		$("#pause > a").text((st.paused ? "Resume" : "Pause") + " Location Guard");
+		$("#setLevel > a").html("Set level for <b>" + domain + "</b> &gt;");
 
 		$("#setLevel,#hideIcon").toggle(!st.paused);
 
 		$("body").css("height", $("#container").height());
-		$("body").css("width", $("#container").width()+13);
+		$("body").css("width", $("#container").width());
 	});
 	});
 }
 
 $(document).ready(drawUI);
 
+
+if(Browser.testing) {
+	// test for nested calls, and for correct passing of tabId
+	//
+	Browser.rpc.register('nestedTestTab', function(tabId, replyHandler) {
+		blog("in nestedTestTab, returning 'popup'");
+		replyHandler("popup");
+	});
+
+	blog("calling nestedTestMain");
+	Browser.rpc.call(null, 'nestedTestMain', [], function(res) {
+		blog('got from nestedTestMain', res);
+	});
+}

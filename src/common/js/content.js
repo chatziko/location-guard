@@ -1,13 +1,22 @@
-// Some code runs in the content script, and some is injected in the page.
-// CPC simplifies the communication between the two.
-// It uses document.defaultView.postMessage (this is the same as window.postMessage, but in Firefox
-// document.defaultView should be used due to some compatibility issues)
-// sending a message for each call and each reply
+// CPC provides rpc functionality through window.postMessage. We use it in 2 ways:
 //
-// NOTE: this communication is not secure and could be intercepted by the page.
-//       so only a noisy location should be transmitted over CPC
+// 1. For communication between the content script and the code injected in the
+//    page (they both share the same window object).
+//    NOTE: this communication is not secure and could be intercepted by the page.
+//          so only a noisy location should be transmitted over CPC
 //
-function CPC() {
+// 2. For communication between the content script of an iframe and the content
+//    script of the top-most frame (through window.top)
+//
+// FF compatibility:
+// In Firefox < 31 window.postMessage does not work _from_ the content script
+// _to_ the page (although it works from the page to the content script), hence
+// we use document.defaultView.postMessage which is equivalent and always works.
+//
+// Thankfully, window.top.postMessage (used for iframe -> top frame communication)
+// works in all FF versions.
+//
+function CPC(targetWin) {
 	this._calls = {};
 	this._methods = {};
 
@@ -20,23 +29,26 @@ function CPC() {
 
 		if(!args) args = [];
 
-		document.defaultView.postMessage({ method: method, args: args, callId: callId }, "*");
+		// window.postMessage does not work in FF < 31, window.top.postMessage always works, see above
+		if(!targetWin) targetWin = document.defaultView;
+		targetWin.postMessage({ __lg: { method: method, args: args, callId: callId } }, "*");
 	};
 
+	if(targetWin) return;		// we can only receive messages in our own window
 	var cpc = this;
 	window.addEventListener("message", function(event) {
-		var data = event.data;
-		if(!(// event.source == window &&             // FF: this doesn't work on FF
-                     data.callId)) return;		// we only care about messages from the same window, and having callId
+		var data = event.data && event.data.__lg;		// everything is inside __lg, to minimize conflicts with messages sent by the page
+		if(!data) return;
 
 		if(data.method) {
 			/* message call */
 			if(data.callId in cpc._calls) return;					// we made this call, the other side should reply
+			if(!cpc._methods[data.method]) return;					// not registered
 
 			var dataArgs = Array.prototype.slice.call(data.args);	// cannot modify data.args in Firefox 32, clone as workaround
 			dataArgs.push(function() {								// pass returnHandler, used to send back the result
 				var args = Array.prototype.slice.call(arguments);	// arguments in real array
-				document.defaultView.postMessage({ callId: data.callId, value: args }, "*");
+				document.defaultView.postMessage({ __lg: { callId: data.callId, value: args } }, "*");
 			});
 			cpc._methods[data.method].apply(null, dataArgs);
 
@@ -68,7 +80,7 @@ var pageCode = function() {
 			// call cb1 on success, cb2 on failure
 			var f = success ? cb1 : cb2;
 			if(f) f(res);
-		});						
+		});
 	};
 
 	navigator.geolocation.watchPosition = function(cb1, cb2, options) {
@@ -97,7 +109,7 @@ if(document.documentElement.tagName.toLowerCase() == 'html') { // only for html
 	var script = document.createElement('script');
 	script.appendChild(document.createTextNode(inject));
 
-        // FF: there is another variables in the scope named parent, this causes a very hard to catch bug
+	// FF: there is another variables in the scope named parent, this causes a very hard to catch bug
 	var parent_ = document.head || document.body || document.documentElement;
 	var firstChild = (parent_.childNodes && (parent_.childNodes.length > 0)) ? parent_.childNodes[0] : null;
 	if(firstChild)
@@ -106,15 +118,23 @@ if(document.documentElement.tagName.toLowerCase() == 'html') { // only for html
 		parent_.appendChild(script);
 }
 
-var apiCalled = false;		// true means that an API call has already happened, so we need to show the icon
+var inFrame = (window != window.top);	// are we in a frame?
+var apiCalled = false;					// true means that an API call has already happened (here or in a nested frame), so we need to show the icon
+var callUrl = window.location.href;		// the url from which the last call was made, it could be us or a nested frame
 
 // methods called by the page
 //
 var cpc = new CPC();
 cpc.register('getNoisyPosition', function(options, replyHandler) {
-	// refresh icon before fetching the location
-	apiCalled = true;
-	Browser.gui.refreshIcon();
+	if(inFrame) {
+		// we're in a frame, we just notify the top window
+		new CPC(window.top).call('apiCalledInFrame', [window.location.href]);
+	} else {
+		// refresh icon before fetching the location
+		apiCalled = true;
+		callUrl = window.location.href;
+		Browser.gui.refreshIcon();
+	}
 
 	Browser.storage.get(function(st) {
 		// if level == 'fixed' and fixedPosNoAPI == true, then we return the
@@ -135,22 +155,23 @@ cpc.register('getNoisyPosition', function(options, replyHandler) {
 		//
 		navigator.geolocation.getCurrentPosition(
 			function(position) {
-			    // clone, modifying/sending the native object returns error
-                            //FF: position is XRayWrapper and Util.clone fails
-                            var clonedPosition = 
-                                {'coords' : 
-                                 {'latitude': position.coords.latitude, 
-                                  'longitude': position.coords.longitude,
-                                  'altitude' : position.coords.altitude,
-                                  'accuracy' : position.coords.accuracy,
-                                  'altitudeAccuracy' : position.coords.altitudeAccuracy,
-                                  'heading' : position.coords.heading,
-                                  'speed' : position.coords.speed,
-                                 }};
+				// clone, modifying/sending the native object returns error
+				//FF: position is XRayWrapper and Util.clone fails
+				var clonedPosition = {
+					coords: {
+						latitude: position.coords.latitude,
+						longitude: position.coords.longitude,
+						altitude: position.coords.altitude,
+						accuracy: position.coords.accuracy,
+						altitudeAccuracy: position.coords.altitudeAccuracy,
+						heading: position.coords.heading,
+						speed: position.coords.speed
+					}
+				};
 
-			    addNoise(clonedPosition, function(noisy) {
-					replyHandler(true, noisy);	
-			    });
+				addNoise(clonedPosition, function(noisy) {
+					replyHandler(true, noisy);
+				});
 			},
 			function(error) {
 				replyHandler(false, Util.clone(error));		// clone, sending the native object returns error
@@ -176,7 +197,7 @@ function addNoise(position, handler) {
 		} else if(st.cachedPos[level] && ((new Date).getTime() - st.cachedPos[level].epoch)/60000 < st.levels[level].cacheTime) {
 			position = st.cachedPos[level].position;
 			blog('using cached', position);
-			
+
 		} else {
 			// add noise
 			var epsilon = st.epsilon / st.levels[level].radius;
@@ -204,9 +225,33 @@ function addNoise(position, handler) {
 }
 
 Browser.init('content');
-Browser.rpc.register('getState', function(tabId, replyHandler) {
-	replyHandler({
-		url: window.location.href,
-		apiCalled: apiCalled
+
+// only the top frame handles getState and apiCalledInFrame requests
+if(!inFrame) {
+	Browser.rpc.register('getState', function(tabId, replyHandler) {
+		replyHandler({
+			callUrl: callUrl,
+			apiCalled: apiCalled
+		});
 	});
-});
+
+	cpc.register('apiCalledInFrame', function(url) {
+		apiCalled = true;
+		callUrl = url;
+		Browser.gui.refreshIcon();
+	});
+}
+
+if(Browser.testing) {
+	// test for nested calls, and for correct passing of tabId
+	//
+	Browser.rpc.register('nestedTestTab', function(tabId, replyHandler) {
+		blog("in nestedTestTab, returning 'content'");
+		replyHandler("content");
+	});
+
+	blog("calling nestedTestMain");
+	Browser.rpc.call(null, 'nestedTestMain', [], function(res) {
+		blog('got from nestedTestMain', res);
+	});
+}

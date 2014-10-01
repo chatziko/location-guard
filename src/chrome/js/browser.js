@@ -166,7 +166,7 @@ Browser.gui.showOptions = function(anchor) {
 	});
 };
 
-Browser.gui.getActiveTabUrl = function(handler) {
+Browser.gui.getActiveCallUrl = function(handler) {
 	chrome.tabs.query(
 		{ active: true,               // Select active tabs
 		  lastFocusedWindow: true     // In the current window
@@ -175,7 +175,7 @@ Browser.gui.getActiveTabUrl = function(handler) {
 			// we call getUrl from the content script (avoid asking for 'tabs' permisison)
 			//
 			Browser.rpc.call(tabs[0].id, 'getState', [], function(state) {
-				handler(state.url);
+				handler(state.callUrl);
 			});
 		}
 	);
@@ -184,16 +184,16 @@ Browser.gui.getActiveTabUrl = function(handler) {
 
 // in chrome, apart from the current console, we also log to the background page, if possible and loaded
 //
-Browser.log = function(a, b) {
+Browser.log = function() {
 	if(!Browser.debugging) return;
 
-	console.log(a, b);
+	console.log.apply(console, arguments);
 
 	var bp;
 	if(chrome.extension && chrome.extension.getBackgroundPage)
 		bp = chrome.extension.getBackgroundPage();
 
 	if(bp && bp.console != console)		// avoid logging twice
-		bp.console.log(a, b);
+		bp.console.log.apply(bp.console, arguments);
 }
 

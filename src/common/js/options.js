@@ -328,3 +328,17 @@ $(document).ready(function() {
 	//showLevelInfo();
 });
 
+
+if(Browser.testing) {
+	// test for nested calls, and for correct passing of tabId
+	//
+	Browser.rpc.register('nestedTestTab', function(tabId, replyHandler) {
+		blog("in nestedTestTab, returning 'options'");
+		replyHandler("options");
+	});
+
+	blog("calling nestedTestMain");
+	Browser.rpc.call(null, 'nestedTestMain', [], function(res) {
+		blog('got from nestedTestMain', res);
+	});
+}
