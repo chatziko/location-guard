@@ -7,7 +7,7 @@
   "contributors": ["Marco Stronati (http://stronati.org) <marco@stronati.org>"],
   "icon" : "data/images/pin_38.png",
   "license": "MPL 2.0",
-  "version": "1.0.10",
+  "version": "1.0.11",
   "dependencies" : ["browser-action"],
   "preferences" : [{ 
           "type": "control", 
