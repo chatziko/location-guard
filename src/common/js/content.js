@@ -144,9 +144,20 @@ cpc.register('getNoisyPosition', function(options, replyHandler) {
 		var level = st.domainLevel[domain] || st.defaultLevel;
 
 		if(level == 'fixed' && st.fixedPosNoAPI) {
-			var noisy = { coords: st.fixedPos, timestamp: new Date().getTime() };
+			var noisy = {
+				coords: {
+					latitude: st.fixedPos.latitude,
+					longitude: st.fixedPos.longitude,
+					accuracy: 10,
+					altitude: null,
+					altitudeAccuracy: null,
+					heading: null,
+					speed: null
+				},
+				timestamp: new Date().getTime()
+			};
 			replyHandler(true, noisy);
-			blog(noisy);
+			blog("returning fixed", noisy);
 			return;
 		}
 
@@ -161,12 +172,13 @@ cpc.register('getNoisyPosition', function(options, replyHandler) {
 					coords: {
 						latitude: position.coords.latitude,
 						longitude: position.coords.longitude,
-						altitude: position.coords.altitude,
 						accuracy: position.coords.accuracy,
+						altitude: position.coords.altitude,
 						altitudeAccuracy: position.coords.altitudeAccuracy,
 						heading: position.coords.heading,
 						speed: position.coords.speed
-					}
+					},
+					timestamp: position.timestamp
 				};
 
 				addNoise(clonedPosition, function(noisy) {
@@ -192,7 +204,15 @@ function addNoise(position, handler) {
 			// do nothing, use real location
 
 		} else if(level == 'fixed') {
-			position.coords = st.fixedPos;
+			position.coords = {
+				latitude: st.fixedPos.latitude,
+				longitude: st.fixedPos.longitude,
+				accuracy: 10,
+				altitude: null,
+				altitudeAccuracy: null,
+				heading: null,
+				speed: null
+			};
 
 		} else if(st.cachedPos[level] && ((new Date).getTime() - st.cachedPos[level].epoch)/60000 < st.levels[level].cacheTime) {
 			position = st.cachedPos[level].position;
@@ -211,6 +231,12 @@ function addNoise(position, handler) {
 			// update accuracy
 			if(position.coords.accuracy && st.updateAccuracy)
 				position.coords.accuracy += Math.round(pl.alphaDeltaAccuracy(epsilon, .9));
+
+			// don't know how to add noise to those, so we set to null (they're most likely null anyway)
+			position.altitude = null;
+			position.altitudeAccuracy = null;
+			position.heading = null;
+			position.speed = null;
 
 			// cache
 			st.cachedPos[level] = { epoch: (new Date).getTime(), position: position };
