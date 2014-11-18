@@ -64,10 +64,10 @@ weather forecast).
 
 For more flexibility, each level can be configured from the _Privacy Levels_
 tab. The red circle is the _protection area_: locations in this area look
-plausible to be the real one (see [What kind of privacy does Location Guard provide?][]).
-The blue circle is the _accuracy_: the fake location will be inside this circle
-with high probability (note that the noise is random). Use the slider to adapt
-the two areas to your needs.
+plausible to be the real one (see "What kind of privacy does Location Guard
+provide?" above). The blue circle is the _accuracy_: the fake location will be
+inside this circle with high probability (note that the noise is random). Use
+the slider to adapt the two areas to your needs.
 
 ### What is a "fixed position"?
 
