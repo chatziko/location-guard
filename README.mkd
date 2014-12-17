@@ -69,23 +69,22 @@ provide?" above). The blue circle is the _accuracy_: the fake location will be
 inside this circle with high probability (note that the noise is random). Use
 the slider to adapt the two areas to your needs.
 
-### What is a "fixed position"?
+### What is a "fixed location"?
 
-The privacy level can be set to "Use fixed position". In this case Location
+The privacy level can be set to "Use fixed location". In this case Location
 Guard always reports a fixed location to the website that never changes (instead
 of generating a fake location by adding noise to the real one). This offers the
-highest privacy, since the reported position is completely independent from the
+highest privacy, since the reported location is completely independent from the
 real one, at the cost of very low accuracy.
 
-The default fixed position is meant as a joke. You can also modify it
-from the extension's options (Fixed Position tab).
+The default fixed location is meant as a joke. You can modify it from the
+extension's options (Fixed Location tab).
 
-When using a fixed position, the browser's geolocation is not performed at all.
+When using a fixed location, the browser's geolocation is not performed at all.
 This offers better privacy, since the list of wifi access points is not
 transmitted to Google's servers. However, it has the side effect that the
-_permission dialog is not displayed at all_. This behaviour is acceptable if the
-fixed position is a dummy one, but it can be modified if you set the fixed
-position to be a sensitive one.
+_permission dialog is not displayed at all_. This behaviour is usually
+acceptable when the fixed location is dummy, but it can be modified if you wish.
 
 ### Why some websites detect my location although I use Location Guard?
 
