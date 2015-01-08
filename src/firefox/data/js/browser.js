@@ -276,68 +276,69 @@ Browser.storage._init = function(){
 // only called by main
 Browser.gui._init = function(){
 
-	var array = require('sdk/util/array');
+	var Cu = require("chrome").Cu;
+	Cu.import("resource://gre/modules/Services.jsm");
 
-	Browser.gui["badge"] = {
-		theBadge : null,
-		visible : false,
-		enabled : false,
-		disable : function(title) {  // visible but disabled
-			Browser.log('disabling button');
-			if (!Browser.gui.badge.visible) {
-				this.enable("");
-			}
-			this.enabled = false;
-			Browser.gui.badge.theBadge.setIcon({path: 'images/pin_disabled_38.png'});
-			Browser.gui.badge.theBadge.setTitle({title : title});
-		},
-		enable : function(title) {	   // visible and enabled
-			Browser.log('enabling button');
+	Browser.gui._fennec = Services.wm.getMostRecentWindow("navigator:browser").NativeWindow != undefined;
 
-			if (!Browser.gui.badge.visible) {
-				Browser.gui.badge.visible = true;
+	if(Browser.gui._fennec) {
+		Cu.import("resource://gre/modules/PageActions.jsm");
+		Cu.import("resource://gre/modules/NetUtil.jsm");
+		Cu.import("resource://gre/modules/Prompt.jsm");
 
-				Browser.gui.badge.theBadge = require('browserAction').BrowserAction({
-					default_icon: 'images/pin_38.png',
-					default_title: title,
-					default_popup: 'popup.html',
-				});
-				Browser.gui.badge.theBadge.onMessage.addListener(function(msg, sender, sendResponse) {
-					// set sender = "popup" (popup worker is registed with tabId = "popup")
-					return Browser.handleMessage(msg, "popup", sendResponse);
-				});
-				array.add(Browser.workers, {"tab" : {"id" : "popup", "url" : "popup"}, 'channel': Browser.gui.badge.theBadge});
-			}
-			Browser.gui.badge.enabled = true;
-			Browser.gui.badge.theBadge.setIcon({path: 'images/pin_38.png'});
-			Browser.gui.badge.theBadge.setTitle({title : title});
-		},
-		hide : function() {
-			Browser.log('hiding button');
-			if (Browser.gui.badge.visible) {
-				Browser.gui.badge.visible = false;
-				Browser.gui.badge.enabled = false;
-				Browser.gui.badge.theBadge.destroy();
-				array.remove(Browser.workers, Browser._find_worker("popup"));
-			}
-		},
-	};
+	} else {
+		var array = require('sdk/util/array');
 
-	var tabs = require("sdk/tabs");
+		Browser.gui.badge = {
+			theBadge : null,
+			visible : false,
+			enabled : false,
+			disable : function(title) {  // visible but disabled
+				Browser.log('disabling button');
+				if (!Browser.gui.badge.visible) {
+					this.enable("");
+				}
+				this.enabled = false;
+				Browser.gui.badge.theBadge.setIcon({path: 'images/pin_disabled_38.png'});
+				Browser.gui.badge.theBadge.setTitle({title : title});
+			},
+			enable : function(title) {	   // visible and enabled
+				Browser.log('enabling button');
 
-	Browser.gui._getActiveTab = function(){
-		Browser.log('active tab: '+tabs.activeTab.url);
-		return tabs.activeTab;
+				if (!Browser.gui.badge.visible) {
+					Browser.gui.badge.visible = true;
+
+					Browser.gui.badge.theBadge = require('browserAction').BrowserAction({
+						default_icon: 'images/pin_38.png',
+						default_title: title,
+						default_popup: 'popup.html',
+					});
+					Browser.gui.badge.theBadge.onMessage.addListener(function(msg, sender, sendResponse) {
+						// set sender = "popup" (popup worker is registed with tabId = "popup")
+						return Browser.handleMessage(msg, "popup", sendResponse);
+					});
+					array.add(Browser.workers, {"tab" : {"id" : "popup", "url" : "popup"}, 'channel': Browser.gui.badge.theBadge});
+				}
+				Browser.gui.badge.enabled = true;
+				Browser.gui.badge.theBadge.setIcon({path: 'images/pin_38.png'});
+				Browser.gui.badge.theBadge.setTitle({title : title});
+			},
+			hide : function() {
+				Browser.log('hiding button');
+				if (Browser.gui.badge.visible) {
+					Browser.gui.badge.visible = false;
+					Browser.gui.badge.enabled = false;
+					Browser.gui.badge.theBadge.destroy();
+					array.remove(Browser.workers, Browser._find_worker("popup"));
+				}
+			},
+		};
 	}
 
+	// register rpc methods
+	//
 	Browser.rpc.register('getActiveCallUrl', function(tabId, replyHandler) {
-		// Note: the callUrl might come from a frame inside the page, from a different url than tab.url
-		// We need to get it from the content script using the getState rpc call
-		//
-		var tab = Browser.gui._getActiveTab();
-		Browser.rpc.call(tab.id, 'getState', [], function(state) {
-			replyHandler(state.callUrl);
-		});
+		Browser.gui.getActiveCallUrl(replyHandler);
 		return true;	// replyHandler will be used later
 	});
 
@@ -345,27 +346,64 @@ Browser.gui._init = function(){
 			Browser.gui.refreshIcon(tabId);
 	});
 
-	var data = require("sdk/self").data;
-
-	Browser.gui._showOptions = function(anchor){
-		var url = data.url('options.html') + (anchor || '');
-		tabs.open(url);
-	}
-
 	Browser.rpc.register('showOptions', function(anchor) {
-		Browser.log('showing options');
-		Browser.gui._showOptions(anchor);
+		Browser.gui.showOptions(anchor);
 	});
 
-
+	// register options button
+	//
 	var prefsModule = require("sdk/simple-prefs");
 	prefsModule.on("optionButton", function() {
 		console.log("options was clicked");
-		Browser.gui._showOptions();
+		Browser.gui.showOptions();
 	})
-
 }
 
+Browser.gui._getActiveTab = function(){
+	var tabs = require("sdk/tabs");
+	Browser.log('active tab: '+tabs.activeTab.url);
+	return tabs.activeTab;
+}
+
+Browser.gui._refresh_pageaction = function(info) {
+	var nw = Browser.gui._fennec = Services.wm.getMostRecentWindow("navigator:browser").NativeWindow;
+
+	if(this._pageaction) {
+		PageActions.remove(this._pageaction);
+		nw.menu.remove(this._menu);
+	}
+
+	if(info.hidden)
+		return;
+
+	// load and cache icon in base64
+	var icon = 'images/' + (info.private ? "pin_50.png" : "pin_disabled_50.png");
+	if(!this._base64_cache)
+		this._base64_cache = {};
+	if(!this._base64_cache[icon])
+		this._base64_cache[icon] = require('sdk/base64').encode( load_binary(icon) );
+
+	this._pageaction = PageActions.add({
+		icon: "data:image/png;base64," + this._base64_cache[icon],
+		title: "Location Guard",
+		clickCallback: PopupFennec.show
+    });
+
+	this._menu = nw.menu.add({
+		name: "Location Guard",
+		callback: PopupFennec.show
+	});
+
+	nw.toast.show("Location Guard is enabled", "long", {
+		button: {
+			label: "SHOW",
+			callback: PopupFennec.show
+		}
+	});
+}
+
+// the following 4 are the public methods of Browser.gui
+//
 Browser.gui.refreshIcon = function(tabId) {
 	Browser.log('refreshing icon');
 	if(Browser._script == 'main') {
@@ -374,20 +412,21 @@ Browser.gui.refreshIcon = function(tabId) {
 
 		Util.getIconInfo(tab.id, function(info) {
 			Browser.log('got info for refreshIcon', info);
-			if(info.hidden) {
-				Browser.gui.badge.hide();
+
+			if(Browser.gui._fennec) {
+				Browser.gui._refresh_pageaction(info);
 			} else {
-				if (!info.private) {
+				if(info.hidden)
+					Browser.gui.badge.hide();
+				else if(!info.private)
 					Browser.gui.badge.disable(info.title);
-				}
-				else {
+				else
 					Browser.gui.badge.enable(info.title);
-				}
 			}
 		});
-	}
-	// content popup
-	else {
+
+	} else {
+		// content popup
 		// cannot do it in the content script, delegate to the main
 		// in this case tabId can be null, the main script will get the tabId
 		// from the rpc call
@@ -399,17 +438,32 @@ Browser.gui.refreshIcon = function(tabId) {
 Browser.gui.refreshAllIcons = function() {Browser.gui.refreshIcon(null)};
 
 Browser.gui.showOptions = function(anchor) {
-	Browser.log('calling showOptions');
+	Browser.log('showOptions');
+
 	if(Browser._script == 'main') {
-		Browser.gui._showOptions(anchor);
-	}
-	else {
+		var data = require("sdk/self").data;
+		var tabs = require("sdk/tabs");
+		var url = data.url('options.html') + (anchor || '');
+		tabs.open(url);
+
+	} else {
 		Browser.rpc.call(null,'showOptions',[anchor],null);
 	}
 };
 
 Browser.gui.getActiveCallUrl = function(handler) {
-	Browser.rpc.call(null, 'getActiveCallUrl', [], handler)
+	if(Browser._script == 'main') {
+		// Note: the callUrl might come from a frame inside the page, from a different url than tab.url
+		// We need to get it from the content script using the getState rpc call
+		//
+		var tab = Browser.gui._getActiveTab();
+		Browser.rpc.call(tab.id, 'getState', [], function(state) {
+			handler(state.callUrl);
+		});
+	} else {
+		// cannot do it in the content script, delegate to the main
+		Browser.rpc.call(null, 'getActiveCallUrl', [], handler)
+	}
 }
 
 
@@ -420,5 +474,21 @@ Browser.log = function() {
 	for(var i = 0; i < arguments.length; i++)
 		s += " " + JSON.stringify(arguments[i]);
 	console.log(s);
+}
+
+
+// loads a binary file from the data directory
+// same as data.load, but data.load does string conversion, and fails for binary
+// files. It's a slight modification of readURISync (which is used by data.load)
+// https://github.com/mozilla/addon-sdk/blob/master/lib/sdk/net/url.js
+//
+function load_binary(uri) {
+	var data = require("sdk/self").data;
+	var channel = NetUtil.newChannel(data.url(uri), null);
+	var stream = channel.open();
+	var count = stream.available();
+	var data = NetUtil.readInputStreamToString(stream, count);
+	stream.close();
+	return data;
 }
 

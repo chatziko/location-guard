@@ -8,5 +8,13 @@ source bin/activate
 cd -
 
 cd dist/firefox
-cfx run $*
+
+if [ "$1" == "mobile" ]
+then
+	shift	# remove "mobile" from args
+	args="-a fennec-on-device -b `which adb` --mobile-app firefox --force-mobile"
+fi
+args="$args $*"
+
+cfx run $args
 #cfx run -b /usr/local/firefox-30/firefox
