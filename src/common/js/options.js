@@ -1,12 +1,8 @@
-var levelMap, accCircle, protCircle, posMarker;
-var fixedPosMap, fixedPosMarker;
-var epsilon, disableSave;
-
-var showAccCircle = true;
-var samplePointsNo = 0;
-var samplePoints = [];
-
-var tabIndex = { general: 0, levels: 1, fixedPos: 2, faq: 3 };
+var levelMap, fixedPosMap;
+var epsilon;
+var activeLevel = "medium";
+var inited = {};
+var sliderRadius, sliderCacheTime;
 
 // default pos
 var currentPos = {
@@ -20,25 +16,39 @@ Browser.storage.get(function(st) {
 });
 
 
+// slider wrapper class, cause sGlide interface sucks
+function Slider(opt) {
+	this.opt = opt;
+	this.value = opt.min;
 
-// TODO: right now changes in textboxes are not saved when closing the popup, cause
-//       javascript stops running right away and Browser.storage.add is not executed
-//       we should avoid using textboxes anyway
-//
-function saveGeneral() {
+	var obj = this;
+	$("#"+opt.id).sGlide({
+		totalRange: [opt.min, opt.max],
+		drag: function(e) {
+			var value = Math.round(e.custom);
+			value -= value % opt.step;
+			opt.slide(value);
+		},
+		drop: function(e) {
+			obj.value = Math.round(e.custom);
+			obj.value -= obj.value % opt.step;
+			opt.change(obj.value);
+		}
+	});
+
+	this.set = function(value) {
+		this.value = value;
+		var pct = 100 * (value - opt.min) / (opt.max - opt.min);
+		$("#"+opt.id).sGlide("startAt", pct);
+	}
+}
+
+function saveOptions() {
 	Browser.storage.get(function(st) {
+		st.defaultLevel = $('#defaultLevel').val();
 		st.paused = $("#paused").prop('checked');
 		st.hideIcon = $("#hideIcon").prop('checked');
-		//st.epsilon = parseFloat($("#epsilon").val());
 		st.updateAccuracy = $("#updateAccuracy").prop('checked');
-		st.fixedPosNoAPI = $("#fixedPosNoAPI").prop('checked');
-		st.defaultLevel = $('#defaultLevel').val();
-
-		if(st.epsilon <= 0) {
-			blog('bad settings, ignoring', st);
-			drawUI();
-			return;
-		}
 
 		Browser.storage.set(st);
 
@@ -46,18 +56,21 @@ function saveGeneral() {
 	});
 }
 
-function saveLevel() {
-	if(disableSave) return;
-
+function saveFixedPosNoAPI() {
 	Browser.storage.get(function(st) {
-		var active = $("#levelTabs").tabs("option", "active");
-		var level = ['low', 'medium', 'high'][active];
+		st.fixedPosNoAPI = $("#fixedPosNoAPI").prop('checked');
 
-		var radius = $("#setRadius").slider("option", "value");
-		var ct = $("#setCacheTime").slider("option", "value");
+		Browser.storage.set(st);
+	});
+}
+
+function saveLevel() {
+	Browser.storage.get(function(st) {
+		var radius = sliderRadius.value;
+		var ct = sliderCacheTime.value;
 		var cacheTime = ct <= 59 ? ct : 60 * (ct-59);
 
-		st.levels[level] = {
+		st.levels[activeLevel] = {
 			radius: radius,
 			cacheTime: cacheTime
 		};
@@ -66,51 +79,86 @@ function saveLevel() {
 	});
 }
 
-function initializeLevelMap() {
-	levelMap = L.map('levelMap');
-	levelMap.addLayer(new L.TileLayer(
-		'http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-		{ attribution: 'Map data © OpenStreetMap contributors' }
-	));
-
+function initLevelMap() {
 	var latlng = [currentPos.latitude, currentPos.longitude];
-	levelMap.setView(latlng, 13);
 
-	posMarker = new L.marker(latlng)
+	// map
+	levelMap = L.map('levelMap')
+		.addLayer(new L.TileLayer(
+			'http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+			{ attribution: 'Map data © OpenStreetMap contributors' }
+		))
+		.setView(latlng, 13)
+		.on('dragstart', function() {
+			levelMap.closePopup();
+		})
+		.on('click', function(e){
+			if(levelMap.popup._isOpen) {	// if popup is open, close it
+				levelMap.closePopup();
+				return;
+			}
+			currentPos = { latitude: e.latlng.lat, longitude: e.latlng.lng };
+			moveCircles();
+		});
+
+	// marker
+	levelMap.marker = new L.marker(latlng, { draggable: true })
 		.addTo(levelMap)
-		.bindPopup('Your current position');
+		.on('click', function() {
+			showPopup(levelMap);
+		})
+		.on('drag', function(e) {
+			currentPos = { latitude: e.target._latlng.lat, longitude: e.target._latlng.lng };
+			moveCircles();
+		});
 
-	// build accuracy circle first to be on bottom
-	if(showAccCircle)
-		accCircle = new L.Circle(latlng, 1500, {
+	// popup
+	var popupHtml =
+		'<div class="map-popup">' +
+			'<p><b>Protection area (red)</b> and <b>accuracy (blue)</b> around some (hypothetical) location.</p>' +
+			'<p>Click on the map or drag the marker to change the location. Click on' +
+			'<a href="#" id="levelMapCurrentPos" class="popup-location-btn ui-btn ui-btn-inline ui-icon-location ui-btn-icon-notext"></a>' +
+			'to show your current location.</p>' +
+		'</div>';
+
+	levelMap.popup = L.popup({
+			autoPan: false,
+			closeOnClick: false,		// we'll close it ourselves
+			maxWidth: Math.min($("#levelMap").width() - 50, 300),
+		})
+		.setContent(popupHtml);
+
+	// circles (accuracy circle first to be on bottom)
+	levelMap.accuracy = new L.Circle(latlng, 1500, {
 			color: null,
 			fillColor: 'blue',
-			fillOpacity: 0.4
-		})	.addTo(levelMap)
-			.bindPopup('Accuracy');
+			fillOpacity: 0.4,
+			clickable: false,
+		})
+		.addTo(levelMap);
 
-	protCircle = new L.Circle(latlng, 500, {
-		color: null,
-		fillColor: '#f03',
-		fillOpacity: 0.4,
-	})	.addTo(levelMap)
-		.bindPopup('Protection area');
-	
-	/* CircleEditor
-		.on("radiusdrag", function() { 
-			blog("a")
-			var radius = Math.floor(this.getRadius());
-			$("#setRadius").slider("option", "value", radius);
-			updateRadiusText(radius);
-		});
-	*/
+	levelMap.protection = new L.Circle(latlng, 500, {
+			color: null,
+			fillColor: '#f03',
+			fillOpacity: 0.4,
+			clickable: false,
+		})
+		.addTo(levelMap);
+
+	// extend the Locate control and override the "start" method, so that it sets the marker to the user's location
+	// see https://github.com/domoritz/leaflet-locatecontrol
+	//
+	var myLocate = L.Control.Locate.extend({
+	   start: showCurrentPosition
+	});
+	new myLocate({
+			icon: 'icon-trans ui-btn-icon-notext ui-icon-location',				// use jqm's icons to avoid loading
+			iconLoading: 'icon-trans ui-btn-icon-notext ui-icon-location',		// font awesome
+		})
+	.addTo(levelMap);
 }
 
-function showFixedPos() {
-	// initialize the map, if not yet created. The map _needs_ to be created
-	// when the panel is shown, otherwise its size will be wrong
-	if(fixedPosMap) return;
-
+function initFixedPosMap() {
 	Browser.storage.get(function(st) {
 		var latlng = [st.fixedPos.latitude, st.fixedPos.longitude];
 
@@ -120,19 +168,58 @@ function showFixedPos() {
 				{ attribution: 'Map data © OpenStreetMap contributors' }
 			))
 			.setView(latlng, 14)
-			.on('click', saveFixedPos);
+			.on('dragstart', function() {
+				fixedPosMap.closePopup();
+			})
+			.on('click', function(e) {
+				if(fixedPosMap.popup._isOpen) {	// if popup is open, close it
+					fixedPosMap.closePopup();
+					return;
+				}
+				saveFixedPos(e.latlng);
+			});
 
-		fixedPosMarker = new L.marker(latlng)
+		// marker
+		fixedPosMap.marker = new L.marker(latlng, { draggable: true })
 			.addTo(fixedPosMap)
-			.bindPopup('Your fixed position');
+			.on('click', function() {
+				showPopup(fixedPosMap);
+			})
+			.on('dragend', function(e) {
+				saveFixedPos(e.target._latlng);
+			});
+
+		// popup
+		var popupHtml =
+			'<div class="map-popup">' +
+				'<p>This is the location reported when the privacy level is set to <b>"Use fixed location"</b>.</p>' +
+				'<p>Click on the map or drag the marker to set a new fixed location.</p>' +
+			'</div>';
+
+		fixedPosMap.popup = L.popup({
+				autoPan: false,
+				closeOnClick: false,		// we'll close it ourselves
+				maxWidth: Math.min($("#fixedPosMap").width() - 50, 300),
+			})
+			.setContent(popupHtml);
+
+		showPopup(fixedPosMap);
+
+		// locate control
+		L.control.locate({
+			drawCircle: false,
+			follow: false,
+			icon: 'icon-trans ui-btn-icon-notext ui-icon-location',				// use jqm's icons to avoid loading
+			iconLoading: 'icon-trans ui-btn-icon-notext ui-icon-location',		// font awesome
+		}).addTo(fixedPosMap);
 	});
 }
 
-function saveFixedPos(e) {
+function saveFixedPos(latlng) {
 	Browser.storage.get(function(st) {
-		st.fixedPos = { latitude: e.latlng.lat, longitude: e.latlng.lng };
+		st.fixedPos = { latitude: latlng.lat, longitude: latlng.lng };
 
-		fixedPosMarker.setLatLng(e.latlng);
+		fixedPosMap.marker.setLatLng(latlng);
 
 		blog('saving st', st);
 		Browser.storage.set(st);
@@ -140,72 +227,78 @@ function saveFixedPos(e) {
 }
 
 function showLevelInfo() {
-	// initialize the map, if not yet created. The map _needs_ to be created
-	// when the panel is shown, otherwise its size will be wrong
-	if(!levelMap) initializeLevelMap();
-
-	// set values
-	var active = $("#levelTabs").tabs("option", "active");
-	var level = ['low', 'medium', 'high'][active];
-
 	Browser.storage.get(function(st) {
 		// set sliders' value
-		var radius = st.levels[level].radius;
-		var cacheTime = st.levels[level].cacheTime;
+		var radius = st.levels[activeLevel].radius;
+		var cacheTime = st.levels[activeLevel].cacheTime;
 		var ct = cacheTime <= 59				// 0-59 are mins, 60 and higher are hours
 			? cacheTime
 			: 59 + Math.floor(cacheTime/59);
 
-		disableSave = true;						// save will be triggered by the change of value
-		$("#setRadius").slider("option", "value", radius);
-		$("#setCacheTime").slider("option", "value", ct);
-		disableSave = false;
+		sliderRadius.set(radius);
+		sliderCacheTime.set(ct);
 
-		updateRadiusText(radius);
-		updateCacheText(ct);
+		updateRadius(radius);
+		updateCache(ct);
 	});
 }
 
-function updateRadiusText(radius) {
+function moveCircles() {
+	var latlng = [currentPos.latitude, currentPos.longitude];
+
+	levelMap.marker.setLatLng(latlng);
+	levelMap.protection.setLatLng(latlng);
+	levelMap.accuracy.setLatLng(latlng);
+}
+
+function showPopup(map) {
+	var smallSize = $(map._container).width() < 500 || $(map._container).height() < 450;
+
+	// on small screens we center the popup at the bottom of the map
+	// on large screens we open at the marker
+	//
+	var latlng;
+	if(smallSize) {
+		var bounds = map.getBounds();
+		latlng = bounds.getCenter();
+		latlng.lat = bounds.getSouth();
+	} else {
+		// get pos 30 pixes above the marker
+		var pos = map.latLngToLayerPoint(map.marker._latlng);
+		pos.y -= 30;
+		latlng = map.layerPointToLatLng(pos);
+	}
+
+	map.popup
+		.setLatLng(latlng)
+		.openOn(map);
+
+	// hide popup "arrow" on small screens
+	$(".leaflet-popup-tip-container").css({ visibility: (smallSize ? "hidden" : "visible") });
+}
+
+function updateRadius(radius) {
 	// update radius text and map
 	var acc = Math.round((new PlannarLaplace).alphaDeltaAccuracy(epsilon/radius, .95));
 
-	var latlng = [currentPos.latitude, currentPos.longitude];
-	posMarker.setLatLng(latlng);
+	moveCircles();
 
-	protCircle.setLatLng(latlng);
-	protCircle.setRadius(radius);
-	//protCircle.updateMarkers();	// for CircleEditor
+	levelMap.protection.setRadius(radius);
+	levelMap.accuracy.setRadius(acc);
 
-	if(showAccCircle) {
-		accCircle.setLatLng(latlng);
-		accCircle.setRadius(acc);
-	}
+	var first_view = !inited.radius;
+	inited.radius = true;
 
-	levelMap.fitBounds((showAccCircle ? accCircle : protCircle).getBounds());
+	levelMap.fitBounds(levelMap.accuracy.getBounds(), { animate: !first_view });
 
-	// draw sample points
-	var e = epsilon/radius;
-	var pl = new PlannarLaplace;
-	for(var i = 0; i < samplePointsNo; i++) {
-		var noisy = pl.addNoise(e, currentPos);
-		var latlng = [noisy.latitude, noisy.longitude];
-
-		if(samplePoints[i])
-			samplePoints[i].setLatLng(latlng);
-		else
-			samplePoints[i] = new L.Circle(latlng, 15, {
-				color: null,
-				fillColor: 'black',
-				fillOpacity: 1,
-			}).addTo(levelMap)
-	}
+	if(first_view)
+		showPopup(levelMap);
 
 	$("#radius").text(radius);
 	$("#accuracy").text(acc);
 }
 
-function updateCacheText(ct) {
+function updateCache(ct) {
 	// update cache time text
 	var h = ct-59
 
@@ -216,72 +309,72 @@ function updateCacheText(ct) {
 	);
 }
 
-function drawUI() {
-	Browser.storage.get(function(st) {
-		$('#faqlist').accordion({
-			collapsible: true
-		});
+function initPages() {
+	$.mobile.ajaxEnabled = false;
+	//$.mobile.hideUrlBar = false;
+	//$.mobile.defaultPageTransition = "none";
 
-		// showLevelInfo needs to be called when the "level" pannel (the pannel
-		// of the inner tab) is displayed.
-		// Note that the 'activate' event is only called when the tab  _changes_.
-		// not when it's first displayed. So we also use the activate event of the parent tab.
+	$(document).on("pagecontainershow", function(e, ui) {
+		var page = ui.toPage[0].id;
+
+		if(inited[page]) {
+			// page already inited. only call invalidateSize on maps
+			if(page == "levels")   levelMap.invalidateSize();
+			if(page == "fixedPos") fixedPosMap.invalidateSize();
+			return;
+		}
+		inited[page] = true;
+
+		// page initialization
 		//
-		$("#tabs").tabs({
-			active: tabIndex[Util.extractAnchor(window.location.href)],
-			activate: function(event, ui) {
-				var id = ui.newPanel.attr('id');
-				window.location.hash = id;
-				if(id == 'levels')
-					showLevelInfo();
-				else if(id == 'fixedPos')
-					showFixedPos();
-			}
-		});
-		$("#levelTabs").tabs({
-			active: 1,
-			activate: function(event, ui) {
-				showLevelInfo();
-			}
-		});
+		if(page == "options") {
+			Browser.storage.get(function(st) {
+				$('#defaultLevel').val(st.defaultLevel).selectmenu("refresh");
+				$('#paused').prop('checked', st.paused).checkboxradio("refresh");
+				$('#hideIcon').prop('checked', st.hideIcon).checkboxradio("refresh");
+				$('#updateAccuracy').prop('checked', st.updateAccuracy).checkboxradio("refresh");
+			});
 
-		$("#setRadius").slider({
-			animate: "fast",
-			min: 40,
-			max: 3000,
-			step: 20,
-			slide: function(event, ui) {
-				updateRadiusText(ui.value);
-			},
-			change: saveLevel,
-		});
-		$("#setCacheTime").slider({
-			animate: "fast",
-			min: 0,
-			max: 69,
-			step: 1,
-			slide: function(event, ui) {
-				updateCacheText(ui.value);
-			},
-			change: saveLevel,
-		});
+		} else if (page == "levels") {
+			sliderRadius = new Slider({
+				id: "setRadius",
+				min: 40,
+				max: 3000,
+				step: 20,
+				slide: function(value) {
+					levelMap.closePopup();
+					updateRadius(value);
+				},
+				change: saveLevel,
+			});
+			sliderCacheTime = new Slider({
+				id: "setCacheTime",
+				min: 0,
+				max: 69,
+				step: 1,
+				slide: updateCache,
+				change: saveLevel,
+			});
 
-		$('#paused').prop('checked', st.paused);
-		$('#hideIcon').prop('checked', st.hideIcon);
-		//$('#epsilon').val(st.epsilon);
-		$('#updateAccuracy').prop('checked', st.updateAccuracy);
-		$('#fixedPosNoAPI').prop('checked', st.fixedPosNoAPI);
-		$('#defaultLevel').val(st.defaultLevel);
+			initLevelMap();
+			showLevelInfo();
+
+		} else if (page == "fixedPos") {
+			Browser.storage.get(function(st) {
+				$('#fixedPosNoAPI').prop('checked', st.fixedPosNoAPI).checkboxradio("refresh");
+
+				initFixedPosMap();
+			});
+		}
 	});
 }
 
 function showCurrentPosition() {
 	navigator.geolocation.getCurrentPosition(
 		function (pos) {
-			// store position and if map is loaded, call showLevelInfo to update it
+			levelMap.closePopup();
 			currentPos = pos.coords;
-			if(levelMap)
-				showLevelInfo();
+			showLevelInfo();		// moves circles and also centers map
 		},
 		function(err) {
 			blog("cannot get location", err);
@@ -292,7 +385,7 @@ function showCurrentPosition() {
 function restoreDefaults() {
 	if(window.confirm('Are you sure you want to restore the default options?')) {
 		Browser.storage.clear();
-		drawUI();
+		location.reload();
 	}
 }
 
@@ -304,28 +397,37 @@ function deleteCache() {
 	});
 }
 
+// set page events before "ready"
+//
+initPages();
+
 $(document).ready(function() {
-	$("#general input").change(saveGeneral);
-	$("#general select").change(saveGeneral);
-	$("#fixedPos input").change(saveGeneral);
+	$("#left-panel").panel().enhanceWithin();			// initialize panel
+
+	// open panel on swipe
+	$(document).on("swiperight", function(e) {
+		if($("#left-panel").css("visibility") !== "visible" )		// check if already open (manually or due to large screen)
+			$("#left-panel").panel("open");
+	});
+
+	$("#options input, #options select, #fixedPos input").change(saveOptions);
+	$("#fixedPosNoAPI").change(saveFixedPosNoAPI);
 
 	$("#restoreDefaults").click(restoreDefaults);
 	$("#deleteCache").click(deleteCache);
 
-	$("#showCurrentPosition").click(showCurrentPosition);
+	$("#activeLevel a").click(function(e) {
+		levelMap.closePopup();
 
-	$(".showPrivacyFAQ").click(function() {
-		$("#faqlist").accordion("option", "active", 1);
+		activeLevel = $(e.target).attr("level");
+		showLevelInfo();
 	});
 
-	window.onhashchange = function() {
-		$("#tabs").tabs("option", "active", tabIndex[Util.extractAnchor(window.location.href)]);
-	};
+	$(".showFAQ").click(function(e) {
+		location.href = "faq.html#" + $(e.target).attr("faq");
+	});
 
-	drawUI();
-
-	// TODO remove
-	//showLevelInfo();
+	$(document).on("click", "#levelMapCurrentPos", showCurrentPosition);	// this doesn't exist yet (it's inside the popup), so we set in document
 });
 
 

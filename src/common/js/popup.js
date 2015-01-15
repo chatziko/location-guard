@@ -13,7 +13,7 @@ function menuAction(action) {
 	switch(action) {
 		case 'options':
 		case 'faq':
-			var anchor = action == 'options' ? '#general' : '#faq';
+			var anchor = action == 'options' ? '#options' : '#faq';
 			Browser.gui.showOptions(anchor);
 
 			closePopup();

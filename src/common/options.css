@@ -1,0 +1,130 @@
+/* make the content take the full height of the page (minus the header) */
+.page {
+	/* NOTE: jqm will set full height dynamically, but with height: 100% it will be faster on fennec, without a visible resize */
+	height: 100%;
+}
+.ui-content {
+	position: absolute;
+	top: 44px;
+	bottom: 0;
+	left: 0;
+	right: 0;
+	display: flex;
+	flex-direction: column;
+}
+
+/* ensure that #faq and its content are big enough for the contents. So scrolling happens for the
+ * whole page, not just for the div, which is _much_ faster on mobile! */
+#faq {
+	overflow: visible;
+}
+#faq .ui-content {
+	bottom: auto;
+}
+
+/* on large screens, permanently show the panel and hide the menu icon */
+@media (min-width: 50em) {
+	#left-panel {
+		visibility: visible;
+		position: relative;
+		width: 17em;
+		box-shadow:2px 0 2px rgba(0,0,0,.15);
+		transition: none !important;
+		transform: none !important;
+	}
+	.page {
+		position: absolute;
+		left: 17em !important;
+		right: 0 !important;
+		width: auto !important;
+		max-width: 55em;
+		box-shadow:2px 0 2px rgba(0,0,0,.15);
+	}
+	.ui-header > a {
+		visibility: hidden;
+	}
+}
+
+.flex {
+	flex: 1;
+}
+
+.no-space {
+	padding: 0;
+	margin: 0 !important;
+}
+.no-vert-space {
+	padding-top: 0;
+	padding-bottom: 0;
+	margin-top: 0;
+	margin-bottom: 0;
+}
+
+.small-font {
+	font-weight: normal;
+	font-size: small;
+}
+
+.map-popup {
+	font-size: 1.2em;
+}
+.popup-location-btn {
+	width: 1.2em;
+	height: 1.2em;
+	margin: 0 0.3em 0 0.3em;
+	border-radius: 4px;
+}
+
+.flat-btn, .flat-btn > .ui-btn-inner {
+	border:0 !important;
+	background:transparent !important;
+	top: 8px !important;
+}
+
+.menu-title {
+	background-color: #4a4a4a !important;
+	font-weight: bold;
+}
+
+/* this prevents the title from being cut */
+.ui-header .ui-title {
+	margin-left: 1em; margin-right: 1em;
+}
+
+/* prevents loading of ajax-loader.gif */
+.ui-icon-loading {
+	background:none !important;
+}
+
+/* make icon transparent without using ui-btn */
+.icon-trans::after { background-color: transparent; }
+
+
+/* slider styling */
+.slider {
+	margin: 0.8em 0 0.8em 0 !important;
+	height: 10px !important;
+	overflow: visible !important;
+	background-color: #e9e9e9;
+	border-color: #ddd;
+	border-radius: .3125em !important;
+	border-width: 1px;
+	border-style: solid;
+	box-shadow: inset 0 1px 3px rgba(0,0,0,.2);
+}
+.follow_bar {
+	display: none;
+}
+.slider_knob {
+	width: 24px !important;
+	height: 24px !important;
+	background-color: #f6f6f6 !important;
+	display: block !important;
+	top: 50%;
+	margin: -13px 0 0 0;
+	border-color: #ddd;
+	border-radius: inherit;
+	border-width: 1px;
+	border-style: solid;
+	box-shadow: 0 1px 3px rgba(0,0,0,.15);
+}
