@@ -366,11 +366,11 @@ Browser.gui._getActiveTab = function(){
 }
 
 Browser.gui._refresh_pageaction = function(info) {
-	var nw = Browser.gui._fennec = Services.wm.getMostRecentWindow("navigator:browser").NativeWindow;
+	// var nw = Browser.gui._fennec = Services.wm.getMostRecentWindow("navigator:browser").NativeWindow;
 
 	if(this._pageaction) {
 		PageActions.remove(this._pageaction);
-		nw.menu.remove(this._menu);
+		// nw.menu.remove(this._menu);
 	}
 
 	if(info.hidden)
@@ -389,6 +389,7 @@ Browser.gui._refresh_pageaction = function(info) {
 		clickCallback: PopupFennec.show
     });
 
+	/*
 	this._menu = nw.menu.add({
 		name: "Location Guard",
 		callback: PopupFennec.show
@@ -400,6 +401,7 @@ Browser.gui._refresh_pageaction = function(info) {
 			callback: PopupFennec.show
 		}
 	});
+	*/
 }
 
 // the following 4 are the public methods of Browser.gui
