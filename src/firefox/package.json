@@ -9,10 +9,10 @@
   "license": "MPL 2.0",
   "version": "1.0.13",
   "dependencies" : ["browser-action"],
-  "preferences" : [{ 
-          "type": "control", 
-          "label": "Options", 
-          "name": "optionButton", 
+  "preferences" : [{
+          "type": "control",
+          "label": "Show",
+          "name": "optionButton",
           "title": "Options"
       }]
 }
