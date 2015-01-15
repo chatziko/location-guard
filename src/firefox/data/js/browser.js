@@ -346,8 +346,8 @@ Browser.gui._init = function(){
 			Browser.gui.refreshIcon(tabId);
 	});
 
-	Browser.rpc.register('showOptions', function(anchor) {
-		Browser.gui.showOptions(anchor);
+	Browser.rpc.register('showPage', function(name) {
+		Browser.gui.showPage(name);
 	});
 
 	// register options button
@@ -355,7 +355,7 @@ Browser.gui._init = function(){
 	var prefsModule = require("sdk/simple-prefs");
 	prefsModule.on("optionButton", function() {
 		console.log("options was clicked");
-		Browser.gui.showOptions();
+		Browser.gui.showPage("options.html");
 	})
 }
 
@@ -437,17 +437,51 @@ Browser.gui.refreshIcon = function(tabId) {
 
 Browser.gui.refreshAllIcons = function() {Browser.gui.refreshIcon(null)};
 
-Browser.gui.showOptions = function(anchor) {
-	Browser.log('showOptions');
+Browser.gui.showPage = function(name) {
+	Browser.log('showPage', name);
 
 	if(Browser._script == 'main') {
+		// if there is any tab showing an internal page, activate and update it, otherwise open new
+		//
 		var data = require("sdk/self").data;
-		var tabs = require("sdk/tabs");
-		var url = data.url('options.html') + (anchor || '');
-		tabs.open(url);
+		var baseUrl = data.url("");
+		var fullUrl = baseUrl + name;
+
+		if(this._fennec) {
+			// sdk/tabs doesn't enumerate tabs correctly in fennec
+			// maybe bug: https://bugzilla.mozilla.org/show_bug.cgi?id=844859
+			// So we use BrowserApp instead
+			//
+			var ba = Services.wm.getMostRecentWindow("navigator:browser").BrowserApp;
+			var tabs = ba.tabs;
+
+			for(var i = 0; i < tabs.length; i++) {
+				var url = tabs[i].window.location.href;
+				if(url.search(baseUrl) != -1) {
+					ba.selectTab(tabs[i]);
+					if(url != fullUrl)		// if identical avoid reload
+						tabs[i].browser.loadURI(fullUrl);
+					return;
+				}
+			}
+
+			ba.addTab(fullUrl);
+
+		} else {
+			var tabs = require("sdk/tabs");
+
+			for(var i = 0; i < tabs.length; i++) {
+				if(tabs[i].url.search(baseUrl) != -1) {
+					tabs[i].url = fullUrl;
+					tabs[i].activate();
+					return;
+				}
+			}
+			tabs.open(fullUrl);
+		}
 
 	} else {
-		Browser.rpc.call(null,'showOptions',[anchor],null);
+		Browser.rpc.call(null, 'showPage', [name], null);
 	}
 };
 

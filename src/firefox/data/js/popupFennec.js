@@ -42,8 +42,8 @@ PopupFennec.show = function() {
 
 				case 'options':
 				case 'faq':
-					var anchor = action == 'options' ? '#options' : '#faq';
-					Browser.gui.showOptions(anchor);
+					var page = action == 'options' ? 'options.html' : 'faq.html';
+					Browser.gui.showPage(page);
 					break;
 
 				case 'hideIcon':

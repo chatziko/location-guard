@@ -153,11 +153,13 @@ Browser.gui.refreshAllIcons = function() {
 	});
 };
 
-Browser.gui.showOptions = function(anchor) {
-	var baseUrl = chrome.extension.getURL('options.html');
-	var fullUrl = baseUrl + (anchor || '');
+Browser.gui.showPage = function(name) {
+	var baseUrl = chrome.extension.getURL('');
+	var fullUrl = baseUrl + name;
 
-	chrome.tabs.query({ url: baseUrl }, function(tabs) {
+	// if there is any tab showing an internal page, activate and update it, otherwise open new
+	//
+	chrome.tabs.query({ url: baseUrl + "*" }, function(tabs) {
 		blog("tabs",tabs);
 		if (tabs.length)
 			chrome.tabs.update(tabs[0].id, { active: true, url: fullUrl });

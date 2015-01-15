@@ -136,12 +136,12 @@ var Browser = {
 		//
 		refreshAllIcons: function() {},
 
-		// Browser.gui.showOptions(anchor)
+		// Browser.gui.showPage(name)
 		//
-		// Shows the options page (by opening a new tab, or focusing an old tab if it's already open).
-		// An 'anchor' (eg. '#faq' can be optionally given)
+		// Shows an internal html page by opening a new tab, or focusing an old tab if it's already open
+		// (at most one internal page should be open)
 		//
-		showOptions: function(anchor) {},
+		showPage: function(name) {},
 
 		// Browser.gui.getActiveCallUrl(handler)
 		//

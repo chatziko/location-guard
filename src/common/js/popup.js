@@ -13,8 +13,8 @@ function menuAction(action) {
 	switch(action) {
 		case 'options':
 		case 'faq':
-			var anchor = action == 'options' ? '#options' : '#faq';
-			Browser.gui.showOptions(anchor);
+			var page = action == 'options' ? 'options.html' : 'faq.html';
+			Browser.gui.showPage(page);
 
 			closePopup();
 			break;
