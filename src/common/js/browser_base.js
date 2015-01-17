@@ -124,7 +124,10 @@ var Browser = {
 	gui: {
 		// Browser.gui.refreshIcon(tabId)
 		//
-		// Refreshes the icon of the tab with the given 'tabId', or the current tab if tabId is null
+		// Refreshes the icon of the tab with the given 'tabId'
+		// If tabId is undefined/null then
+		//  - if called from a content script it refreshes the icon of the content script's tab
+		//  - outside the content script it raises error
 		// getIconInfo should be called to get the icon's info
 		//
 		refreshIcon: function(tabId) {},

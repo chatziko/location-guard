@@ -70,11 +70,11 @@ Browser._main_script = function() {
 
 			worker.tab.on('activate', function(tab){
 				Browser.log(tab.url + ' activated');
-				Browser.gui.refreshIcon(null);//tabId is ignored
+				Browser.gui.refreshIcon(tab.id);
 			});
 			worker.tab.on('pageShow', function(tab){
 				Browser.log(tab.url + ' pageShow');
-				Browser.gui.refreshIcon(null);//tabId is ignored
+				Browser.gui.refreshIcon(tab.id);
 			});
 		}
 	});
@@ -105,11 +105,11 @@ Browser._main_script = function() {
 
 			worker.tab.on('activate', function(tab){
 				Browser.log(tab.url + ' activated');
-				Browser.gui.refreshIcon(null);//tabId is ignored
+				Browser.gui.refreshIcon(tab.id);
 			});
 			worker.tab.on('pageShow', function(tab){
 				Browser.log(tab.url + ' pageShow');
-				Browser.gui.refreshIcon(null);//tabId is ignored
+				Browser.gui.refreshIcon(tab.id);
 			});
 		}
 	});
@@ -342,8 +342,12 @@ Browser.gui._init = function(){
 		return true;	// replyHandler will be used later
 	});
 
-	Browser.rpc.register('refreshIcon', function(tabId) {
-			Browser.gui.refreshIcon(tabId);
+	Browser.rpc.register('refreshIcon', function(tabId, callerTabId) {
+		Browser.gui.refreshIcon(tabId || callerTabId);		// null tabId in the content script means refresh its own tab
+	});
+
+	Browser.rpc.register('refreshAllIcons', function() {
+		Browser.gui.refreshAllIcons();
 	});
 
 	Browser.rpc.register('showPage', function(name) {
@@ -407,12 +411,19 @@ Browser.gui._refresh_pageaction = function(info) {
 // the following 4 are the public methods of Browser.gui
 //
 Browser.gui.refreshIcon = function(tabId) {
-	Browser.log('refreshing icon');
+	Browser.log('refreshing icon', tabId);
+
 	if(Browser._script == 'main') {
+		// refreshIcon is supposed to change the icon of a specific tab (or the active tab if tabId = null). In firefox
+		// the icon is actually _global_, we update it on every tab change. So refreshIcon only needs to refresh the _active_
+		// tab's icon (i.e. when tabId == null or tabId == activeTab.id).
+		//
+		if(tabId == undefined)
+			throw "tabId not set";
+		if(tabId != Browser.gui._getActiveTab().id)
+			return;		// asked to refresh a non-active tab, nothing to do
 
-		var tab = Browser.gui._getActiveTab();
-
-		Util.getIconInfo(tab.id, function(info) {
+		Util.getIconInfo(tabId, function(info) {
 			Browser.log('got info for refreshIcon', info);
 
 			if(Browser.gui._fennec) {
@@ -430,14 +441,17 @@ Browser.gui.refreshIcon = function(tabId) {
 	} else {
 		// content popup
 		// cannot do it in the content script, delegate to the main
-		// in this case tabId can be null, the main script will get the tabId
-		// from the rpc call
-
-		Browser.rpc.call(null, 'refreshIcon', null);
+		Browser.rpc.call(null, 'refreshIcon', [tabId]);
 	}
 };
 
-Browser.gui.refreshAllIcons = function() {Browser.gui.refreshIcon(null)};
+Browser.gui.refreshAllIcons = function() {
+	if(Browser._script == 'main')
+		// in firefox the icon is global, we only need to refresh the active tab
+		Browser.gui.refreshIcon(Browser.gui._getActiveTab().id);
+	else
+		Browser.rpc.call(null, 'refreshAllIcons');
+};
 
 Browser.gui.showPage = function(name) {
 	Browser.log('showPage', name);

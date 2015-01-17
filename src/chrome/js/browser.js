@@ -31,8 +31,8 @@ Browser._main_script = function() {
 	// some operations cannot be done by other scripts, so we set
 	// handlers to do them in the main script
 	//
-	Browser.rpc.register('refreshIcon', function(tabId) {
-		Browser.gui.refreshIcon(tabId);
+	Browser.rpc.register('refreshIcon', function(tabId, callerTabId) {
+		Browser.gui.refreshIcon(tabId || callerTabId);		// null tabId in the content script means refresh its own tab
 	});
 }
 
@@ -118,12 +118,12 @@ Browser.storage.clear = function() {
 Browser.gui.refreshIcon = function(tabId) {
 	if(Browser._script == 'content') {
 		// cannot do it in the content script, delegate to the main
-		// in this case tabId can be null, the main script will get the tabId
-		// from the rpc call
-
-		Browser.rpc.call(null, 'refreshIcon');
+		Browser.rpc.call(null, 'refreshIcon', [tabId]);
 		return;
 	}
+
+	if(tabId == undefined)
+		throw "tabId not set";
 
 	Util.getIconInfo(tabId, function(info) {
 		if(!info || info.hidden) {
