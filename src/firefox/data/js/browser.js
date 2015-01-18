@@ -11,8 +11,6 @@ Browser.init = function (script) {
 		Browser.gui._init();
 		Browser._install_update();
 	}
-	Browser.gui.refreshAllIcons();
-
 };
 
 // handle installation and upgrade
@@ -29,16 +27,57 @@ Browser._install_update = function(){
 }
 
 Browser._main_script = function() {
+	// refresh icon when a tab is activated
+	//
+	require('sdk/tabs').on('activate', function (tab) {
+		Browser.gui.refreshIcon(tab.id);
+	});
 
-	Browser.workers = [];
-
+	// content script insertion
+	// we insert two scripts
+	// 1. our content.js and auxiliary .js files that do the main job
+	// 2. the messaging module's code, needed for communication with the content script (see https://github.com/Rob--W/browser-action-jplib/blob/master/docs/messaging.md)
+	//
 	var array = require('sdk/util/array');
 	var data = require("sdk/self").data;
 	const { createMessageChannel, messageContentScriptFile } = require('messaging');
 
-	// user tabs
+	Browser.workers = [];
 
-	var pagemod = require("sdk/page-mod").PageMod({
+	// executed when a worker is created, each worker corresponds to a page
+	// we need to create communication channel, and to keep track of workers in Browser.workers to
+	// allow for main -> page communication
+	//
+	function onWorkerAttach(worker) {
+		worker.channel = createMessageChannel(this.contentScriptOptions, worker.port);
+		worker.channel.onMessage.addListener(function(msg, sender, sendResponse) {
+			// sender is always null, we set it to worker.tab.id
+			return Browser.handleMessage(msg, worker.tab.id, sendResponse);
+		});
+
+		array.add(Browser.workers, worker);
+
+		// pagehide: called when user moves away from the page (closes tab or moves back/forward). the worker is not
+		// valid anymore so we need to remove it. We also call refreshIcon to remove the icon.
+		//
+		worker.on('pagehide', function() {
+			array.remove(Browser.workers, this);
+
+			Browser.gui.refreshIcon(this.tab.id);
+		});
+
+		// pageshow: called when page is shown, either the first time, or when navigating history (back/forward button)
+		// When havigating history, an old (hidden) worker is reused instead of creating a new one. So we need to put it
+		// back to Browser.workers
+		//
+		worker.on('pageshow', function() {
+			array.add(Browser.workers, this);
+		});
+	}
+
+	// all http[s] pages: insert content.js and messaging code
+	//
+	require("sdk/page-mod").PageMod({
 		include: ['*'],
 		attachTo: ["top", "frame"],
 		contentScriptWhen: 'start', // TODO THIS IS TRICKY
@@ -50,79 +89,23 @@ Browser._main_script = function() {
 							data.url("js/content.js")],
 		contentScriptOptions: {
 			channelName: 'whatever you want',
-			// Set the following to false if you want to communicate between
-			// the "extension" and a content script instead of the page.
-			endAtPage: false
+			endAtPage: false		// false: communicate with the content script
 		},
-
-		onAttach: function(worker) {
-			worker["channel"] = createMessageChannel(pagemod.contentScriptOptions, worker.port);
-			worker.channel.onMessage.addListener(function(msg, sender, sendResponse) {
-				// sender is always null, we set it to worker.tab.id
-				return Browser.handleMessage(msg, worker.tab.id, sendResponse);
-			});
-
-			array.add(Browser.workers, worker);
-			status();
-			worker.on('pageshow', function() { array.add(Browser.workers, this); status();});
-			worker.on('pagehide', function() { array.remove(Browser.workers, this); status();});
-			worker.on('detach', function() { array.remove(Browser.workers, this); status();});
-
-			worker.tab.on('activate', function(tab){
-				Browser.log(tab.url + ' activated');
-				Browser.gui.refreshIcon(tab.id);
-			});
-			worker.tab.on('pageShow', function(tab){
-				Browser.log(tab.url + ' pageShow');
-				Browser.gui.refreshIcon(tab.id);
-			});
-		}
+		onAttach: onWorkerAttach,
 	});
 
-	// options page
-
-	var pagemod = require("sdk/page-mod").PageMod({
+	// options page: insert only messaging code
+	//
+	require("sdk/page-mod").PageMod({
 		include: [data.url("options.html*")],
-		//attachTo: ["top"], //excludes iframes
 		contentScriptWhen: 'start', // sets up comm. before running the page scripts
 		contentScriptFile: [messageContentScriptFile],
 		contentScriptOptions: {
 			channelName: 'whatever you want',
-			endAtPage: true //sets up communication with the page, not its content script
+			endAtPage: true			// true: communicate with the options page (not its content script)
 		},
-		onAttach: function(worker) {
-			worker["channel"] = createMessageChannel(pagemod.contentScriptOptions, worker.port);
-			worker.channel.onMessage.addListener(function(msg, sender, sendResponse) {
-				// sender is always null, we set it to worker.tab.id
-				return Browser.handleMessage(msg, worker.tab.id, sendResponse);
-			});
-
-			array.add(Browser.workers, worker);
-			status();
-			worker.on('pageshow', function() { array.add(Browser.workers, this); status();});
-			worker.on('pagehide', function() { array.remove(Browser.workers, this); status();});
-			worker.on('detach', function() { array.remove(Browser.workers, this); status();});
-
-			worker.tab.on('activate', function(tab){
-				Browser.log(tab.url + ' activated');
-				Browser.gui.refreshIcon(tab.id);
-			});
-			worker.tab.on('pageShow', function(tab){
-				Browser.log(tab.url + ' pageShow');
-				Browser.gui.refreshIcon(tab.id);
-			});
-		}
+		onAttach: onWorkerAttach,
 	});
-
-
-	var status = function () {
-		var w = [];
-		for(var i=0; i < Browser.workers.length; i++)
-			w.push(Browser.workers[i].tab.url);
-		Browser.log('workers', w);
-	}
-
-
 }
 
 
@@ -151,7 +134,8 @@ Browser.sendMessage = function (tabId, type, message, cb) {
 			// Browser.log('-> ', worker.tab.url, message);
 			worker.channel.sendMessage({'type': type, 'message': message},cb);
 		} else {
-			Browser.log('no destination '+tabId);
+			// cannot connect, call cb with no arguments
+			if(cb) cb();
 		}
 	}
 	// content or popup
@@ -365,7 +349,6 @@ Browser.gui._init = function(){
 
 Browser.gui._getActiveTab = function(){
 	var tabs = require("sdk/tabs");
-	Browser.log('active tab: '+tabs.activeTab.url);
 	return tabs.activeTab;
 }
 
@@ -520,10 +503,10 @@ Browser.gui.getActiveCallUrl = function(handler) {
 Browser.log = function() {
 	if(!Browser.debugging) return;
 
-	var s = Browser._script + ":";
-	for(var i = 0; i < arguments.length; i++)
-		s += " " + JSON.stringify(arguments[i]);
-	console.log(s);
+    var args = Array.prototype.slice.call(arguments);	// convert to real array
+	args.unshift(Browser._script + ":");
+
+	console.log.apply(console, args);
 }
 
 

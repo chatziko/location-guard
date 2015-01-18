@@ -47,6 +47,8 @@ var Browser = {
 		//   args:     array of arguments to pass
 		//   handler:  function(res), will be called when the result is received
 		//
+		// If the call cannot be made to the specific tabId, handler will be called with no arguments.
+		//
 		call: function(tabId, name, args, handler) {}
 	},
 
