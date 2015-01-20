@@ -2,6 +2,14 @@ blog("popup loading");
 
 Browser.init('popup');
 
+$.mobile.hashListeningEnabled = false;		// disabling state changing is needed in firefox,
+$.mobile.pushStateEnabled = false;			// it breaks when executed in the popup cause there's no history
+$.mobile.ajaxEnabled = false;				// doesn't hurt but not needed
+$.mobile.autoInitializePage = false;		// don't initialize until we set all values, avoids a quick but visible refresh
+
+$(document).ready(drawUI);
+
+
 var url;
 
 function closePopup() {
@@ -9,7 +17,9 @@ function closePopup() {
 	setInterval(window.close, 50);
 }
 
-function menuAction(action) {
+function doAction() {
+	var action = $(this).attr("id");
+
 	switch(action) {
 		case 'options':
 		case 'faq':
@@ -41,7 +51,8 @@ function menuAction(action) {
 			});
 			break;
 
-		case 'setLevel':		// top menu, no need to do anything
+		case 'setLevel':
+			$("#levels").popup("open");
 			break;
 
 		default:	// set level
@@ -63,22 +74,7 @@ function menuAction(action) {
 }
 
 function drawUI() {
-	// draw the menu right away (don't wait for st, url), otherwise it renders funny in chrome
-	// also: for some reason the mouse gets a mouseover event when created, so it
-	// highlights the first item. To avoid this, we create the menu as
-	// disabled, and enable it after 50msecs
-	$("#menu").menu({
-		disabled: true,
-		position: { my: "right bottom", at: "right bottom", of: $(window) },
-		select: function(event, ui) {
-			menuAction(ui.item.attr("id"));
-		}
-	});
-	setTimeout(function() {
-		$("#menu").menu({ disabled: false });
-	}, 50);
-
-	// for the remaining things we need storage and url
+	// we need storage and url
 	Browser.gui.getActiveCallUrl(function(callUrl) {
 	Browser.storage.get(function(st) {
 		blog("popup: callUrl", callUrl, "settings", st);
@@ -94,18 +90,27 @@ function drawUI() {
 			"Privacy level: " + level
 		);
 
-		$("#pause > a").text((st.paused ? "Resume" : "Pause") + " Location Guard");
-		$("#setLevel > a").html("Set level for <b>" + domain + "</b> &gt;");
+		$("#pause").text((st.paused ? "Resume" : "Pause") + " Location Guard");
+		$("#pause").parent().attr("data-icon", st.paused ? "play" : "pause");
+		$("#setLevel").html("Set level for <b>" + domain + "</b>");
 
 		$("#setLevel,#hideIcon").toggle(!st.paused);
 
-		$("body").css("height", $("#container").height());
-		$("body").css("width", $("#container").width());
+		$("#"+level).attr("checked", true);
+
+		$("a, input").on("click", doAction);
+
+		// we're ready, init
+		$.mobile.initializePage();
+
+		// resize body to match #container
+		$("html, body").css({
+			width:  $("#container").width(),
+			height: $("#container").height(),
+		});
 	});
 	});
 }
-
-$(document).ready(drawUI);
 
 
 if(Browser.testing) {
