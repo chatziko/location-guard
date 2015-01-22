@@ -1,5 +1,16 @@
 #!/bin/bash
 
+# usage:
+#   ./run-firefox
+#   ./run-firefox -b /<path-to-old-firefox>/firefox6
+#	./run-firefox mobile
+#	./run-firefox xpi
+#
+# min supported version:
+#  desktop: 23
+#  android: 34
+
+
 rm -rf dist/firefox
 ./deploy firefox
 
@@ -9,12 +20,17 @@ cd -
 
 cd dist/firefox
 
-if [ "$1" == "mobile" ]
+if [ "$1" == "xpi" ]
 then
-	shift	# remove "mobile" from args
-	args="-a fennec-on-device -b `which adb` --mobile-app firefox --force-mobile"
-fi
-args="$args $*"
+	cfx xpi --force-mobile
+	mv location-guard.xpi ../../
 
-cfx run $args
-#cfx run -b /usr/local/firefox-30/firefox
+else
+	if [ "$1" == "mobile" ]
+	then
+		shift	# remove "mobile" from $*
+		args="-a fennec-on-device -b `which adb` --mobile-app firefox --force-mobile"
+	fi
+
+	cfx run $args $*
+fi
