@@ -48,7 +48,20 @@ function saveOptions() {
 		st.defaultLevel = $('#defaultLevel').val();
 		st.paused = $("#paused").prop('checked');
 		st.hideIcon = $("#hideIcon").prop('checked');
-		st.updateAccuracy = $("#updateAccuracy").prop('checked');
+
+		var updateAccuracy = $("#updateAccuracy").prop('checked');
+		if(st.updateAccuracy != updateAccuracy) {
+			// update accuracy of cached positions to reflect the change
+			for(var level in st.cachedPos) {
+				var epsilon = st.epsilon / st.levels[level].radius;
+				var pl = new PlannarLaplace();
+
+				st.cachedPos[level].position.coords.accuracy +=									// add/remove the .9 accuracy
+					(updateAccuracy ? 1 : -1) * Math.round(pl.alphaDeltaAccuracy(epsilon, .9));
+			}
+
+			st.updateAccuracy = updateAccuracy;
+		}
 
 		Browser.storage.set(st);
 
@@ -69,6 +82,10 @@ function saveLevel() {
 		var radius = sliderRadius.value;
 		var ct = sliderCacheTime.value;
 		var cacheTime = ct <= 59 ? ct : 60 * (ct-59);
+
+		// delete cache for that level if radius changes
+		if(st.levels[activeLevel].radius != radius)
+			delete st.cachedPos[activeLevel];
 
 		st.levels[activeLevel] = {
 			radius: radius,
