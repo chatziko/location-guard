@@ -13,6 +13,6 @@
           "type": "control",
           "label": "Show",
           "name": "optionButton",
-          "title": "Options"
+          "title": "Options Page"
       }]
 }
