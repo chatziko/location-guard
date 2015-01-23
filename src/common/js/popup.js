@@ -23,7 +23,7 @@ function doAction() {
 	switch(action) {
 		case 'options':
 		case 'faq':
-			var page = action == 'options' ? 'options.html' : 'faq.html';
+			var page = action == 'options' ? 'options.html' : 'faq.html#general';
 			Browser.gui.showPage(page);
 
 			closePopup();

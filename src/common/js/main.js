@@ -7,7 +7,7 @@ Browser.log('starting');
 
 Util.events.addListener('browser.install', function() {
 	// show FAQ on first install
-	Browser.gui.showPage('faq.html');
+	Browser.gui.showPage('faq.html#general');
 });
 
 Util.events.addListener('browser.update', function() {

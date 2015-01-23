@@ -42,7 +42,7 @@ PopupFennec.show = function() {
 
 				case 'options':
 				case 'faq':
-					var page = action == 'options' ? 'options.html' : 'faq.html';
+					var page = action == 'options' ? 'options.html' : 'faq.html#general';
 					Browser.gui.showPage(page);
 					break;
 
