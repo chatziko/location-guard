@@ -19,10 +19,10 @@ PopupFennec.show = function() {
 			"Privacy level: " + level;
 
 		var items = [
-			{ label: "What is this?", action: "faq" },
-			{ label: "Options", action: "options" },
-			{ label: "Hide icon", action: "hideIcon" },
 			{ label: (st.paused ? "Resume" : "Pause") + " Location Guard", action: "pause" },
+			{ label: "Hide icon", action: "hideIcon" },
+			{ label: "Options", action: "options" },
+			{ label: "What is Location Guard?", action: "faq" },
 		];
 		if(!st.paused)
 			items.unshift({ label: "Set level for " + domain, menu: true, action: "setLevel" });
