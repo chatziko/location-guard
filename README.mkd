@@ -13,18 +13,19 @@ To install Location Guard:
 
 ## Frequently Asked Questions
 
-### How does Location Guard work?
+### What is Location Guard?
 
-Websites can ask the browser for your location using javascript. When they do
+Websites can ask the browser for your location (via JavaScript). When they do
 so, the browser first asks your permission, and if you accept, it detects your
 location (typically by transmitting a list of available wifi access points to a
-geolocation provider such as Google Location Services) and gives it to the
-website.
+geolocation provider such as Google Location Services, or via GPS if available)
+and gives it to the website.
 
-Location Guard intercepts the javascript call. The permission dialog appears as
-usual, and you can still choose to deny. If you give permission, then Location
-Guard obtains your location and adds "random noise" to it, creating a fake
-location. Only the fake location is then given to the website.
+Location Guard is a browser extension that intercepts this procedure. The
+permission dialog appears as usual, and you can still choose to deny. If you
+give permission, then Location Guard obtains your location and adds "random
+noise" to it, creating a fake location. Only the fake location is then given to
+the website.
 
 To see Location Guard in action use [this demo](http://html5demos.com/geo), a
 [geolocalized weather forecast](http://forecast.io/), or go to [Google
@@ -96,13 +97,15 @@ limited to the city or postal/zip code level. Examples of such websites are
 [iplocation.net](http://www.iplocation.net/) and
 [tracemyip.org](http://www.tracemyip.org/).
 
-Location Guard does not protect your IP address; it hides the location revealed by the
-browser through the javascript API, which is usually _very accurate_.
+Location Guard does not protect your IP address; it hides the location revealed
+by the browser through the JavaScript API, which is usually _very accurate_.
+More information about how the browser obtains your location can be found
+[here](https://www.mozilla.org/en-US/firefox/geolocation/).
 
 To hide your IP address you need to use some anonymous communication system such
 as [Tor](https://www.torproject.org/). Note, however, that even if your IP
 address is hidden, your browser can still reveal your location through
-javascript, so you need to also use Location Guard.
+JavaScript, so you need to also use Location Guard.
 
 ### How Location Guard uses my information?
 
