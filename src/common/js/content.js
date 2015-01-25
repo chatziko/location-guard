@@ -101,7 +101,7 @@ var pageCode = function() {
 //
 if(document.documentElement.tagName.toLowerCase() == 'html') { // only for html
 	// we inject the CPC class, followed by pageCode, all protected by anonymous functions
-	var inject = "(function(){ "
+	var inject = "/* injected by Location Guard */ (function(){ "
 		+ CPC +
 		"(" + pageCode + ")();" +
 	"})()";
