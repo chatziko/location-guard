@@ -40,6 +40,7 @@ var Util = {
 
 				var info = {
 					hidden:  st.hideIcon || !state.apiCalled,
+					apiCalled: state.apiCalled,
 					private: !st.paused && level != 'real',
 					title:
 						st.paused		? "Location Guard is paused" :

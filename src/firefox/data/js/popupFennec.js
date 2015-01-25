@@ -20,7 +20,7 @@ PopupFennec.show = function() {
 
 		var items = [
 			{ label: (st.paused ? "Resume" : "Pause") + " Location Guard", action: "pause" },
-			{ label: "Hide icon", action: "hideIcon" },
+			{ label: (st.hideIcon ? "Show" : "Hide") + " icon", action: "toggleIcon" },
 			{ label: "Options", action: "options" },
 			{ label: "What is Location Guard?", action: "faq" },
 		];
@@ -46,13 +46,8 @@ PopupFennec.show = function() {
 					Browser.gui.showPage(page);
 					break;
 
-				case 'hideIcon':
-					Browser.storage.get(function(st) {
-						st.hideIcon = true;
-						Browser.storage.set(st);
-
-						Browser.gui.refreshAllIcons();
-					});
+				case 'toggleIcon':
+					PopupFennec.toggleIcon();
 					break;
 
 				case 'pause':
@@ -98,4 +93,26 @@ PopupFennec.setLevel = function(domain, level) {
 		});
 	});
 };
+
+PopupFennec.toggleIcon = function() {
+	var nw = Services.wm.getMostRecentWindow("navigator:browser").NativeWindow;
+
+	Browser.storage.get(function(st) {
+		st.hideIcon = !st.hideIcon;
+		Browser.storage.set(st);
+
+		Browser.gui.refreshAllIcons();
+
+		var msg = st.hideIcon
+			? "Icon replaced by menu item"
+			: "Icon restored";
+
+		nw.toast.show(msg, "long", {
+			button: {
+				label: "UNDO",
+				callback: PopupFennec.toggleIcon
+			}
+		});
+	});
+}
 

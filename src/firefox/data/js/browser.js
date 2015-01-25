@@ -353,35 +353,41 @@ Browser.gui._getActiveTab = function(){
 }
 
 Browser.gui._refresh_pageaction = function(info) {
-	// var nw = Browser.gui._fennec = Services.wm.getMostRecentWindow("navigator:browser").NativeWindow;
+	 var nw = Services.wm.getMostRecentWindow("navigator:browser").NativeWindow;
 
-	if(this._pageaction) {
+	if(this._pageaction)
 		PageActions.remove(this._pageaction);
-		// nw.menu.remove(this._menu);
-	}
+	if(this._menu)
+		 nw.menu.remove(this._menu);
 
-	if(info.hidden)
+	if(!info.apiCalled) {
+		// no API call, show nothing
 		return;
 
-	// load and cache icon in base64
-	var icon = 'images/' + (info.private ? "pin_50.png" : "pin_disabled_50.png");
-	if(!this._base64_cache)
-		this._base64_cache = {};
-	if(!this._base64_cache[icon])
-		this._base64_cache[icon] = require('sdk/base64').encode( load_binary(icon) );
+	} else if(info.hidden) {
+		// if the API is called by the icon is hidden, add menu
+		//
+		this._menu = nw.menu.add({
+			name: "Location Guard",
+			callback: PopupFennec.show
+		});
 
-	this._pageaction = PageActions.add({
-		icon: "data:image/png;base64," + this._base64_cache[icon],
-		title: "Location Guard",
-		clickCallback: PopupFennec.show
-    });
+	} else {
+		// load and cache icon in base64
+		var icon = 'images/' + (info.private ? "pin_50.png" : "pin_disabled_50.png");
+		if(!this._base64_cache)
+			this._base64_cache = {};
+		if(!this._base64_cache[icon])
+			this._base64_cache[icon] = require('sdk/base64').encode( load_binary(icon) );
+
+		this._pageaction = PageActions.add({
+			icon: "data:image/png;base64," + this._base64_cache[icon],
+			title: "Location Guard",
+			clickCallback: PopupFennec.show
+		});
+	}
 
 	/*
-	this._menu = nw.menu.add({
-		name: "Location Guard",
-		callback: PopupFennec.show
-	});
-
 	nw.toast.show("Location Guard is enabled", "long", {
 		button: {
 			label: "SHOW",
