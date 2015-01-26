@@ -83,6 +83,8 @@ function saveLevel() {
 		var ct = sliderCacheTime.value;
 		var cacheTime = ct <= 59 ? ct : 60 * (ct-59);
 
+		updateRadius(radius, true);
+
 		// delete cache for that level if radius changes
 		if(st.levels[activeLevel].radius != radius)
 			delete st.cachedPos[activeLevel];
@@ -255,7 +257,7 @@ function showLevelInfo() {
 		sliderRadius.set(radius);
 		sliderCacheTime.set(ct);
 
-		updateRadius(radius);
+		updateRadius(radius, true);
 		updateCache(ct);
 	});
 }
@@ -294,7 +296,7 @@ function showPopup(map) {
 	$(".leaflet-popup-tip-container").css({ visibility: (smallSize ? "hidden" : "visible") });
 }
 
-function updateRadius(radius) {
+function updateRadius(radius, fit) {
 	// update radius text and map
 	var acc = Math.round((new PlannarLaplace).alphaDeltaAccuracy(epsilon/radius, .95));
 
@@ -306,7 +308,8 @@ function updateRadius(radius) {
 	var first_view = !inited.radius;
 	inited.radius = true;
 
-	levelMap.fitBounds(levelMap.accuracy.getBounds(), { animate: !first_view });
+	if(fit)
+		levelMap.fitBounds(levelMap.accuracy.getBounds(), { animate: !first_view });
 
 	if(first_view)
 		showPopup(levelMap);
@@ -360,7 +363,7 @@ function initPages() {
 				step: 20,
 				slide: function(value) {
 					levelMap.closePopup();
-					updateRadius(value);
+					updateRadius(value, false);
 				},
 				change: saveLevel,
 			});
