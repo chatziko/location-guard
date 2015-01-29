@@ -97,7 +97,7 @@ Browser._main_script = function() {
 	// options page: insert only messaging code
 	//
 	require("sdk/page-mod").PageMod({
-		include: [data.url("options.html*")],
+		include: [data.url("*")],
 		contentScriptWhen: 'start', // sets up comm. before running the page scripts
 		contentScriptFile: [messageContentScriptFile],
 		contentScriptOptions: {

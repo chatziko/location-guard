@@ -93,6 +93,17 @@
 /* make icon transparent without using ui-btn */
 .icon-trans::after { background-color: transparent; }
 
+/* avoid the anoying focus/highlight effects in the panel's links */
+#left-panel .ui-btn-active {
+	background-color: #f6f6f6;
+	color: inherit;
+	text-shadow: inherit;
+	border-color: #ddd;
+}
+#left-panel .ui-btn:focus {
+	box-shadow: none !important;
+	-webkit-box-shadow: none !important;
+}
 
 /* slider styling */
 .slider {
@@ -121,4 +132,120 @@
 	border-width: 1px;
 	border-style: solid;
 	box-shadow: 0 1px 3px rgba(0,0,0,.15);
+}
+
+
+/****************************** demo page ************************************/
+
+/* big locate button */
+#demoMap .leaflet-control-locate, #demoMap .leaflet-control-locate a {
+	width: 3.5em;
+	height: 3.5em;
+}
+
+.introjs-tooltip {
+	padding: 1em;
+	font-size: 1.1em;
+	width: 22em;
+	max-width: none;
+	min-width: 0;
+}
+
+.introjs-button {
+	font-size: .9em;
+	padding: 0.3em 0.9em;
+}
+
+.introjs-tooltipReferenceLayer {
+	z-index: 1000;		/* behind jqm's panel */
+}
+.introjs-overlay {
+	z-index: 999;		/* behind jqm's panel */
+}
+
+/* the full page overlay as well as the focused element overlay should not prevent clicks */
+.introjs-overlay, .introjs-tooltipReferenceLayer {
+	pointer-events: none;
+}
+.introjs-tooltip {
+	pointer-events: auto;	/* the tooltip itself should be clickable */
+}
+
+/* empty placeholders just for the effect of steps 3,4 */
+.placeholder-step1 {
+	position: absolute;
+	left: 50%;
+	top: 50%;
+	width: 0;
+	height: 0;
+}
+.placeholder-step3 {
+	position: absolute;
+	left: 0;
+	right: 0;
+	top: 0;
+	height: 5px;
+	pointer-events: none;
+}
+.placeholder-step4 {
+	position: absolute;
+	left: 50%;
+	bottom: 20px;
+	width: 0;
+	height: 0;
+}
+
+/* tooltip placement, relative to the placeholders */
+.tooltip-step2 {
+	left: 0 !important;
+}
+.tooltip-step2 span {
+	border: 0;
+	width: 8px;
+	cursor: auto;
+	margin-top: -3px;
+}
+.tooltip-step3 {
+	left: auto !important;
+	right: 15px !important;
+}
+/* on firefox and under small screen, lower the tooltip, so that it appears below the permission dialog */
+@media (max-width: 50em) {
+@-moz-document url-prefix() {		/* hack to select only firefox */
+	.tooltip-step3 {
+		top: 175px;
+		bottom: auto !important;
+	}
+}}
+.tooltip-step4 {
+	bottom: 0 !important;
+}
+
+.tooltip-step1 .introjs-skipbutton,
+.tooltip-step2 .introjs-skipbutton,
+.tooltip-step3 .introjs-skipbutton {
+	visibility: hidden;
+}
+.tooltip-step4 .introjs-nextbutton {
+	display: none;
+}
+.tooltip-step4 .introjs-skipbutton {
+	float: right;
+	border-radius: 0 .2em .2em 0;
+	color: #333;
+}
+
+.highlight-step4 {
+	visibility: hidden !important;
+}
+
+.unclickable {
+	pointer-events: none;
+}
+
+/* small screens are usually mobile phones, disable animation to make it faster */
+@media (max-width: 50em) {
+	.introjs-helperLayer {
+		transition: 0s;
+	}
 }
