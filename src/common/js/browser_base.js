@@ -47,6 +47,8 @@ var Browser = {
 		//   args:     array of arguments to pass
 		//   handler:  function(res), will be called when the result is received
 		//
+		// If the call cannot be made to the specific tabId, handler will be called with no arguments.
+		//
 		call: function(tabId, name, args, handler) {}
 	},
 
@@ -124,7 +126,10 @@ var Browser = {
 	gui: {
 		// Browser.gui.refreshIcon(tabId)
 		//
-		// Refreshes the icon of the tab with the given 'tabId', or the current tab if tabId is null
+		// Refreshes the icon of the tab with the given 'tabId'
+		// If tabId is undefined/null then
+		//  - if called from a content script it refreshes the icon of the content script's tab
+		//  - outside the content script it raises error
 		// getIconInfo should be called to get the icon's info
 		//
 		refreshIcon: function(tabId) {},
@@ -136,12 +141,12 @@ var Browser = {
 		//
 		refreshAllIcons: function() {},
 
-		// Browser.gui.showOptions(anchor)
+		// Browser.gui.showPage(name)
 		//
-		// Shows the options page (by opening a new tab, or focusing an old tab if it's already open).
-		// An 'anchor' (eg. '#faq' can be optionally given)
+		// Shows an internal html page by opening a new tab, or focusing an old tab if it's already open
+		// (at most one internal page should be open)
 		//
-		showOptions: function(anchor) {},
+		showPage: function(name) {},
 
 		// Browser.gui.getActiveCallUrl(handler)
 		//

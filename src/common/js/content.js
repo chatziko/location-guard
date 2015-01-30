@@ -1,9 +1,20 @@
-// CPC provides rpc functionality through window.postMessage. We use it in 2 ways:
+//
+// content.js
+//
+// This script runs as a _content script_ (in a separate js environment) on all pages.
+//
+// HOWEVER:
+// Chrome does not allow content scripts in internal pages, so in the _demo page_ we just
+// include content.js as a normal <script>. This mostly works (we don't need the
+// separate js environment anyway), apart from a few things marked as DEMO below.
+
+
+// PostRPC provides RPC functionality through window.postMessage. We use it in 2 ways:
 //
 // 1. For communication between the content script and the code injected in the
 //    page (they both share the same window object).
 //    NOTE: this communication is not secure and could be intercepted by the page.
-//          so only a noisy location should be transmitted over CPC
+//          so only a noisy location should be transmitted over PostRPC
 //
 // 2. For communication between the content script of an iframe and the content
 //    script of the top-most frame (through window.top)
@@ -16,7 +27,7 @@
 // Thankfully, window.top.postMessage (used for iframe -> top frame communication)
 // works in all FF versions.
 //
-function CPC(targetWin) {
+function PostRPC(targetWin) {
 	this._calls = {};
 	this._methods = {};
 
@@ -35,48 +46,52 @@ function CPC(targetWin) {
 	};
 
 	if(targetWin) return;		// we can only receive messages in our own window
-	var cpc = this;
+	var _this = this;
 	window.addEventListener("message", function(event) {
 		var data = event.data && event.data.__lg;		// everything is inside __lg, to minimize conflicts with messages sent by the page
 		if(!data) return;
 
 		if(data.method) {
 			/* message call */
-			if(data.callId in cpc._calls) return;					// we made this call, the other side should reply
-			if(!cpc._methods[data.method]) return;					// not registered
+			if(data.callId in _this._calls) return;					// we made this call, the other side should reply
+			if(!_this._methods[data.method]) return;					// not registered
 
 			var dataArgs = Array.prototype.slice.call(data.args);	// cannot modify data.args in Firefox 32, clone as workaround
 			dataArgs.push(function() {								// pass returnHandler, used to send back the result
 				var args = Array.prototype.slice.call(arguments);	// arguments in real array
 				document.defaultView.postMessage({ __lg: { callId: data.callId, value: args } }, "*");
 			});
-			cpc._methods[data.method].apply(null, dataArgs);
+			_this._methods[data.method].apply(null, dataArgs);
 
 		} else {
 			/* return value */
-			var c = cpc._calls[data.callId];
-			delete cpc._calls[data.callId];
+			var c = _this._calls[data.callId];
+			delete _this._calls[data.callId];
 			if(!c) return;											// return value for the other side, or no return handler
 			c.apply(null, data.value);
 		}
 	}, false);
 };
 
-
 // this will be injected to the page
 //
-var pageCode = function() {
+function injectedCode() {
 	if(!navigator.geolocation) return;		/* no geolocation API */
 
-	var cpc = new CPC();
+	var prpc;
 
 	// we replace geolocation methods with our own
 	// the real methods will be called by the content script (not by the page)
 	// so we dont need to keep them at all.
 
 	navigator.geolocation.getCurrentPosition = function(cb1, cb2, options) {
+		// create a PostRPC object only when getCurrentPosition is called. This
+		// avoids having our own postMessage handler on every page
+		if(!prpc)
+			prpc = new PostRPC();
+
 		// call getNoisyPosition on the content-script
-		cpc.call('getNoisyPosition', [options], function(success, res) {
+		prpc.call('getNoisyPosition', [options], function(success, res) {
 			// call cb1 on success, cb2 on failure
 			var f = success ? cb1 : cb2;
 			if(f) f(res);
@@ -93,46 +108,57 @@ var pageCode = function() {
 	navigator.geolocation.clearWatch = function () {
 		// nothing to do
 	};
-};
+}
 
 // the remaining runs in the content script
 //
-// inject the code in the page
-//
-if(document.documentElement.tagName.toLowerCase() == 'html') { // only for html
-	// we inject the CPC class, followed by pageCode, all protected by anonymous functions
-	var inject = "(function(){ "
-		+ CPC +
-		"(" + pageCode + ")();" +
+// DEMO: save the getCurrentPosition function, cause in the demo page it gets replaced (no separate js environment)
+var getCurrentPosition = navigator.geolocation.getCurrentPosition;
+
+var inDemo;				// DEMO: this is set in demo.js
+if(inDemo) {
+	// DEMO: we are inside the page, just run injectedCode()
+	injectedCode();
+
+} else if(document.documentElement.tagName.toLowerCase() == 'html') { // only for html
+	// we inject PostRPC/injectedCode, and call injectedCode, all protected by an anonymous function
+	//
+	var inject = "/* injected by Location Guard */\n(function(){ "
+		+ PostRPC + injectedCode +
+		"injectedCode();" +
 	"})()";
 
+	// Note: the code _must_ be inserted _inline_, i.e. <script>...code...</script>
+	// instead of <script src="...">, otherwise it might not run immediately
+	//
 	var script = document.createElement('script');
 	script.appendChild(document.createTextNode(inject));
 
 	// FF: there is another variables in the scope named parent, this causes a very hard to catch bug
-	var parent_ = document.head || document.body || document.documentElement;
-	var firstChild = (parent_.childNodes && (parent_.childNodes.length > 0)) ? parent_.childNodes[0] : null;
+	var _parent = document.head || document.body || document.documentElement;
+	var firstChild = (_parent.childNodes && (_parent.childNodes.length > 0)) ? _parent.childNodes[0] : null;
 	if(firstChild)
-		parent_.insertBefore(script, firstChild);
+		_parent.insertBefore(script, firstChild);
 	else
-		parent_.appendChild(script);
+		_parent.appendChild(script);
 }
 
 var inFrame = (window != window.top);	// are we in a frame?
 var apiCalled = false;					// true means that an API call has already happened (here or in a nested frame), so we need to show the icon
-var callUrl = window.location.href;		// the url from which the last call was made, it could be us or a nested frame
+var myUrl = inDemo ? 'http://demo-page/' : window.location.href;	// DEMO: user-friendly url
+var callUrl = myUrl;					// the url from which the last call was made, it could be us or a nested frame
 
 // methods called by the page
 //
-var cpc = new CPC();
-cpc.register('getNoisyPosition', function(options, replyHandler) {
+var rpc = new PostRPC();
+rpc.register('getNoisyPosition', function(options, replyHandler) {
 	if(inFrame) {
 		// we're in a frame, we just notify the top window
-		new CPC(window.top).call('apiCalledInFrame', [window.location.href]);
+		new PostRPC(window.top).call('apiCalledInFrame', [myUrl]);
 	} else {
 		// refresh icon before fetching the location
 		apiCalled = true;
-		callUrl = window.location.href;
+		callUrl = myUrl;
 		Browser.gui.refreshIcon();
 	}
 
@@ -140,7 +166,7 @@ cpc.register('getNoisyPosition', function(options, replyHandler) {
 		// if level == 'fixed' and fixedPosNoAPI == true, then we return the
 		// fixed position without calling the geolocation API at all.
 		//
-		var domain = Util.extractDomain(window.location.href);
+		var domain = Util.extractDomain(myUrl);
 		var level = st.domainLevel[domain] || st.defaultLevel;
 
 		if(level == 'fixed' && st.fixedPosNoAPI) {
@@ -164,7 +190,7 @@ cpc.register('getNoisyPosition', function(options, replyHandler) {
 		// we call getCurrentPosition here in the content script, instead of
 		// inside the page, because the content-script/page communication is not secure
 		//
-		navigator.geolocation.getCurrentPosition(
+		getCurrentPosition.apply(navigator.geolocation, [
 			function(position) {
 				// clone, modifying/sending the native object returns error
 				//FF: position is XRayWrapper and Util.clone fails
@@ -189,7 +215,7 @@ cpc.register('getNoisyPosition', function(options, replyHandler) {
 				replyHandler(false, Util.clone(error));		// clone, sending the native object returns error
 			},
 			options
-		);
+		]);
 	});
 });
 
@@ -197,7 +223,7 @@ cpc.register('getNoisyPosition', function(options, replyHandler) {
 //
 function addNoise(position, handler) {
 	Browser.storage.get(function(st) {
-		var domain = Util.extractDomain(window.location.href);
+		var domain = Util.extractDomain(myUrl);
 		var level = st.domainLevel[domain] || st.defaultLevel;
 
 		if(st.paused || level == 'real') {
@@ -261,7 +287,7 @@ if(!inFrame) {
 		});
 	});
 
-	cpc.register('apiCalledInFrame', function(url) {
+	rpc.register('apiCalledInFrame', function(url) {
 		apiCalled = true;
 		callUrl = url;
 		Browser.gui.refreshIcon();

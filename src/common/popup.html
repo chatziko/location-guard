@@ -1,27 +1,76 @@
+<!DOCTYPE html>
 <html>
 <head>
 	<title>Location Guard</title>
-	<style>
-	body {
-		background-color: #FDFDF5;
-		font-size: 11px;
-		font-family: verdana;
-		margin: 3px;
-		white-space: nowrap;	/* no wrap, widht is computed automatically */
-	}
-	#title {
-		padding: 7px;
-		font-size: 12px;
-		font-weight: bold;
-		border-radius: 4px;
-		margin-bottom: 4px;
-	}
-	#container { position: absolute }
-	</style>
+	<meta charset="utf-8">
 
+	<link rel="stylesheet" href="external/jquery/jquery.mobile-1.4.5.min.css"/>
 	<script src="external/jquery/jquery.min.js"></script>
-	<script src="external/jquery/jquery-ui.min.js"></script>
-	<link rel="stylesheet" href="external/jquery/jquery-ui.min.css">
+	<script src="external/jquery/jquery.mobile-1.4.5.min.js"></script>
+
+	<style>
+	/*
+	the best way to autoresize the popup is to let #container expand to fit its contents, then set the html/body's
+	width/height to those of #container using js. We initially set html/body's width/height to 0 to avoid resizes in chrome.
+	We also need to override width/min-height from jqm's CCS.
+	*/
+	html, body {
+		width: 0px;
+		height: 0px;
+		overflow: hidden;		/* avoid momentary display of scrollbars */
+	}
+	#container {
+		width: auto;
+		min-height: 0;
+
+		line-height: 1;
+	}
+
+	.ui-btn {
+		padding-top: 0.65em;
+		padding-bottom: 0.65em;
+	}
+	.ui-header {
+		font-size: 0.9em;
+	}
+	.ui-listview a {
+		font-size: 0.88em;
+		font-weight: normal;
+	}
+	.ui-controlgroup {
+		margin: 0;
+		border-radius: 0;
+	}
+	#levels {
+		border: 0;
+	}
+	#levels label {
+		font-weight: normal;
+		font-size: 0.88em;
+		padding: 0.55em 1em 0.55em 2.5em;
+	}
+
+	.ui-icon-pin:after {
+		background-image: url("images/pin_16.png");
+	}
+	.ui-icon-pause:after {
+		background-image: url("images/pause.png");
+	}
+	.ui-icon-play:after {
+		background-image: url("images/play.png");
+	}
+
+	/* this prevents the title from being cut */
+	.ui-header .ui-title {
+		margin-left: 0em;
+		margin-right: 0em;
+	}
+
+	/* prevents loading of ajax-loader.gif */
+	.ui-icon-loading {
+		background:none !important;
+	}
+	</style>
 
 	<script src="js/util.js"></script>
 	<script src="js/browser_base.js"></script>
@@ -29,27 +78,26 @@
 	<script src="js/popup.js"></script>
 </head>
 <body>
-	<!-- the best way to auto resize the popup is to use a container div with position:absolte, and then set the body's width/height to those of the container using js -->
-	<div id="container">
-	<div id="title" class="ui-state-hover">
-		Using obfuscated location
-	</div>
-
-	<ul id="menu">
-		<li id="setLevel"><a href="#">Set level for this domain</a>
-			<ul>
-				<li id="fixed"><a href="#">Use fixed location</a></li>
-				<li id="high"><a href="#">High</a></li>
-				<li id="medium"><a href="#">Medium</a></li>
-				<li id="low"><a href="#">Low</a></li>
-				<li id="real"><a href="#">Use real location</a></li>
-			</ul>
-		</li>
-		<li id="faq"><a href="#">What is this?</a></li>
-		<li id="options"><a href="#">Options</a></li>
-		<li id="hideIcon"><a href="#">Hide icon</a></li>
-		<li id="pause"><a href="#">Pause Location Guard</a></li>
-	</ul>
-	</div>
+	<div data-role="page" id="container" data-title="Location Guard">
+		<div data-role="header">
+			<h1 id="title"></h1>
+		</div>
+		<div data-role="popup" id="levels">
+			<div data-role="controlgroup">
+				<input name="level" id="fixed" type="radio"><label for="fixed">Use fixed location</label>
+				<input name="level" id="high" type="radio"><label for="high">High</label>
+				<input name="level" id="medium" type="radio"><label for="medium">Medium</label>
+				<input name="level" id="low" type="radio"><label for="low">Low</label>
+				<input name="level" id="real" type="radio"><label for="real">Use real location</label>
+			</div>
+		</div>
+		<ul data-role="listview" class="ui-alt-icon ui-nodisc-icon">
+			<li data-icon="carat-r"><a href="#" id="setLevel"></a></li>
+			<li data-icon="pause"><a href="#" id="pause"></a></li>
+			<li data-icon="pin"><a href="#" id="hideIcon">Hide icon</a></li>
+			<li data-icon="gear"><a href="#" id="options">Options</a></li>
+			<li data-icon="info"><a href="#" id="faq">What is Location Guard?</a></li>
+		</ul>
+	</div><!-- /page -->
 </body>
 </html>

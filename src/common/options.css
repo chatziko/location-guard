@@ -1,0 +1,251 @@
+/* make the content take the full height of the page (minus the header) */
+.page {
+	/* NOTE: jqm will set full height dynamically, but with height: 100% it will be faster on fennec, without a visible resize */
+	height: 100%;
+}
+.ui-content {
+	position: absolute;
+	top: 44px;
+	bottom: 0;
+	left: 0;
+	right: 0;
+	display: flex;
+	flex-direction: column;
+}
+
+/* ensure that #faq and its content are big enough for the contents. So scrolling happens for the
+ * whole page, not just for the div, which is _much_ faster on mobile! */
+#faq {
+	overflow: visible;
+}
+#faq .ui-content {
+	bottom: auto;
+}
+
+/* on large screens, permanently show the panel and hide the menu icon */
+@media (min-width: 50em) {
+	#left-panel {
+		visibility: visible;
+		position: relative;
+		width: 17em;
+		box-shadow:2px 0 2px rgba(0,0,0,.15);
+		transition: none !important;
+		transform: none !important;
+	}
+	.page {
+		position: absolute;
+		left: 17em !important;
+		right: 0 !important;
+		width: auto !important;
+		max-width: 55em;
+		box-shadow:2px 0 2px rgba(0,0,0,.15);
+	}
+	.ui-header > a {
+		visibility: hidden;
+	}
+}
+
+.flex {
+	flex: 1;
+}
+
+.no-space {
+	padding: 0;
+	margin: 0 !important;
+}
+.no-vert-space {
+	padding-top: 0;
+	padding-bottom: 0;
+	margin-top: 0;
+	margin-bottom: 0;
+}
+
+.small-font {
+	font-weight: normal;
+	font-size: small;
+}
+
+.map-popup {
+	font-size: 1.2em;
+}
+.popup-location-btn {
+	width: 1.2em;
+	height: 1.2em;
+	margin: 0 0.3em 0 0.3em;
+	border-radius: 4px;
+}
+
+.menu-title {
+	background-color: #4a4a4a !important;
+	font-weight: bold;
+}
+
+/* this prevents the title from being cut */
+.ui-header .ui-title {
+	margin-left: 1em; margin-right: 1em;
+}
+
+/* prevents loading of ajax-loader.gif */
+.ui-icon-loading {
+	background:none !important;
+}
+
+/* make icon transparent without using ui-btn */
+.icon-trans::after { background-color: transparent; }
+
+/* avoid the anoying focus/highlight effects in the panel's links */
+#left-panel .ui-btn-active {
+	background-color: #f6f6f6;
+	color: inherit;
+	text-shadow: inherit;
+	border-color: #ddd;
+}
+#left-panel .ui-btn:focus {
+	box-shadow: none !important;
+	-webkit-box-shadow: none !important;
+}
+
+/* slider styling */
+.slider {
+	margin: 0.8em 0 0.8em 0 !important;
+	height: 10px !important;
+	overflow: visible !important;
+	background-color: #e9e9e9;
+	border-color: #ddd;
+	border-radius: .3125em !important;
+	border-width: 1px;
+	border-style: solid;
+	box-shadow: inset 0 1px 3px rgba(0,0,0,.2);
+}
+.follow_bar {
+	display: none;
+}
+.slider_knob {
+	width: 24px !important;
+	height: 24px !important;
+	background-color: #f6f6f6 !important;
+	display: block !important;
+	top: 50%;
+	margin: -13px 0 0 0;
+	border-color: #ddd;
+	border-radius: inherit;
+	border-width: 1px;
+	border-style: solid;
+	box-shadow: 0 1px 3px rgba(0,0,0,.15);
+}
+
+
+/****************************** demo page ************************************/
+
+/* big locate button */
+#demoMap .leaflet-control-locate, #demoMap .leaflet-control-locate a {
+	width: 3.5em;
+	height: 3.5em;
+}
+
+.introjs-tooltip {
+	padding: 1em;
+	font-size: 1.1em;
+	width: 22em;
+	max-width: none;
+	min-width: 0;
+}
+
+.introjs-button {
+	font-size: .9em;
+	padding: 0.3em 0.9em;
+}
+
+.introjs-tooltipReferenceLayer {
+	z-index: 1000;		/* behind jqm's panel */
+}
+.introjs-overlay {
+	z-index: 999;		/* behind jqm's panel */
+}
+
+/* the full page overlay as well as the focused element overlay should not prevent clicks */
+.introjs-overlay, .introjs-tooltipReferenceLayer {
+	pointer-events: none;
+}
+.introjs-tooltip {
+	pointer-events: auto;	/* the tooltip itself should be clickable */
+}
+
+/* empty placeholders just for the effect of steps 3,4 */
+.placeholder-step1 {
+	position: absolute;
+	left: 50%;
+	top: 50%;
+	width: 0;
+	height: 0;
+}
+.placeholder-step3 {
+	position: absolute;
+	left: 0;
+	right: 0;
+	top: 0;
+	height: 5px;
+	pointer-events: none;
+}
+.placeholder-step4 {
+	position: absolute;
+	left: 50%;
+	bottom: 20px;
+	width: 0;
+	height: 0;
+}
+
+/* tooltip placement, relative to the placeholders */
+.tooltip-step2 {
+	left: 0 !important;
+}
+.tooltip-step2 span {
+	border: 0;
+	width: 8px;
+	cursor: auto;
+	margin-top: -3px;
+}
+.tooltip-step3 {
+	left: auto !important;
+	right: 15px !important;
+}
+/* on firefox and under small screen, lower the tooltip, so that it appears below the permission dialog */
+@media (max-width: 50em) {
+@-moz-document url-prefix() {		/* hack to select only firefox */
+	.tooltip-step3 {
+		top: 175px;
+		bottom: auto !important;
+	}
+}}
+.tooltip-step4 {
+	bottom: 0 !important;
+}
+
+.tooltip-step1 .introjs-skipbutton,
+.tooltip-step2 .introjs-skipbutton,
+.tooltip-step3 .introjs-skipbutton {
+	visibility: hidden;
+}
+.tooltip-step4 .introjs-nextbutton {
+	display: none;
+}
+.tooltip-step4 .introjs-skipbutton {
+	float: right;
+	border-radius: 0 .2em .2em 0;
+	color: #333;
+}
+
+.highlight-step4 {
+	visibility: hidden !important;
+}
+
+.unclickable {
+	pointer-events: none;
+}
+
+/* small screens are usually mobile phones, disable animation to make it faster */
+@media (max-width: 50em) {
+	.introjs-helperLayer {
+		transition: 0s;
+	}
+}

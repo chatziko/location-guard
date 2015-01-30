@@ -1,30 +1,39 @@
 # Location Guard
 
-**Location Guard** is a [Google Chrome/Chromium extension](https://chrome.google.com/webstore/detail/location-guard/cfohepagpmnodfdmjliccbbigdkfcgia)
-and a [Mozilla Firefox add-on](https://addons.mozilla.org/en-US/firefox/addon/location-guard/) that
-allows to protect your location while using location-aware websites, by adding controlled noise to it.
+**Location Guard** is a browser extension that allows to protect your location
+while using location-aware websites, by adding controlled noise to it.
+It supports the followng browsers:
+
+* Desktop
+  * Google Chrome / Chromium
+  * Mozilla Firefox
+  * Opera
+* Mobile
+  * Mozilla Firefox for Android
 
 ## Installation
 
 To install Location Guard:
 
-* Install it from the [Chrome Web Store](https://chrome.google.com/webstore/detail/location-guard/cfohepagpmnodfdmjliccbbigdkfcgia)
-* Install it from the [Firefox Add-ons page](https://addons.mozilla.org/en-US/firefox/addon/location-guard/)
+* Chrome / Chromium: install it [from here](https://chrome.google.com/webstore/detail/location-guard/cfohepagpmnodfdmjliccbbigdkfcgia)
+* Firefox / Firefox for Android: install it [from here](https://addons.mozilla.org/en-US/firefox/addon/location-guard/)
+* Opera: install it [from here](https://addons.opera.com/en/extensions/details/location-guard/)
 
 ## Frequently Asked Questions
 
-### How does Location Guard work?
+### What is Location Guard?
 
-Websites can ask the browser for your location using javascript. When they do
+Websites can ask the browser for your location (via JavaScript). When they do
 so, the browser first asks your permission, and if you accept, it detects your
 location (typically by transmitting a list of available wifi access points to a
-geolocation provider such as Google Location Services) and gives it to the
-website.
+geolocation provider such as Google Location Services, or via GPS if available)
+and gives it to the website.
 
-Location Guard intercepts the javascript call. The permission dialog appears as
-usual, and you can still choose to deny. If you give permission, then Location
-Guard obtains your location and adds "random noise" to it, creating a fake
-location. Only the fake location is then given to the website.
+Location Guard is a browser extension that intercepts this procedure. The
+permission dialog appears as usual, and you can still choose to deny. If you
+give permission, then Location Guard obtains your location and adds "random
+noise" to it, creating a fake location. Only the fake location is then given to
+the website.
 
 To see Location Guard in action use [this demo](http://html5demos.com/geo), a
 [geolocalized weather forecast](http://forecast.io/), or go to [Google
@@ -96,13 +105,15 @@ limited to the city or postal/zip code level. Examples of such websites are
 [iplocation.net](http://www.iplocation.net/) and
 [tracemyip.org](http://www.tracemyip.org/).
 
-Location Guard does not protect your IP address; it hides the location revealed by the
-browser through the javascript API, which is usually _very accurate_.
+Location Guard does not protect your IP address; it hides the location revealed
+by the browser through the JavaScript API, which is usually _very accurate_.
+More information about how the browser obtains your location can be found
+[here](https://www.mozilla.org/en-US/firefox/geolocation/).
 
 To hide your IP address you need to use some anonymous communication system such
 as [Tor](https://www.torproject.org/). Note, however, that even if your IP
 address is hidden, your browser can still reveal your location through
-javascript, so you need to also use Location Guard.
+JavaScript, so you need to also use Location Guard.
 
 ### How Location Guard uses my information?
 
