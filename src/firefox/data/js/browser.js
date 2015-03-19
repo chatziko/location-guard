@@ -57,13 +57,16 @@ Browser._main_script = function() {
 
 		array.add(Browser.workers, worker);
 
-		// pagehide: called when user moves away from the page (closes tab or moves back/forward). the worker is not
-		// valid anymore so we need to remove it. We also call refreshIcon to remove the icon.
+		// pagehide: called when user moves away from the page (closes tab or moves back/forward).
+		// the worker is not valid anymore so we need to remove it.
+		// in case of back/forward, the tab is still active and the icon needs to be removed, so we call refreshIcon.
+		// in case of tab close, the "activate" even of the new tab will be called anyway, so the icon will be refreshed there.
 		//
 		worker.on('pagehide', function() {
 			array.remove(Browser.workers, this);
 
-			Browser.gui.refreshIcon(this.tab.id);
+			if(this.tab)								// moving back/forward, the tab is still active so the icon must be refreshed
+				Browser.gui.refreshIcon(this.tab.id);
 		});
 
 		// pageshow: called when page is shown, either the first time, or when navigating history (back/forward button)
