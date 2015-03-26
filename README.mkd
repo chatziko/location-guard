@@ -135,7 +135,7 @@ real one. The cache period can be configured from the extension's options
 ### What is the technology behind Location Guard?
 
 Location Guard is a product of research carried out at the Ecole Polytechnique of Paris,
-CNRS and INRIA. It is based on work by [Miguel Andrés](http://www.lix.polytechnique.fr/~mandres),
+CNRS and Inria. It is based on work by [Miguel Andrés](http://www.lix.polytechnique.fr/~mandres),
 [Nicolás Bordenabe](http://www.lix.polytechnique.fr/~nbordenabe/),
 [Kostas Chatzikokolakis](http://www.lix.polytechnique.fr/~kostas/),
 [Catuscia Palamidessi](http://www.lix.polytechnique.fr/~catuscia/) and
