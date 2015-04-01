@@ -90,6 +90,7 @@ var Util = {
 function _PostRPC() {		// include all code here to inject easily
 
 	PostRPC = function(name, sendObj, receiveObj) {
+		this._id = Math.floor(Math.random()*1000000);
 		this._ns = '__PostRPC_' + name;
 		this._sendObj = sendObj;
 		this._calls = {};
@@ -114,12 +115,14 @@ function _PostRPC() {		// include all code here to inject easily
 		this._methods[name] = fun;
 	};
 	PostRPC.prototype.call = function(method, args, handler) {
-		var callId = Math.floor(Math.random()*1000000);
-		this._calls[callId] = handler;
-
+		var callId;
+		if(handler) {
+			callId = Math.floor(Math.random()*1000000);
+			this._calls[callId] = handler;
+		}
 		if(!args) args = [];
 
-		this._sendMessage({ method: method, args: args, callId: callId });
+		this._sendMessage({ method: method, args: args, callId: callId, from: this._id });
 	};
 
 	// private methods for sending/receiving messages
@@ -137,18 +140,27 @@ function _PostRPC() {		// include all code here to inject easily
 	PostRPC.prototype._receiveMessage = function(data) {
 		if(data.method) {
 			// message call
-			if(data.callId in this._calls) return;					// we made this call, the other side should reply
+			if(data.from == this._id) return;						// we made this call, the other side should reply
 			if(!this._methods[data.method]) {						// not registered
 				Browser.log('PostRPC: no handler for '+data.method);
 				return;
 			}
 
-			var _this = this;
+			// pass returnHandler, used to send back the result
+			var replyHandler;
+			if(data.callId) {
+				var _this = this;
+				replyHandler = function() {
+					var args = Array.prototype.slice.call(arguments);	// arguments in real array
+					_this._sendMessage({ callId: data.callId, value: args });
+				};
+			} else {
+				replyHandler = function() {};		// no result expected, use dummy handler
+			}
+
 			var dataArgs = Array.prototype.slice.call(data.args);	// cannot modify data.args in Firefox 32, clone as workaround
-			dataArgs.push(function() {								// pass returnHandler, used to send back the result
-				var args = Array.prototype.slice.call(arguments);	// arguments in real array
-				_this._sendMessage({ callId: data.callId, value: args });
-			});
+			dataArgs.push(replyHandler);
+
 			this._methods[data.method].apply(null, dataArgs);
 
 		} else {
