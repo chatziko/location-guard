@@ -10,6 +10,14 @@ Browser.init = function (script) {
 		Browser._main_script();
 		Browser.gui._init();
 		Browser._install_update();
+	} else {
+		// setup the internal RPC with the main script, on which the higher-level Browser.rpc is based
+		// If we run in a content script we use self.port
+		// If we run in a normal page we use window (messageProxy.js will then forward the messages)
+		//
+		var sendObj = self.port || window;
+		Browser._internal_rpc = new PostRPC('internal', sendObj, sendObj);
+		Browser._internal_rpc.register('internalCall', Browser.rpc._listener);
 	}
 };
 
@@ -40,19 +48,19 @@ Browser._main_script = function() {
 	//
 	var array = require('sdk/util/array');
 	var data = require("sdk/self").data;
-	const { createMessageChannel, messageContentScriptFile } = require('messaging');
 
 	Browser.workers = [];
 
 	// executed when a worker is created, each worker corresponds to a page
-	// we need to create communication channel, and to keep track of workers in Browser.workers to
+	// we need to setup internal RPC, and to keep track of workers in Browser.workers to
 	// allow for main -> page communication
 	//
 	function onWorkerAttach(worker) {
-		worker.channel = createMessageChannel(this.contentScriptOptions, worker.port);
-		worker.channel.onMessage.addListener(function(msg, sender, sendResponse) {
-			// sender is always null, we set it to worker.tab.id
-			return Browser.handleMessage(msg, worker.tab.id, sendResponse);
+		worker._internal_rpc = new PostRPC('internal', worker.port, worker.port);
+		worker._internal_rpc.register('internalCall', function(call, replyHandler) {
+			// add tabId and pass to Browser.rpc
+			call.tabId = worker.tab.id;
+			return Browser.rpc._listener(call, replyHandler);
 		});
 
 		array.add(Browser.workers, worker);
@@ -78,45 +86,29 @@ Browser._main_script = function() {
 		});
 	}
 
-	// all http[s] pages: insert content.js and messaging code
+	// all http[s] pages: insert content.js
 	//
 	require("sdk/page-mod").PageMod({
 		include: ['*'],
 		attachTo: ["top", "frame"],
 		contentScriptWhen: 'start', // TODO THIS IS TRICKY
-		contentScriptFile: [messageContentScriptFile,
-							data.url("js/util.js"),
+		contentScriptFile: [data.url("js/util.js"),
 							data.url("js/browser_base.js"),
 							data.url("js/browser.js"),
 							data.url("js/laplace.js"),
 							data.url("js/content.js")],
-		contentScriptOptions: {
-			channelName: 'whatever you want',
-			endAtPage: false		// false: communicate with the content script
-		},
 		onAttach: onWorkerAttach,
 	});
 
-	// options page: insert only messaging code
+	// our internal pages (options, demo, popup): insert only messageProxy for communication
 	//
 	require("sdk/page-mod").PageMod({
 		include: [data.url("*")],
 		contentScriptWhen: 'start', // sets up comm. before running the page scripts
-		contentScriptFile: [messageContentScriptFile],
-		contentScriptOptions: {
-			channelName: 'whatever you want',
-			endAtPage: true			// true: communicate with the options page (not its content script)
-		},
+		contentScriptFile: [data.url("js/messageProxy.js")],
 		onAttach: onWorkerAttach,
 	});
 }
-
-
-//// low level communication
-
-var id = function (msg,sender,sendResponse){sendResponse(msg)};
-Browser.messageHandlers = {};
-Browser.messageHandlers['id'] = id;
 
 Browser._find_worker = function(tabId) {
 	for (var i = 0; i < Browser.workers.length; i++)
@@ -125,70 +117,50 @@ Browser._find_worker = function(tabId) {
 	return null;
 }
 
-Browser.handleMessage = function(msg,sender,sendResponse) {
-	// Browser.log('handling: ', msg, sender, sendResponse);
-	return Browser.messageHandlers[msg.type].apply(null,[msg.message,sender,sendResponse]);
-}
-
-Browser.sendMessage = function (tabId, type, message, cb) {
-	if (Browser._script == 'main') {
-		var worker = Browser._find_worker(tabId);
-		if(worker) {
-			// Browser.log('-> ', worker.tab.url, message);
-			worker.channel.sendMessage({'type': type, 'message': message},cb);
-		} else {
-			// cannot connect, call cb with no arguments
-			if(cb) cb();
-		}
-	}
-	// content or popup
-	else {
-		// Browser.log(' -> main', message);
-		extension.sendMessage({'type': type, 'message': message},cb);
-	}
-};
 
 
 
 //////////////////// rpc ///////////////////////////
 //
-//
+Browser.rpc._methods = {};
+
 // handler is a   function(...args..., tabId, replyHandler)
 Browser.rpc.register = function(name, handler) {
-	// set onMessage listener if called for first time
-	if(!this._methods) {
-		this._methods = {};
-		Browser.messageHandlers['rpc'] = Browser.rpc._listener;
-
-		if(Browser._script != 'main')	// the main script sets the listener on the channels it creates
-			extension.onMessage.addListener(Browser.handleMessage);
-	}
 	this._methods[name] = handler;
 }
 
-// onMessage listener. Received messages are of the form
-// { method: ..., args: ... }
+// internal RPC listener. 'call' is of the form
+// { method: ..., args: ..., tabId: ... }
 //
-Browser.rpc._listener = function(message, tabId, replyHandler) {
-	//blog("RPC: got message", message, tabId, replyHandler);
-
-	var handler = Browser.rpc._methods[message.method];
+Browser.rpc._listener = function(call, replyHandler) {
+	var handler = Browser.rpc._methods[call.method];
 	if(!handler) {
-		Browser.log('No handler for '+message.method);
+		replyHandler();		// if the call cannot be made, call handler with no arguments
 		return;
 	}
 
 	// add tabId and replyHandler to the arguments
-	var args = message.args || [];
-	args.push(tabId, replyHandler);
+	var args = call.args || [];
+	args.push(call.tabId, replyHandler);
 
 	return handler.apply(null, args);
 };
 
 Browser.rpc.call = function(tabId, name, args, cb) {
-	var message = { method: name, args: args };
+	var call = { method: name, args: args };
 
-	Browser.sendMessage(tabId, 'rpc', message, cb)
+	if (Browser._script == 'main') {
+		var worker = Browser._find_worker(tabId);
+		if(worker) {
+			worker._internal_rpc.call('internalCall', [call], cb);
+		} else {
+			if(cb) cb();				// cannot connect, call cb with no arguments
+		}
+
+	} else {
+		// content or popup
+		Browser._internal_rpc.call('internalCall', [call], cb);
+	}
 }
 
 

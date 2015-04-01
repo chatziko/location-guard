@@ -7,9 +7,9 @@
 // Chrome does not allow content scripts in internal pages, so in the _demo page_ we just
 // include content.js as a normal <script>. This mostly works (we don't need the
 // separate js environment anyway), apart from a few things marked as DEMO below.
-
-
-// PostRPC provides RPC functionality through window.postMessage. We use it in 2 ways:
+//
+//
+// PostRPC is being used it in 2 ways:
 //
 // 1. For communication between the content script and the code injected in the
 //    page (they both share the same window object).
@@ -26,52 +26,7 @@
 //
 // Thankfully, window.top.postMessage (used for iframe -> top frame communication)
 // works in all FF versions.
-//
-function PostRPC(targetWin) {
-	this._calls = {};
-	this._methods = {};
 
-	this.register = function(name, fun) {
-		this._methods[name] = fun;
-	};
-	this.call = function(method, args, handler) {
-		var callId = Math.floor(Math.random()*1000000);
-		this._calls[callId] = handler;
-
-		if(!args) args = [];
-
-		// window.postMessage does not work in FF < 31, window.top.postMessage always works, see above
-		if(!targetWin) targetWin = document.defaultView;
-		targetWin.postMessage({ __lg: { method: method, args: args, callId: callId } }, "*");
-	};
-
-	if(targetWin) return;		// we can only receive messages in our own window
-	var _this = this;
-	window.addEventListener("message", function(event) {
-		var data = event.data && event.data.__lg;		// everything is inside __lg, to minimize conflicts with messages sent by the page
-		if(!data) return;
-
-		if(data.method) {
-			/* message call */
-			if(data.callId in _this._calls) return;					// we made this call, the other side should reply
-			if(!_this._methods[data.method]) return;					// not registered
-
-			var dataArgs = Array.prototype.slice.call(data.args);	// cannot modify data.args in Firefox 32, clone as workaround
-			dataArgs.push(function() {								// pass returnHandler, used to send back the result
-				var args = Array.prototype.slice.call(arguments);	// arguments in real array
-				document.defaultView.postMessage({ __lg: { callId: data.callId, value: args } }, "*");
-			});
-			_this._methods[data.method].apply(null, dataArgs);
-
-		} else {
-			/* return value */
-			var c = _this._calls[data.callId];
-			delete _this._calls[data.callId];
-			if(!c) return;											// return value for the other side, or no return handler
-			c.apply(null, data.value);
-		}
-	}, false);
-};
 
 // this will be injected to the page
 //
@@ -88,7 +43,7 @@ function injectedCode() {
 		// create a PostRPC object only when getCurrentPosition is called. This
 		// avoids having our own postMessage handler on every page
 		if(!prpc)
-			prpc = new PostRPC();
+			prpc = new PostRPC('page-content', document.defaultView, window);
 
 		// call getNoisyPosition on the content-script
 		prpc.call('getNoisyPosition', [options], function(success, res) {
@@ -124,8 +79,8 @@ if(inDemo) {
 	// we inject PostRPC/injectedCode, and call injectedCode, all protected by an anonymous function
 	//
 	var inject = "/* injected by Location Guard */\n(function(){ "
-		+ PostRPC + injectedCode +
-		"injectedCode();" +
+		+ _PostRPC + injectedCode +
+		"_PostRPC(); injectedCode();" +
 	"})()";
 
 	// Note: the code _must_ be inserted _inline_, i.e. <script>...code...</script>
@@ -150,11 +105,11 @@ var callUrl = myUrl;					// the url from which the last call was made, it could 
 
 // methods called by the page
 //
-var rpc = new PostRPC();
+var rpc = new PostRPC('page-content', document.defaultView, window);			// window.postMessage does not work in FF < 31, use document.defaultView.postMessage
 rpc.register('getNoisyPosition', function(options, replyHandler) {
 	if(inFrame) {
 		// we're in a frame, we just notify the top window
-		new PostRPC(window.top).call('apiCalledInFrame', [myUrl]);
+		new PostRPC('frames', window.top).call('apiCalledInFrame', [myUrl]);	// window.top.postMessage always works!
 	} else {
 		// refresh icon before fetching the location
 		apiCalled = true;
@@ -279,6 +234,7 @@ function addNoise(position, handler) {
 Browser.init('content');
 
 // only the top frame handles getState and apiCalledInFrame requests
+var frames_rpc;
 if(!inFrame) {
 	Browser.rpc.register('getState', function(tabId, replyHandler) {
 		replyHandler({
@@ -287,7 +243,8 @@ if(!inFrame) {
 		});
 	});
 
-	rpc.register('apiCalledInFrame', function(url) {
+	frames_rpc = new PostRPC("frames", window, window);
+	frames_rpc.register('apiCalledInFrame', function(url) {
 		apiCalled = true;
 		callUrl = url;
 		Browser.gui.refreshIcon();
