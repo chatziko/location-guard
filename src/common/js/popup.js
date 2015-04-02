@@ -14,7 +14,9 @@ var url;
 
 function closePopup() {
 	// delay closing to allow scripts to finish executing
-	setInterval(window.close, 50);
+	setTimeout(function() {
+		Browser.gui.resizePopup(null, null);
+	}, 50);
 }
 
 function doAction() {
@@ -103,11 +105,16 @@ function drawUI() {
 		// we're ready, init
 		$.mobile.initializePage();
 
-		// resize body to match #container
+		// resize body to match #container, and call Browser.gui.resizePopup
+		var width = $("#container").width();
+		var height = $("#container").height();
+
 		$("html, body").css({
-			width:  $("#container").width(),
-			height: $("#container").height(),
+			width:  width,
+			height: height,
 		});
+
+		Browser.gui.resizePopup(width, height);
 	});
 	});
 }

@@ -35,57 +35,18 @@ Browser._install_update = function(){
 }
 
 Browser._main_script = function() {
+	var data = require("sdk/self").data;
+
 	// refresh icon when a tab is activated
 	//
 	require('sdk/tabs').on('activate', function (tab) {
 		Browser.gui.refreshIcon(tab.id);
+		Browser.gui._hidePopup();			// firefox hides panel automatically on mouse click, but not on Ctrl-T tab change
 	});
-
-	// content script insertion
-	// we insert two scripts
-	// 1. our content.js and auxiliary .js files that do the main job
-	// 2. the messaging module's code, needed for communication with the content script (see https://github.com/Rob--W/browser-action-jplib/blob/master/docs/messaging.md)
-	//
-	var array = require('sdk/util/array');
-	var data = require("sdk/self").data;
 
 	Browser.workers = [];
 
-	// executed when a worker is created, each worker corresponds to a page
-	// we need to setup internal RPC, and to keep track of workers in Browser.workers to
-	// allow for main -> page communication
-	//
-	function onWorkerAttach(worker) {
-		worker._internal_rpc = new PostRPC('internal', worker.port, worker.port);
-		worker._internal_rpc.register('internalCall', function(call, replyHandler) {
-			// add tabId and pass to Browser.rpc
-			call.tabId = worker.tab.id;
-			return Browser.rpc._listener(call, replyHandler);
-		});
-
-		array.add(Browser.workers, worker);
-
-		// pagehide: called when user moves away from the page (closes tab or moves back/forward).
-		// the worker is not valid anymore so we need to remove it.
-		// in case of back/forward, the tab is still active and the icon needs to be removed, so we call refreshIcon.
-		// in case of tab close, the "activate" even of the new tab will be called anyway, so the icon will be refreshed there.
-		//
-		worker.on('pagehide', function() {
-			array.remove(Browser.workers, this);
-
-			if(this.tab)								// moving back/forward, the tab is still active so the icon must be refreshed
-				Browser.gui.refreshIcon(this.tab.id);
-		});
-
-		// pageshow: called when page is shown, either the first time, or when navigating history (back/forward button)
-		// When havigating history, an old (hidden) worker is reused instead of creating a new one. So we need to put it
-		// back to Browser.workers
-		//
-		worker.on('pageshow', function() {
-			array.add(Browser.workers, this);
-		});
-	}
-
+	// content script insertion
 	// all http[s] pages: insert content.js
 	//
 	require("sdk/page-mod").PageMod({
@@ -97,7 +58,7 @@ Browser._main_script = function() {
 							data.url("js/browser.js"),
 							data.url("js/laplace.js"),
 							data.url("js/content.js")],
-		onAttach: onWorkerAttach,
+		onAttach: Browser._onWorkerAttach,
 	});
 
 	// our internal pages (options, demo, popup): insert only messageProxy for communication
@@ -106,7 +67,48 @@ Browser._main_script = function() {
 		include: [data.url("*")],
 		contentScriptWhen: 'start', // sets up comm. before running the page scripts
 		contentScriptFile: [data.url("js/messageProxy.js")],
-		onAttach: onWorkerAttach,
+		onAttach: Browser._onWorkerAttach,
+	});
+}
+
+// executed when a worker is created, each worker corresponds to a page
+// we need to setup internal RPC, and to keep track of workers in Browser.workers to
+// allow for main -> page communication
+//
+Browser._onWorkerAttach = function(worker) {
+	var array = require('sdk/util/array');
+
+	worker._internal_rpc = new PostRPC('internal', worker.port, worker.port);
+	worker._internal_rpc.register('internalCall', function(call, replyHandler) {
+		// add tabId and pass to Browser.rpc
+		call.tabId = worker.tab.id;
+		return Browser.rpc._listener(call, replyHandler);
+	});
+
+	array.add(Browser.workers, worker);
+
+	if(!worker.on) return;		// dummy 'popup' worker, has no events
+
+	// pagehide: called when user moves away from the page (closes tab or moves back/forward).
+	// the worker is not valid anymore so we need to remove it.
+	// in case of back/forward, the tab is still active and the icon needs to be removed, so we call refreshIcon.
+	// in case of tab close, the "activate" even of the new tab will be called anyway, so the icon will be refreshed there.
+	//
+	worker.on('pagehide', function() {
+		array.remove(Browser.workers, this);
+
+		if(this.tab)								// moving back/forward, the tab is still active so the icon must be refreshed
+			Browser.gui.refreshIcon(this.tab.id);
+
+		Browser.gui._hidePopup();					// firefox hides panel automatically on mouse click, but not on Ctrl-W tab close
+	});
+
+	// pageshow: called when page is shown, either the first time, or when navigating history (back/forward button)
+	// When havigating history, an old (hidden) worker is reused instead of creating a new one. So we need to put it
+	// back to Browser.workers
+	//
+	worker.on('pageshow', function() {
+		array.add(Browser.workers, this);
 	});
 }
 
@@ -116,7 +118,6 @@ Browser._find_worker = function(tabId) {
 			return Browser.workers[i];
 	return null;
 }
-
 
 
 
@@ -244,54 +245,6 @@ Browser.gui._init = function(){
 		Cu.import("resource://gre/modules/PageActions.jsm");
 		Cu.import("resource://gre/modules/NetUtil.jsm");
 		Cu.import("resource://gre/modules/Prompt.jsm");
-
-	} else {
-		var array = require('sdk/util/array');
-
-		Browser.gui.badge = {
-			theBadge : null,
-			visible : false,
-			enabled : false,
-			disable : function(title) {  // visible but disabled
-				Browser.log('disabling button');
-				if (!Browser.gui.badge.visible) {
-					this.enable("");
-				}
-				this.enabled = false;
-				Browser.gui.badge.theBadge.setIcon({path: 'images/pin_disabled_38.png'});
-				Browser.gui.badge.theBadge.setTitle({title : title});
-			},
-			enable : function(title) {	   // visible and enabled
-				Browser.log('enabling button');
-
-				if (!Browser.gui.badge.visible) {
-					Browser.gui.badge.visible = true;
-
-					Browser.gui.badge.theBadge = require('browserAction').BrowserAction({
-						default_icon: 'images/pin_38.png',
-						default_title: title,
-						default_popup: 'popup.html',
-					});
-					Browser.gui.badge.theBadge.onMessage.addListener(function(msg, sender, sendResponse) {
-						// set sender = "popup" (popup worker is registed with tabId = "popup")
-						return Browser.handleMessage(msg, "popup", sendResponse);
-					});
-					array.add(Browser.workers, {"tab" : {"id" : "popup", "url" : "popup"}, 'channel': Browser.gui.badge.theBadge});
-				}
-				Browser.gui.badge.enabled = true;
-				Browser.gui.badge.theBadge.setIcon({path: 'images/pin_38.png'});
-				Browser.gui.badge.theBadge.setTitle({title : title});
-			},
-			hide : function() {
-				Browser.log('hiding button');
-				if (Browser.gui.badge.visible) {
-					Browser.gui.badge.visible = false;
-					Browser.gui.badge.enabled = false;
-					Browser.gui.badge.theBadge.destroy();
-					array.remove(Browser.workers, Browser._find_worker("popup"));
-				}
-			},
-		};
 	}
 
 	// register rpc methods
@@ -305,13 +258,9 @@ Browser.gui._init = function(){
 		Browser.gui.refreshIcon(tabId || callerTabId);		// null tabId in the content script means refresh its own tab
 	});
 
-	Browser.rpc.register('refreshAllIcons', function() {
-		Browser.gui.refreshAllIcons();
-	});
-
-	Browser.rpc.register('showPage', function(name) {
-		Browser.gui.showPage(name);
-	});
+	Browser.rpc.register('refreshAllIcons', Util.delegate(Browser.gui, 'refreshAllIcons'));
+	Browser.rpc.register('showPage',        Util.delegate(Browser.gui, 'showPage'));
+	Browser.rpc.register('resizePopup',     Util.delegate(Browser.gui, 'resizePopup'));
 
 	// register options button
 	//
@@ -327,7 +276,93 @@ Browser.gui._getActiveTab = function(){
 	return tabs.activeTab;
 }
 
-Browser.gui._refresh_pageaction = function(info) {
+Browser.gui._refreshButton = function(info) {
+	var { ToggleButton } = require('sdk/ui/button/toggle');
+	var { data } = require("sdk/self");
+
+	if(!info || info.hidden) {
+		if(this._button) {
+			this._button.destroy();
+			this._button = null;
+		}
+
+	} else {
+		if(!this._button) {
+			// The button's "main" label/icon are always used in the customizing page!
+			// So we set them to values that are understandable in the customizing context, and then set a tab state for the active tab
+			//
+			this._button = ToggleButton({
+				id: "location_guard",
+				label: "Location Guard",
+				icon: {
+					19: data.url('images/pin_19.png'),
+					38: data.url('images/pin_38.png'),
+					50: data.url('images/pin_50.png'),
+				},
+				onChange: function(state) {
+					if(state.checked)
+						Browser.gui._showPopup();
+				},
+			});
+		}
+
+		this._button.state(Browser.gui._getActiveTab(), {
+			icon: {
+				19: data.url('images/' + (info.private ? 'pin_19.png' : 'pin_disabled_19.png')),
+				38: data.url('images/' + (info.private ? 'pin_38.png' : 'pin_disabled_38.png')),
+				50: data.url('images/' + (info.private ? 'pin_50.png' : 'pin_disabled_50.png')),
+			},
+			label: info.title,
+		});
+	}
+}
+
+Browser.gui._hidePopup = function() {
+	if(Browser.gui._panel)
+		Browser.gui._panel.hide();
+}
+
+Browser.gui._showPopup = function() {
+	var { data } = require("sdk/self");
+
+	// we create a dummy worker with tabId = "popup" and add it in Brower.workers, so that
+	// communication with the popup happens in the same way as with all tabs
+	//
+	var worker = {
+		tab: { id: "popup", url: "popup" }
+	};
+
+	// hide previous panel, if any
+	this._hidePopup();
+
+	// we create a new panel each time, and destroy it when it's hidden (simulate chrome's bejaviour)
+	// the panel starts hidden, it will be shown by Browser.gui.resizePopup
+	//
+	var panel = require("sdk/panel").Panel({
+		contentURL: data.url("popup.html"),
+
+		contentScriptWhen: 'start',								// sets up comm. before running the page scripts
+		contentScriptFile: [data.url("js/messageProxy.js")],	// needed for communication
+
+		onHide: function() {
+			if(Browser.gui._button)
+				Browser.gui._button.state("window", { checked: false });
+
+			if(Browser.gui._panel == panel)
+				Browser.gui._panel = null;
+			panel.destroy();
+
+			require('sdk/util/array').remove(Browser.workers, worker);
+		},
+	});
+	Browser.gui._panel = panel;
+
+	// prepare RPC, add to workers array
+	worker.port = panel.port;
+	Browser._onWorkerAttach(worker);
+}
+
+Browser.gui._refreshPageAction = function(info) {
 	 var nw = Services.wm.getMostRecentWindow("navigator:browser").NativeWindow;
 
 	if(this._pageaction)
@@ -372,7 +407,7 @@ Browser.gui._refresh_pageaction = function(info) {
 	*/
 }
 
-// the following 4 are the public methods of Browser.gui
+// the following 5 are the public methods of Browser.gui
 //
 Browser.gui.refreshIcon = function(tabId) {
 	Browser.log('refreshing icon', tabId);
@@ -382,24 +417,23 @@ Browser.gui.refreshIcon = function(tabId) {
 		// the icon is actually _global_, we update it on every tab change. So refreshIcon only needs to refresh the _active_
 		// tab's icon (i.e. when tabId == null or tabId == activeTab.id).
 		//
+		var active = Browser.gui._getActiveTab();
 		if(tabId == undefined)
 			throw "tabId not set";
-		if(tabId != Browser.gui._getActiveTab().id)
+		if(tabId != active.id)
 			return;		// asked to refresh a non-active tab, nothing to do
 
 		Util.getIconInfo(tabId, function(info) {
+			// in Firefox's customzing page, we show a "placeholder" icon to allow the user to customize
+			if(active.url == 'about:customizing')
+				info = { hidden: false, private: true, title: "Location Guard" };
+
 			Browser.log('got info for refreshIcon', info);
 
-			if(Browser.gui._fennec) {
-				Browser.gui._refresh_pageaction(info);
-			} else {
-				if(info.hidden)
-					Browser.gui.badge.hide();
-				else if(!info.private)
-					Browser.gui.badge.disable(info.title);
-				else
-					Browser.gui.badge.enable(info.title);
-			}
+			if(Browser.gui._fennec)
+				Browser.gui._refreshPageAction(info);
+			else
+				Browser.gui._refreshButton(info);
 		});
 
 	} else {
@@ -479,6 +513,23 @@ Browser.gui.getActiveCallUrl = function(handler) {
 		Browser.rpc.call(null, 'getActiveCallUrl', [], handler)
 	}
 }
+
+Browser.gui.resizePopup = function(width, height) {
+	if(Browser._script == 'main') {
+		if(!Browser.gui._panel) return;
+
+		if(width && height) {
+			Browser.gui._panel.resize(width, height);
+			Browser.gui._panel.show({ position: Browser.gui._button });
+		} else {
+			// close
+			Browser.gui._panel.hide();
+		}
+
+	} else {
+		Browser.rpc.call(null, 'resizePopup', [width, height]);
+	}
+};
 
 
 Browser.log = function() {

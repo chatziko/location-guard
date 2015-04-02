@@ -152,7 +152,13 @@ var Browser = {
 		//
 		// Gets the callUrl of the active tab and passes it to 'handler'
 		//
-		getActiveCallUrl: function(handler) {}
+		getActiveCallUrl: function(handler) {},
+
+		// Browser.gui.resizePopup(width, height)
+		//
+		// Resizes the popup to the given width/height, closes it if width/height are null
+		//
+		resizePopup: function(width, height) {},
 	},
 
 	// Browser.log(text, value)
