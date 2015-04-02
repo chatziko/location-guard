@@ -86,8 +86,8 @@ changes (instead of generating a fake location by adding noise to the real one).
 This offers the highest privacy, since the reported location is completely
 independent from the real one, at the cost of very low accuracy.
 
-The default fixed location is meant as a joke. You can modify it from the
-extension's options (Fixed Location tab).
+You can modify the fixed location from the extension's options (Fixed Location
+tab).
 
 When using a fixed location, the browser's geolocation is not performed at all.
 This offers better privacy, since the list of wifi access points is not

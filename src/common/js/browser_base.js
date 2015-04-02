@@ -85,8 +85,8 @@ var Browser = {
 			hideIcon: false,
 			cachedPos: {},
 			fixedPos: {
-				latitude: 39.108889,
-				longitude: -76.771389
+				latitude: -4.448784,
+				longitude: -171.24832
 			},
 			fixedPosNoAPI: true,
 			updateAccuracy: true,
