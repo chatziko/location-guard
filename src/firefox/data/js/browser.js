@@ -247,6 +247,22 @@ Browser.gui._init = function(){
 		Cu.import("resource://gre/modules/Prompt.jsm");
 	}
 
+	// NINJA WORKAROUND HACK
+	// If the button is removed from toolbar, then re-created 2 times, the constructor fails with "aId is undefined" error.
+	//   https://bugzilla.mozilla.org/show_bug.cgi?id=1150907
+	// However, the button seems to be created fine, only the constructor fails. The following hack hijacks ToggleButton's
+	// setup function and makes it ignore all errors!
+	//
+	var { ToggleButton } = require('sdk/ui/button/toggle');
+	var oldSetup = ToggleButton.prototype.setup;
+	ToggleButton.prototype.setup = function() {
+		try {
+			oldSetup.apply(this, arguments);
+		} catch(e) {
+			Browser.log("ToggleButon.setup failed, continuing anyway, error: ", e);
+		}
+	}
+
 	// register rpc methods
 	//
 	Browser.rpc.register('getActiveCallUrl', function(tabId, replyHandler) {
