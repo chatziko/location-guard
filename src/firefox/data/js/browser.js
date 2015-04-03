@@ -439,11 +439,18 @@ Browser.gui.refreshIcon = function(tabId) {
 		if(tabId != active.id)
 			return;		// asked to refresh a non-active tab, nothing to do
 
-		Util.getIconInfo(tabId, function(info) {
-			// in Firefox's customzing page, we show a "placeholder" icon to allow the user to customize
-			if(active.url == 'about:customizing')
-				info = { hidden: false, private: true, title: "Location Guard" };
+		// in Firefox's customzing page, we show a "placeholder" icon to allow the user to customize
+		// we only hide the icon if the user selects to hide it in the options
+		if(active.url == 'about:customizing') {
+			Browser.storage.get(function(st) {
+				Browser.gui._refreshButton(
+					{ hidden: st.hideIcon, private: true, title: "Location Guard" }
+				);
+			});
+			return;
+		}
 
+		Util.getIconInfo(tabId, function(info) {
 			Browser.log('got info for refreshIcon', info);
 
 			if(Browser.gui._fennec)
