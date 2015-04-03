@@ -282,7 +282,7 @@ Browser.gui._init = function(){
 	//
 	var prefsModule = require("sdk/simple-prefs");
 	prefsModule.on("optionButton", function() {
-		console.log("options was clicked");
+		Browser.log("options was clicked");
 		Browser.gui.showPage("options.html");
 	})
 }
