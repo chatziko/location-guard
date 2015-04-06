@@ -245,22 +245,47 @@ Browser.gui._init = function(){
 		Cu.import("resource://gre/modules/PageActions.jsm");
 		Cu.import("resource://gre/modules/NetUtil.jsm");
 		Cu.import("resource://gre/modules/Prompt.jsm");
-	}
 
-	// NINJA WORKAROUND HACK
-	// If the button is removed from toolbar, then re-created 2 times, the constructor fails with "aId is undefined" error.
-	//   https://bugzilla.mozilla.org/show_bug.cgi?id=1150907
-	// However, the button seems to be created fine, only the constructor fails. The following hack hijacks ToggleButton's
-	// setup function and makes it ignore all errors!
-	//
-	var { ToggleButton } = require('sdk/ui/button/toggle');
-	var oldSetup = ToggleButton.prototype.setup;
-	ToggleButton.prototype.setup = function() {
-		try {
-			oldSetup.apply(this, arguments);
-		} catch(e) {
-			Browser.log("ToggleButon.setup failed, continuing anyway, error: ", e);
-		}
+	} else {
+		// The fact that we create/destroy the button multiple times doesn't play well with Firefox about:customizing page.
+		// For instance if the user presses "remove from toolbar" and we keep creating/destroying, we'll get errors:
+		//    https://bugzilla.mozilla.org/show_bug.cgi?id=1150907
+		// Sometimes (hard to reproduce) the customizing page will even get in a "stuck" state.
+		//
+		// To avoid these issues, and since our button emulated a "pageaction" button anyway, we don't allow customization. More precisely:
+		//  - "move to menu" is disabled, if pressed the button immediately returns in the toolbar
+		//  - "remove from toolbar" is caught, and sets the "hide icon" option. The user needs to re-enable it in the options page
+		//  - the button does not appear in about:customizing
+		//
+		Cu.import("resource:///modules/CustomizableUI.jsm");
+
+		this._widgetId =															// widget id used internally by CustomizableUI, see https://github.com/mozilla/addon-sdk/blob/master/lib/sdk/ui/button/toggle.js
+			('toggle-button--' + require("sdk/self").id.toLowerCase()+ '-' + "location_guard").
+			replace(/[^a-z0-9_-]/g, '');
+
+		CustomizableUI.addListener({
+			onWidgetRemoved: function(widgetId) {
+				if(widgetId != Browser.gui._widgetId) return;
+
+				// button removed from toolbar. if "move to menu" was pressed it will be added to the menu immediately (but it's not there yet).
+				// if "remove from toolbar" was pressed it will remained "unused". so we wait 10msecs and see what happened.
+				//
+				require("sdk/timers").setTimeout(function() {
+					if(!CustomizableUI.getPlacementOfWidget(widgetId)) {
+						// button is "unused", remove and update settings
+						Browser.gui._refreshButton(null);
+
+						Browser.storage.get(function(st) {
+							st.hideIcon = true;
+							Browser.storage.set(st);
+						});
+					}
+
+					// in both cases we put the button back in the toolbar
+					CustomizableUI.addWidgetToArea(Browser.gui._widgetId, CustomizableUI.AREA_NAVBAR);
+				}, 10);
+			}
+		});
 	}
 
 	// register rpc methods
@@ -303,33 +328,30 @@ Browser.gui._refreshButton = function(info) {
 		}
 
 	} else {
+		var icon = {
+			19: data.url('images/' + (info.private ? 'pin_19.png' : 'pin_disabled_19.png')),
+			38: data.url('images/' + (info.private ? 'pin_38.png' : 'pin_disabled_38.png')),
+			50: data.url('images/' + (info.private ? 'pin_50.png' : 'pin_disabled_50.png')),
+		};
+
 		if(!this._button) {
-			// The button's "main" label/icon are always used in the customizing page!
-			// So we set them to values that are understandable in the customizing context, and then set a tab state for the active tab
-			//
 			this._button = ToggleButton({
 				id: "location_guard",
 				label: "Location Guard",
-				icon: {
-					19: data.url('images/pin_19.png'),
-					38: data.url('images/pin_38.png'),
-					50: data.url('images/pin_50.png'),
-				},
+				icon: icon,
 				onChange: function(state) {
 					if(state.checked)
 						Browser.gui._showPopup();
 				},
 			});
-		}
 
-		this._button.state(Browser.gui._getActiveTab(), {
-			icon: {
-				19: data.url('images/' + (info.private ? 'pin_19.png' : 'pin_disabled_19.png')),
-				38: data.url('images/' + (info.private ? 'pin_38.png' : 'pin_disabled_38.png')),
-				50: data.url('images/' + (info.private ? 'pin_50.png' : 'pin_disabled_50.png')),
-			},
-			label: info.title,
-		});
+			// make sure it's in the main toolbar
+			CustomizableUI.addWidgetToArea(Browser.gui._widgetId, CustomizableUI.AREA_NAVBAR);
+
+		} else {
+			this._button.icon = icon;
+			this._button.label = info.title;
+		}
 	}
 }
 
@@ -433,22 +455,10 @@ Browser.gui.refreshIcon = function(tabId) {
 		// the icon is actually _global_, we update it on every tab change. So refreshIcon only needs to refresh the _active_
 		// tab's icon (i.e. when tabId == null or tabId == activeTab.id).
 		//
-		var active = Browser.gui._getActiveTab();
 		if(tabId == undefined)
 			throw "tabId not set";
-		if(tabId != active.id)
+		if(tabId != Browser.gui._getActiveTab().id)
 			return;		// asked to refresh a non-active tab, nothing to do
-
-		// in Firefox's customzing page, we show a "placeholder" icon to allow the user to customize
-		// we only hide the icon if the user selects to hide it in the options
-		if(active.url == 'about:customizing') {
-			Browser.storage.get(function(st) {
-				Browser.gui._refreshButton(
-					{ hidden: st.hideIcon, private: true, title: "Location Guard" }
-				);
-			});
-			return;
-		}
 
 		Util.getIconInfo(tabId, function(info) {
 			Browser.log('got info for refreshIcon', info);
