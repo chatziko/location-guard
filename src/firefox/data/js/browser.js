@@ -271,7 +271,14 @@ Browser.gui._init = function(){
 				// if "remove from toolbar" was pressed it will remained "unused". so we wait 10msecs and see what happened.
 				//
 				require("sdk/timers").setTimeout(function() {
-					if(!CustomizableUI.getPlacementOfWidget(widgetId)) {
+					if(CustomizableUI.getPlacementOfWidget(widgetId)) {
+						// button was moved to Menu, notify user that this is not supported
+						require("sdk/notifications").notify({
+							text: "This icon cannot be moved to Menu.",
+							iconURL: require("sdk/self").data.url('images/pin_38.png')
+						});
+
+					} else {
 						// button is "unused", remove and update settings
 						Browser.gui._refreshButton(null);
 
