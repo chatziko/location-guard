@@ -66,17 +66,17 @@ var Browser = {
 		//
 		get: function(handler) {},
 
-		// browser.storage.set(st)
+		// browser.storage.set(st, handler)
 		//
-		// Stores the give storage object.
+		// Stores the give storage object. Calls the handler when finished.
 		//
-		set: function(st) {},
+		set: function(st, handler) {},
 
-		// browser.storage.clear()
+		// browser.storage.clear(handler)
 		//
-		// Clears the storage.
+		// Clears the storage. Calls the handler when finished.
 		//
-		clear: function() {},
+		clear: function(handler) {},
 
 		// default storage object
 		//

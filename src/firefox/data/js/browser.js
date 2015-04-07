@@ -173,7 +173,7 @@ Browser.storage._init = function(){
 
 		var ss = require("sdk/simple-storage").storage;
 
-		Browser.storage.get = function(cb) {
+		Browser.storage.get = function(handler) {
 			var st = ss[Browser.storage._key];
 
 			// default values
@@ -183,29 +183,31 @@ Browser.storage._init = function(){
 				Browser.storage.set(st);
 			}
 			// Browser.log('returning st');
-			cb(st);
+			handler(st);
 		};
 
-		Browser.storage.set = function(st) {
+		Browser.storage.set = function(st, handler) {
 			// Browser.log('setting st');
 			ss[Browser.storage._key] = st;
+
+			if(handler) handler();
 		};
 
-		Browser.storage.clear = function() {
+		Browser.storage.clear = function(handler) {
 			// Browser.log('clearing st');
 			delete ss[Browser.storage._key];
+
+			if(handler) handler();
 		};
 
-		Browser.rpc.register('storage.get',function(tabId,replyHandler){
-			Browser.storage.get(replyHandler);
+		Browser.rpc.register('storage.get',function(tabId, handler) {
+			Browser.storage.get(handler);
 		});
-
-		Browser.rpc.register('storage.set',function(st,tabId,replyHandler){
-			Browser.storage.set(st);
-			replyHandler();
+		Browser.rpc.register('storage.set',function(st, tabId, handler) {
+			Browser.storage.set(st, handler);
 		});
-		Browser.rpc.register('storage.clear',function(){
-			Browser.storage.clear();
+		Browser.rpc.register('storage.clear',function(tabId, handler) {
+			Browser.storage.clear(handler);
 		});
 
 	}
@@ -214,17 +216,17 @@ Browser.storage._init = function(){
 
 		Browser.storage.get = function(cb) {
 			// Browser.log('getting state');
-			Browser.rpc.call(null,'storage.get',null,cb);
+			Browser.rpc.call(null, 'storage.get', null, cb);
 		}
 
-		Browser.storage.set = function(st) {
+		Browser.storage.set = function(st, cb) {
 			// Browser.log('setting state');
-			Browser.rpc.call(null,'storage.set',[st]);
+			Browser.rpc.call(null, 'storage.set', [st], cb);
 		}
 
-		Browser.storage.clear = function() {
+		Browser.storage.clear = function(cb) {
 			// Browser.log('clearing state');
-			Browser.rpc.call(null,'storage.clear');
+			Browser.rpc.call(null, 'storage.clear', [], cb);
 		}
 
 	}
@@ -280,11 +282,11 @@ Browser.gui._init = function(){
 
 					} else {
 						// button is "unused", remove and update settings
-						Browser.gui._refreshButton(null);
-
 						Browser.storage.get(function(st) {
 							st.hideIcon = true;
-							Browser.storage.set(st);
+							Browser.storage.set(st, function() {
+								Browser.gui.refreshAllIcons();
+							});
 						});
 					}
 

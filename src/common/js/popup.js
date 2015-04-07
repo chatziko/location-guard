@@ -34,22 +34,20 @@ function doAction() {
 		case 'hideIcon':
 			Browser.storage.get(function(st) {
 				st.hideIcon = true;
-				Browser.storage.set(st);
-
-				Browser.gui.refreshAllIcons();
-
-				closePopup();
+				Browser.storage.set(st, function() {
+					Browser.gui.refreshAllIcons();
+					closePopup();
+				});
 			});
 			break;
 
 		case 'pause':
 			Browser.storage.get(function(st) {
 				st.paused = !st.paused;
-				Browser.storage.set(st);
-
-				Browser.gui.refreshAllIcons();
-
-				closePopup();
+				Browser.storage.set(st, function() {
+					Browser.gui.refreshAllIcons();
+					closePopup();
+				});
 			});
 			break;
 
@@ -65,11 +63,11 @@ function doAction() {
 					delete st.domainLevel[domain];
 				else
 					st.domainLevel[domain] = level;
-				Browser.storage.set(st);
 
-				Browser.gui.refreshAllIcons();
-
-				closePopup();
+				Browser.storage.set(st, function() {
+					Browser.gui.refreshAllIcons();
+					closePopup();
+				});
 			});
 			break;
 	}

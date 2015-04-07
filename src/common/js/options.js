@@ -63,9 +63,9 @@ function saveOptions() {
 			st.updateAccuracy = updateAccuracy;
 		}
 
-		Browser.storage.set(st);
-
-		Browser.gui.refreshAllIcons();
+		Browser.storage.set(st, function() {
+			Browser.gui.refreshAllIcons();
+		});
 	});
 }
 
@@ -404,16 +404,18 @@ function showCurrentPosition() {
 
 function restoreDefaults() {
 	if(window.confirm('Are you sure you want to restore the default options?')) {
-		Browser.storage.clear();
-		location.reload();
+		Browser.storage.clear(function() {
+			location.reload();
+		});
 	}
 }
 
 function deleteCache() {
 	Browser.storage.get(function(st) {
 		st.cachedPos = {};
-		Browser.storage.set(st);
-		window.alert('Location cache was deleted');
+		Browser.storage.set(st, function() {
+			window.alert('Location cache was deleted');
+		});
 	});
 }
 

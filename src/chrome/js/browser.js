@@ -100,15 +100,15 @@ Browser.storage.get = function(cb) {
 	});
 };
 
-Browser.storage.set = function(st) {
+Browser.storage.set = function(st, handler) {
 	blog('saving st', st);
 	var items = {};
 	items[Browser.storage._key] = st;
-	chrome.storage.local.set(items);
+	chrome.storage.local.set(items, handler);
 };
 
-Browser.storage.clear = function() {
-	chrome.storage.local.clear();
+Browser.storage.clear = function(handler) {
+	chrome.storage.local.clear(handler);
 };
 
 
