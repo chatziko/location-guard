@@ -1,3 +1,8 @@
+blog("faq loading");
+
+// although we don't use it explicitly in faq.js, Browser should be always loaded, it might be needed internally
+Browser.init('options');
+
 $.mobile.ajaxEnabled = false;
 $.mobile.linkBindingEnabled = false;
 

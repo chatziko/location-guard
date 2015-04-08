@@ -100,15 +100,15 @@ Browser.storage.get = function(cb) {
 	});
 };
 
-Browser.storage.set = function(st) {
+Browser.storage.set = function(st, handler) {
 	blog('saving st', st);
 	var items = {};
 	items[Browser.storage._key] = st;
-	chrome.storage.local.set(items);
+	chrome.storage.local.set(items, handler);
 };
 
-Browser.storage.clear = function() {
-	chrome.storage.local.clear();
+Browser.storage.clear = function(handler) {
+	chrome.storage.local.clear(handler);
 };
 
 
@@ -182,6 +182,16 @@ Browser.gui.getActiveCallUrl = function(handler) {
 		}
 	);
 };
+
+Browser.gui.resizePopup = function(width, height) {
+	if(Browser._script != 'popup') throw "only called from popup";
+
+	// nothing is needed for resize (chrome resizes automatically)
+	// for close we just to window.close()
+	//
+	if(!(width && height))
+		window.close();
+}
 
 
 // in chrome, apart from the current console, we also log to the background page, if possible and loaded

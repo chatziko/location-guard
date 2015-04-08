@@ -66,17 +66,17 @@ var Browser = {
 		//
 		get: function(handler) {},
 
-		// browser.storage.set(st)
+		// browser.storage.set(st, handler)
 		//
-		// Stores the give storage object.
+		// Stores the give storage object. Calls the handler when finished.
 		//
-		set: function(st) {},
+		set: function(st, handler) {},
 
-		// browser.storage.clear()
+		// browser.storage.clear(handler)
 		//
-		// Clears the storage.
+		// Clears the storage. Calls the handler when finished.
 		//
-		clear: function() {},
+		clear: function(handler) {},
 
 		// default storage object
 		//
@@ -85,8 +85,8 @@ var Browser = {
 			hideIcon: false,
 			cachedPos: {},
 			fixedPos: {
-				latitude: 39.108889,
-				longitude: -76.771389
+				latitude: -4.448784,
+				longitude: -171.24832
 			},
 			fixedPosNoAPI: true,
 			updateAccuracy: true,
@@ -152,7 +152,13 @@ var Browser = {
 		//
 		// Gets the callUrl of the active tab and passes it to 'handler'
 		//
-		getActiveCallUrl: function(handler) {}
+		getActiveCallUrl: function(handler) {},
+
+		// Browser.gui.resizePopup(width, height)
+		//
+		// Resizes the popup to the given width/height, closes it if width/height are null
+		//
+		resizePopup: function(width, height) {},
 	},
 
 	// Browser.log(text, value)

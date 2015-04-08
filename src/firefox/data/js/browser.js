@@ -10,6 +10,14 @@ Browser.init = function (script) {
 		Browser._main_script();
 		Browser.gui._init();
 		Browser._install_update();
+	} else {
+		// setup the internal RPC with the main script, on which the higher-level Browser.rpc is based
+		// If we run in a content script we use self.port
+		// If we run in a normal page we use window (messageProxy.js will then forward the messages)
+		//
+		var sendObj = self.port || window;
+		Browser._internal_rpc = new PostRPC('internal', sendObj, sendObj);
+		Browser._internal_rpc.register('internalCall', Browser.rpc._listener);
 	}
 };
 
@@ -27,96 +35,82 @@ Browser._install_update = function(){
 }
 
 Browser._main_script = function() {
+	var data = require("sdk/self").data;
+
 	// refresh icon when a tab is activated
 	//
 	require('sdk/tabs').on('activate', function (tab) {
 		Browser.gui.refreshIcon(tab.id);
+		Browser.gui._hidePopup();			// firefox hides panel automatically on mouse click, but not on Ctrl-T tab change
 	});
-
-	// content script insertion
-	// we insert two scripts
-	// 1. our content.js and auxiliary .js files that do the main job
-	// 2. the messaging module's code, needed for communication with the content script (see https://github.com/Rob--W/browser-action-jplib/blob/master/docs/messaging.md)
-	//
-	var array = require('sdk/util/array');
-	var data = require("sdk/self").data;
-	const { createMessageChannel, messageContentScriptFile } = require('messaging');
 
 	Browser.workers = [];
 
-	// executed when a worker is created, each worker corresponds to a page
-	// we need to create communication channel, and to keep track of workers in Browser.workers to
-	// allow for main -> page communication
-	//
-	function onWorkerAttach(worker) {
-		worker.channel = createMessageChannel(this.contentScriptOptions, worker.port);
-		worker.channel.onMessage.addListener(function(msg, sender, sendResponse) {
-			// sender is always null, we set it to worker.tab.id
-			return Browser.handleMessage(msg, worker.tab.id, sendResponse);
-		});
-
-		array.add(Browser.workers, worker);
-
-		// pagehide: called when user moves away from the page (closes tab or moves back/forward).
-		// the worker is not valid anymore so we need to remove it.
-		// in case of back/forward, the tab is still active and the icon needs to be removed, so we call refreshIcon.
-		// in case of tab close, the "activate" even of the new tab will be called anyway, so the icon will be refreshed there.
-		//
-		worker.on('pagehide', function() {
-			array.remove(Browser.workers, this);
-
-			if(this.tab)								// moving back/forward, the tab is still active so the icon must be refreshed
-				Browser.gui.refreshIcon(this.tab.id);
-		});
-
-		// pageshow: called when page is shown, either the first time, or when navigating history (back/forward button)
-		// When havigating history, an old (hidden) worker is reused instead of creating a new one. So we need to put it
-		// back to Browser.workers
-		//
-		worker.on('pageshow', function() {
-			array.add(Browser.workers, this);
-		});
-	}
-
-	// all http[s] pages: insert content.js and messaging code
+	// content script insertion
+	// all http[s] pages: insert content.js
 	//
 	require("sdk/page-mod").PageMod({
 		include: ['*'],
 		attachTo: ["top", "frame"],
 		contentScriptWhen: 'start', // TODO THIS IS TRICKY
-		contentScriptFile: [messageContentScriptFile,
-							data.url("js/util.js"),
+		contentScriptFile: [data.url("js/util.js"),
 							data.url("js/browser_base.js"),
 							data.url("js/browser.js"),
 							data.url("js/laplace.js"),
 							data.url("js/content.js")],
-		contentScriptOptions: {
-			channelName: 'whatever you want',
-			endAtPage: false		// false: communicate with the content script
-		},
-		onAttach: onWorkerAttach,
+		onAttach: Browser._onWorkerAttach,
 	});
 
-	// options page: insert only messaging code
+	// our internal pages (options, demo, popup): insert only messageProxy for communication
 	//
 	require("sdk/page-mod").PageMod({
 		include: [data.url("*")],
 		contentScriptWhen: 'start', // sets up comm. before running the page scripts
-		contentScriptFile: [messageContentScriptFile],
-		contentScriptOptions: {
-			channelName: 'whatever you want',
-			endAtPage: true			// true: communicate with the options page (not its content script)
-		},
-		onAttach: onWorkerAttach,
+		contentScriptFile: [data.url("js/messageProxy.js")],
+		onAttach: Browser._onWorkerAttach,
 	});
 }
 
+// executed when a worker is created, each worker corresponds to a page
+// we need to setup internal RPC, and to keep track of workers in Browser.workers to
+// allow for main -> page communication
+//
+Browser._onWorkerAttach = function(worker) {
+	var array = require('sdk/util/array');
 
-//// low level communication
+	worker._internal_rpc = new PostRPC('internal', worker.port, worker.port);
+	worker._internal_rpc.register('internalCall', function(call, replyHandler) {
+		// add tabId and pass to Browser.rpc
+		call.tabId = worker.tab.id;
+		return Browser.rpc._listener(call, replyHandler);
+	});
 
-var id = function (msg,sender,sendResponse){sendResponse(msg)};
-Browser.messageHandlers = {};
-Browser.messageHandlers['id'] = id;
+	array.add(Browser.workers, worker);
+
+	if(!worker.on) return;		// dummy 'popup' worker, has no events
+
+	// pagehide: called when user moves away from the page (closes tab or moves back/forward).
+	// the worker is not valid anymore so we need to remove it.
+	// in case of back/forward, the tab is still active and the icon needs to be removed, so we call refreshIcon.
+	// in case of tab close, the "activate" even of the new tab will be called anyway, so the icon will be refreshed there.
+	//
+	worker.on('pagehide', function() {
+		array.remove(Browser.workers, this);
+
+		if(this.tab)								// moving back/forward, the tab is still active so the icon must be refreshed
+			Browser.gui.refreshIcon(this.tab.id);
+
+		Browser.gui._hidePopup();					// firefox hides panel automatically on mouse click, but not on Ctrl-W tab close
+	});
+
+	// pageshow: called when page is shown, either the first time, or when navigating history (back/forward button)
+	// When havigating history, an old (hidden) worker is reused instead of creating a new one. So we need to put it
+	// back to Browser.workers
+	//
+	worker.on('pageshow', function() {
+		array.add(Browser.workers, this);
+	});
+}
 
 Browser._find_worker = function(tabId) {
 	for (var i = 0; i < Browser.workers.length; i++)
@@ -125,70 +119,49 @@ Browser._find_worker = function(tabId) {
 	return null;
 }
 
-Browser.handleMessage = function(msg,sender,sendResponse) {
-	// Browser.log('handling: ', msg, sender, sendResponse);
-	return Browser.messageHandlers[msg.type].apply(null,[msg.message,sender,sendResponse]);
-}
-
-Browser.sendMessage = function (tabId, type, message, cb) {
-	if (Browser._script == 'main') {
-		var worker = Browser._find_worker(tabId);
-		if(worker) {
-			// Browser.log('-> ', worker.tab.url, message);
-			worker.channel.sendMessage({'type': type, 'message': message},cb);
-		} else {
-			// cannot connect, call cb with no arguments
-			if(cb) cb();
-		}
-	}
-	// content or popup
-	else {
-		// Browser.log(' -> main', message);
-		extension.sendMessage({'type': type, 'message': message},cb);
-	}
-};
-
 
 
 //////////////////// rpc ///////////////////////////
 //
-//
+Browser.rpc._methods = {};
+
 // handler is a   function(...args..., tabId, replyHandler)
 Browser.rpc.register = function(name, handler) {
-	// set onMessage listener if called for first time
-	if(!this._methods) {
-		this._methods = {};
-		Browser.messageHandlers['rpc'] = Browser.rpc._listener;
-
-		if(Browser._script != 'main')	// the main script sets the listener on the channels it creates
-			extension.onMessage.addListener(Browser.handleMessage);
-	}
 	this._methods[name] = handler;
 }
 
-// onMessage listener. Received messages are of the form
-// { method: ..., args: ... }
+// internal RPC listener. 'call' is of the form
+// { method: ..., args: ..., tabId: ... }
 //
-Browser.rpc._listener = function(message, tabId, replyHandler) {
-	//blog("RPC: got message", message, tabId, replyHandler);
-
-	var handler = Browser.rpc._methods[message.method];
+Browser.rpc._listener = function(call, replyHandler) {
+	var handler = Browser.rpc._methods[call.method];
 	if(!handler) {
-		Browser.log('No handler for '+message.method);
+		replyHandler();		// if the call cannot be made, call handler with no arguments
 		return;
 	}
 
 	// add tabId and replyHandler to the arguments
-	var args = message.args || [];
-	args.push(tabId, replyHandler);
+	var args = call.args || [];
+	args.push(call.tabId, replyHandler);
 
 	return handler.apply(null, args);
 };
 
 Browser.rpc.call = function(tabId, name, args, cb) {
-	var message = { method: name, args: args };
+	var call = { method: name, args: args };
 
-	Browser.sendMessage(tabId, 'rpc', message, cb)
+	if (Browser._script == 'main') {
+		var worker = Browser._find_worker(tabId);
+		if(worker) {
+			worker._internal_rpc.call('internalCall', [call], cb);
+		} else {
+			if(cb) cb();				// cannot connect, call cb with no arguments
+		}
+
+	} else {
+		// content or popup
+		Browser._internal_rpc.call('internalCall', [call], cb);
+	}
 }
 
 
@@ -200,7 +173,7 @@ Browser.storage._init = function(){
 
 		var ss = require("sdk/simple-storage").storage;
 
-		Browser.storage.get = function(cb) {
+		Browser.storage.get = function(handler) {
 			var st = ss[Browser.storage._key];
 
 			// default values
@@ -210,29 +183,31 @@ Browser.storage._init = function(){
 				Browser.storage.set(st);
 			}
 			// Browser.log('returning st');
-			cb(st);
+			handler(st);
 		};
 
-		Browser.storage.set = function(st) {
+		Browser.storage.set = function(st, handler) {
 			// Browser.log('setting st');
 			ss[Browser.storage._key] = st;
+
+			if(handler) handler();
 		};
 
-		Browser.storage.clear = function() {
+		Browser.storage.clear = function(handler) {
 			// Browser.log('clearing st');
 			delete ss[Browser.storage._key];
+
+			if(handler) handler();
 		};
 
-		Browser.rpc.register('storage.get',function(tabId,replyHandler){
-			Browser.storage.get(replyHandler);
+		Browser.rpc.register('storage.get',function(tabId, handler) {
+			Browser.storage.get(handler);
 		});
-
-		Browser.rpc.register('storage.set',function(st,tabId,replyHandler){
-			Browser.storage.set(st);
-			replyHandler();
+		Browser.rpc.register('storage.set',function(st, tabId, handler) {
+			Browser.storage.set(st, handler);
 		});
-		Browser.rpc.register('storage.clear',function(){
-			Browser.storage.clear();
+		Browser.rpc.register('storage.clear',function(tabId, handler) {
+			Browser.storage.clear(handler);
 		});
 
 	}
@@ -241,17 +216,17 @@ Browser.storage._init = function(){
 
 		Browser.storage.get = function(cb) {
 			// Browser.log('getting state');
-			Browser.rpc.call(null,'storage.get',null,cb);
+			Browser.rpc.call(null, 'storage.get', null, cb);
 		}
 
-		Browser.storage.set = function(st) {
+		Browser.storage.set = function(st, cb) {
 			// Browser.log('setting state');
-			Browser.rpc.call(null,'storage.set',[st]);
+			Browser.rpc.call(null, 'storage.set', [st], cb);
 		}
 
-		Browser.storage.clear = function() {
+		Browser.storage.clear = function(cb) {
 			// Browser.log('clearing state');
-			Browser.rpc.call(null,'storage.clear');
+			Browser.rpc.call(null, 'storage.clear', [], cb);
 		}
 
 	}
@@ -274,52 +249,52 @@ Browser.gui._init = function(){
 		Cu.import("resource://gre/modules/Prompt.jsm");
 
 	} else {
-		var array = require('sdk/util/array');
+		// The fact that we create/destroy the button multiple times doesn't play well with Firefox about:customizing page.
+		// For instance if the user presses "remove from toolbar" and we keep creating/destroying, we'll get errors:
+		//    https://bugzilla.mozilla.org/show_bug.cgi?id=1150907
+		// Sometimes (hard to reproduce) the customizing page will even get in a "stuck" state.
+		//
+		// To avoid these issues, and since our button emulated a "pageaction" button anyway, we don't allow customization. More precisely:
+		//  - "move to menu" is disabled, if pressed the button immediately returns in the toolbar
+		//  - "remove from toolbar" is caught, and sets the "hide icon" option. The user needs to re-enable it in the options page
+		//  - the button does not appear in about:customizing
+		//
+		Cu.import("resource:///modules/CustomizableUI.jsm");
 
-		Browser.gui.badge = {
-			theBadge : null,
-			visible : false,
-			enabled : false,
-			disable : function(title) {  // visible but disabled
-				Browser.log('disabling button');
-				if (!Browser.gui.badge.visible) {
-					this.enable("");
-				}
-				this.enabled = false;
-				Browser.gui.badge.theBadge.setIcon({path: 'images/pin_disabled_38.png'});
-				Browser.gui.badge.theBadge.setTitle({title : title});
-			},
-			enable : function(title) {	   // visible and enabled
-				Browser.log('enabling button');
+		this._widgetId =															// widget id used internally by CustomizableUI, see https://github.com/mozilla/addon-sdk/blob/master/lib/sdk/ui/button/toggle.js
+			('toggle-button--' + require("sdk/self").id.toLowerCase()+ '-' + "location_guard").
+			replace(/[^a-z0-9_-]/g, '');
 
-				if (!Browser.gui.badge.visible) {
-					Browser.gui.badge.visible = true;
+		CustomizableUI.addListener({
+			onWidgetRemoved: function(widgetId) {
+				if(widgetId != Browser.gui._widgetId) return;
 
-					Browser.gui.badge.theBadge = require('browserAction').BrowserAction({
-						default_icon: 'images/pin_38.png',
-						default_title: title,
-						default_popup: 'popup.html',
-					});
-					Browser.gui.badge.theBadge.onMessage.addListener(function(msg, sender, sendResponse) {
-						// set sender = "popup" (popup worker is registed with tabId = "popup")
-						return Browser.handleMessage(msg, "popup", sendResponse);
-					});
-					array.add(Browser.workers, {"tab" : {"id" : "popup", "url" : "popup"}, 'channel': Browser.gui.badge.theBadge});
-				}
-				Browser.gui.badge.enabled = true;
-				Browser.gui.badge.theBadge.setIcon({path: 'images/pin_38.png'});
-				Browser.gui.badge.theBadge.setTitle({title : title});
-			},
-			hide : function() {
-				Browser.log('hiding button');
-				if (Browser.gui.badge.visible) {
-					Browser.gui.badge.visible = false;
-					Browser.gui.badge.enabled = false;
-					Browser.gui.badge.theBadge.destroy();
-					array.remove(Browser.workers, Browser._find_worker("popup"));
-				}
-			},
-		};
+				// button removed from toolbar. if "move to menu" was pressed it will be added to the menu immediately (but it's not there yet).
+				// if "remove from toolbar" was pressed it will remained "unused". so we wait 10msecs and see what happened.
+				//
+				require("sdk/timers").setTimeout(function() {
+					if(CustomizableUI.getPlacementOfWidget(widgetId)) {
+						// button was moved to Menu, notify user that this is not supported
+						require("sdk/notifications").notify({
+							text: "This icon cannot be moved to Menu.",
+							iconURL: require("sdk/self").data.url('images/pin_38.png')
+						});
+
+					} else {
+						// button is "unused", remove and update settings
+						Browser.storage.get(function(st) {
+							st.hideIcon = true;
+							Browser.storage.set(st, function() {
+								Browser.gui.refreshAllIcons();
+							});
+						});
+					}
+
+					// in both cases we put the button back in the toolbar
+					CustomizableUI.addWidgetToArea(Browser.gui._widgetId, CustomizableUI.AREA_NAVBAR);
+				}, 10);
+			}
+		});
 	}
 
 	// register rpc methods
@@ -333,19 +308,15 @@ Browser.gui._init = function(){
 		Browser.gui.refreshIcon(tabId || callerTabId);		// null tabId in the content script means refresh its own tab
 	});
 
-	Browser.rpc.register('refreshAllIcons', function() {
-		Browser.gui.refreshAllIcons();
-	});
-
-	Browser.rpc.register('showPage', function(name) {
-		Browser.gui.showPage(name);
-	});
+	Browser.rpc.register('refreshAllIcons', Util.delegate(Browser.gui, 'refreshAllIcons'));
+	Browser.rpc.register('showPage',        Util.delegate(Browser.gui, 'showPage'));
+	Browser.rpc.register('resizePopup',     Util.delegate(Browser.gui, 'resizePopup'));
 
 	// register options button
 	//
 	var prefsModule = require("sdk/simple-prefs");
 	prefsModule.on("optionButton", function() {
-		console.log("options was clicked");
+		Browser.log("options was clicked");
 		Browser.gui.showPage("options.html");
 	})
 }
@@ -355,7 +326,90 @@ Browser.gui._getActiveTab = function(){
 	return tabs.activeTab;
 }
 
-Browser.gui._refresh_pageaction = function(info) {
+Browser.gui._refreshButton = function(info) {
+	var { ToggleButton } = require('sdk/ui/button/toggle');
+	var { data } = require("sdk/self");
+
+	if(!info || info.hidden) {
+		if(this._button) {
+			this._button.destroy();
+			this._button = null;
+		}
+
+	} else {
+		var icon = {
+			19: data.url('images/' + (info.private ? 'pin_19.png' : 'pin_disabled_19.png')),
+			38: data.url('images/' + (info.private ? 'pin_38.png' : 'pin_disabled_38.png')),
+			50: data.url('images/' + (info.private ? 'pin_50.png' : 'pin_disabled_50.png')),
+		};
+
+		if(!this._button) {
+			this._button = ToggleButton({
+				id: "location_guard",
+				label: "Location Guard",
+				icon: icon,
+				onChange: function(state) {
+					if(state.checked)
+						Browser.gui._showPopup();
+				},
+			});
+
+			// make sure it's in the main toolbar
+			CustomizableUI.addWidgetToArea(Browser.gui._widgetId, CustomizableUI.AREA_NAVBAR);
+
+		} else {
+			this._button.icon = icon;
+			this._button.label = info.title;
+		}
+	}
+}
+
+Browser.gui._hidePopup = function() {
+	if(Browser.gui._panel)
+		Browser.gui._panel.hide();
+}
+
+Browser.gui._showPopup = function() {
+	var { data } = require("sdk/self");
+
+	// we create a dummy worker with tabId = "popup" and add it in Brower.workers, so that
+	// communication with the popup happens in the same way as with all tabs
+	//
+	var worker = {
+		tab: { id: "popup", url: "popup" }
+	};
+
+	// hide previous panel, if any
+	this._hidePopup();
+
+	// we create a new panel each time, and destroy it when it's hidden (simulate chrome's bejaviour)
+	// the panel starts hidden, it will be shown by Browser.gui.resizePopup
+	//
+	var panel = require("sdk/panel").Panel({
+		contentURL: data.url("popup.html"),
+
+		contentScriptWhen: 'start',								// sets up comm. before running the page scripts
+		contentScriptFile: [data.url("js/messageProxy.js")],	// needed for communication
+
+		onHide: function() {
+			if(Browser.gui._button)
+				Browser.gui._button.state("window", { checked: false });
+
+			if(Browser.gui._panel == panel)
+				Browser.gui._panel = null;
+			panel.destroy();
+
+			require('sdk/util/array').remove(Browser.workers, worker);
+		},
+	});
+	Browser.gui._panel = panel;
+
+	// prepare RPC, add to workers array
+	worker.port = panel.port;
+	Browser._onWorkerAttach(worker);
+}
+
+Browser.gui._refreshPageAction = function(info) {
 	 var nw = Services.wm.getMostRecentWindow("navigator:browser").NativeWindow;
 
 	if(this._pageaction)
@@ -400,7 +454,7 @@ Browser.gui._refresh_pageaction = function(info) {
 	*/
 }
 
-// the following 4 are the public methods of Browser.gui
+// the following 5 are the public methods of Browser.gui
 //
 Browser.gui.refreshIcon = function(tabId) {
 	Browser.log('refreshing icon', tabId);
@@ -418,16 +472,10 @@ Browser.gui.refreshIcon = function(tabId) {
 		Util.getIconInfo(tabId, function(info) {
 			Browser.log('got info for refreshIcon', info);
 
-			if(Browser.gui._fennec) {
-				Browser.gui._refresh_pageaction(info);
-			} else {
-				if(info.hidden)
-					Browser.gui.badge.hide();
-				else if(!info.private)
-					Browser.gui.badge.disable(info.title);
-				else
-					Browser.gui.badge.enable(info.title);
-			}
+			if(Browser.gui._fennec)
+				Browser.gui._refreshPageAction(info);
+			else
+				Browser.gui._refreshButton(info);
 		});
 
 	} else {
@@ -507,6 +555,23 @@ Browser.gui.getActiveCallUrl = function(handler) {
 		Browser.rpc.call(null, 'getActiveCallUrl', [], handler)
 	}
 }
+
+Browser.gui.resizePopup = function(width, height) {
+	if(Browser._script == 'main') {
+		if(!Browser.gui._panel) return;
+
+		if(width && height) {
+			Browser.gui._panel.resize(width, height);
+			Browser.gui._panel.show({ position: Browser.gui._button });
+		} else {
+			// close
+			Browser.gui._panel.hide();
+		}
+
+	} else {
+		Browser.rpc.call(null, 'resizePopup', [width, height]);
+	}
+};
 
 
 Browser.log = function() {

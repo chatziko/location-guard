@@ -7,7 +7,7 @@
 #	./run-firefox xpi
 #
 # min supported version:
-#  desktop: 23
+#  desktop: 31
 #  android: 34
 
 
@@ -32,5 +32,5 @@ else
 		args="-a fennec-on-device -b `which adb` --mobile-app firefox --force-mobile"
 	fi
 
-	cfx run $args $*
+	cfx run --binary-args -jsconsole $args $*
 fi

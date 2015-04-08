@@ -53,9 +53,9 @@ PopupFennec.show = function() {
 				case 'pause':
 					Browser.storage.get(function(st) {
 						st.paused = !st.paused;
-						Browser.storage.set(st);
-
-						Browser.gui.refreshAllIcons();
+						Browser.storage.set(st, function() {
+							Browser.gui.refreshAllIcons();
+						});
 					});
 					break;
 			}
@@ -87,9 +87,10 @@ PopupFennec.setLevel = function(domain, level) {
 				delete st.domainLevel[domain];
 			else
 				st.domainLevel[domain] = level;
-			Browser.storage.set(st);
 
-			Browser.gui.refreshAllIcons();
+			Browser.storage.set(st, function() {
+				Browser.gui.refreshAllIcons();
+			});
 		});
 	});
 };
@@ -99,9 +100,9 @@ PopupFennec.toggleIcon = function() {
 
 	Browser.storage.get(function(st) {
 		st.hideIcon = !st.hideIcon;
-		Browser.storage.set(st);
-
-		Browser.gui.refreshAllIcons();
+		Browser.storage.set(st, function() {
+			Browser.gui.refreshAllIcons();
+		});
 
 		var msg = st.hideIcon
 			? "Icon replaced by menu item"
