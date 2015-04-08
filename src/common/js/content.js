@@ -63,6 +63,10 @@ function injectedCode() {
 	navigator.geolocation.clearWatch = function () {
 		// nothing to do
 	};
+
+	// remove script
+	var s = document.getElementById('__lg_script');
+	if(s) s.remove();	// DEMO: in demo injectCode is run directly so there's no script
 }
 
 // the remaining runs in the content script
@@ -78,7 +82,7 @@ if(inDemo) {
 } else if(document.documentElement.tagName.toLowerCase() == 'html') { // only for html
 	// we inject PostRPC/injectedCode, and call injectedCode, all protected by an anonymous function
 	//
-	var inject = "/* injected by Location Guard */\n(function(){ "
+	var inject = "(function(){"
 		+ _PostRPC + injectedCode +
 		"_PostRPC(); injectedCode();" +
 	"})()";
@@ -87,6 +91,7 @@ if(inDemo) {
 	// instead of <script src="...">, otherwise it might not run immediately
 	//
 	var script = document.createElement('script');
+	script.setAttribute('id', '__lg_script');
 	script.appendChild(document.createTextNode(inject));
 
 	// FF: there is another variables in the scope named parent, this causes a very hard to catch bug
