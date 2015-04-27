@@ -146,9 +146,33 @@ technique based on adding noise from a 2-dimensional
 [Laplace distribution](http://en.wikipedia.org/wiki/Laplace_distribution).
 This method can be formally shown to provide a privacy guarantee which is a variant
 of [Differential Privacy](http://en.wikipedia.org/wiki/Differential_privacy).
-More details can be found in the paper below.
+More details can be found in the [CCS'13 paper](http://arxiv.org/abs/1212.1984),
+or in the [PhD thesis](https://pastel.archives-ouvertes.fr/tel-01098088/document)
+of Nicolas Bordenabe.
 
-**Geo-Indistinguishability: Differential Privacy for Location-Based Systems**.
-M. Andres, N. Bordenabe, K. Chatzikokolakis and C. Palamidessi.
-_Proc. of the ACM Conference on Computer and Communications Security (CCS) '13_, ACM, pp. 901-914, 2013.
-[[report version](http://arxiv.org/abs/1212.1984)]
+#### Complete list of publications related to Location Guard
+
+##### Thesis
+
+* **Measuring Privacy with Distinguishability Metrics: Definitions, Mechanisms and Application to Location Privacy**.  
+  N. Bordenabe.  
+  _PhD dissertation_, École Polytechnique, Paris, 2014. [[pdf](https://pastel.archives-ouvertes.fr/tel-01098088/document)]
+
+##### Papers
+
+* **Geo-Indistinguishability: Differential Privacy for Location-Based Systems**.  
+  M. Andres, N. Bordenabe, K. Chatzikokolakis and C. Palamidessi.  
+  _Proc. of CCS '13_, ACM, pp. 901-914, 2013. [[report](http://arxiv.org/abs/1212.1984)]
+* **Broadening the Scope of Differential Privacy Using Metrics**.  
+  K. Chatzikokolakis, M. Andres, N. Bordenabe and C. Palamidessi.  
+  _Proc. of PETS '13_, Springer, LNCS 7981, pp. 82-102, 2013. [[report](http://hal.inria.fr/hal-00767210)]
+* **A Predictive Differentially-Private Mechanism for Mobility Traces**.  
+  K. Chatzikokolakis, C. Palamidessi and M. Stronati.  
+  _Proc. of PETS '14_, Springer, LNCS 8555, pp. 21-41, 2014. [[report](http://arxiv.org/abs/1311.4008)]
+* **Optimal Geo-Indistinguishable Mechanisms for Location Privacy**.  
+  N. Bordenabe, K. Chatzikokolakis and C. Palamidessi.  
+  _Proc. of CCS '14_, ACM, pp. 251-262, 2014. [[report](http://arxiv.org/abs/1402.5029)]
+* **Geo-indistinguishability: A Principled Approach to Location Privacy**.  
+  K. Chatzikokolakis, C. Palamidessi and M. Stronati.  
+  _Proc. of ICDCIT '15_, Springer, LNCS 8956, pp. 49-72, 2015. [[report](http://hal.inria.fr/hal-01114241)]
+
