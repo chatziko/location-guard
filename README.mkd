@@ -175,4 +175,7 @@ of Nicolas Bordenabe.
 * **Geo-indistinguishability: A Principled Approach to Location Privacy**.  
   K. Chatzikokolakis, C. Palamidessi and M. Stronati.  
   _Proc. of ICDCIT '15_, Springer, LNCS 8956, pp. 49-72, 2015. [[report](http://hal.inria.fr/hal-01114241)]
+* **Constructing elastic distinguishability metrics for location privacy**.  
+  K. Chatzikokolakis, C. Palamidessi and M. Stronati.  
+  _PETS'15 / PoPETs_, De Gruyter Open, to appear, 2015. [[report](http://arxiv.org/abs/1503.00756)]
 
