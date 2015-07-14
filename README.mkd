@@ -11,6 +11,9 @@ It supports the followng browsers:
 * Mobile
   * Mozilla Firefox for Android
 
+Location Guard is available under either the [MIT/X11](http://opensource.org/licenses/mit-license.php)
+or the [CeCILL-B](http://www.cecill.info/licences.fr.html) license.
+
 ## Installation
 
 To install Location Guard:
