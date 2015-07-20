@@ -19,7 +19,7 @@
 
 	<link rel="stylesheet" href="options.css">
 
-	<script src="js/demo.js"></script>
+	<script src="js/mobility.js"></script>
 
 	<!-- chrome does not support content scripts for internal pages, so we load content.js and its requirements as a normal script -->
 	<script src="js/util.js"></script>
@@ -29,16 +29,14 @@
 	<script src="js/content.js"></script>
 </head>
 <body class="ui-alt-icon ui-nodisc-icon">
-	<div data-role="page" id="demo" data-title="Location Guard" class="page">
+	<div data-role="page" id="mobility" data-title="Location Guard" class="page">
 		<div data-role="header">
 			<a href="#left-panel" class="ui-btn ui-btn-icon-notext ui-icon-bars"></a>
-			<h1>Location Guard Demo</h1>
+			<h1>Mobility Profile</h1>
 		</div>
 
 		<div role="main" class="ui-content no-space">
-			<div id="demoMap" class="flex">
-				<div class="placeholder-step1"></div>
-				<div class="placeholder-step4"></div>
+			<div id="mobilityMap" class="flex">
 			</div>
 		</div>
 	</div><!-- /page -->
@@ -50,8 +48,8 @@
 			<li data-icon="eye"><a href="options.html#levels">Privacy Levels</a></li>
 			<li data-icon="location"><a href="options.html#fixedPos">Fixed Location</a></li>
 			<li data-icon="info"><a href="faq.html#general">FAQ</a></li>
-			<li data-icon="navigation"><a id="demo-link">Demo</a></li>
-			<li data-icon="navigation"><a href="mobility.html">Mobility Profile</a></li>
+			<li data-icon="navigation"><a href="demo.html">Demo</a></li>
+			<li data-icon="navigation"><a id="mobility-link">Mobility Profile</a></li>
 		</ul>
 	</div><!-- /panel -->
 
