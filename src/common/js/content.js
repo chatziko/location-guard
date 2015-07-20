@@ -211,28 +211,39 @@ function addNoise(position, handler) {
 			var pl = new PlannarLaplace();
 			var noisy = pl.addNoise(epsilon, position.coords);
 
-			position.coords.latitude = noisy.latitude;
-			position.coords.longitude = noisy.longitude;
+                        var sanitized = {};
+                        sanitized["coords"] = {}
+                        sanitized["coords"]["latitude"] = noisy.latitude;
+                        sanitized["coords"]["longitude"] = noisy.longitude;
 
 			// update accuracy
 			if(position.coords.accuracy && st.updateAccuracy)
-				position.coords.accuracy += Math.round(pl.alphaDeltaAccuracy(epsilon, .9));
+				sanitized.coords["accuracy"] = Math.round(pl.alphaDeltaAccuracy(epsilon, .9)) + position.coords.accuracy;
 
 			// don't know how to add noise to those, so we set to null (they're most likely null anyway)
-			position.altitude = null;
-			position.altitudeAccuracy = null;
-			position.heading = null;
-			position.speed = null;
+			sanitized.altitude = null;
+			sanitized.altitudeAccuracy = null;
+			sanitized.heading = null;
+			sanitized.speed = null;
 
 			// cache
-			st.cachedPos[level] = { epoch: (new Date).getTime(), position: position };
-			Browser.storage.set(st);
+			st.cachedPos[level] = { epoch: (new Date).getTime(), position: sanitized };
+                        // log
+                        if (!st.logs[domain]) { 
+                          st.logs[domain] = [];
+                        }
+                        st.logs[domain].push({real: position,
+                                              sanitized: sanitized,
+                                              level: level,
+                                              time: (new Date).getTime()});
 
-			blog('noisy coords', position.coords);
+			Browser.storage.set(st);
+                    blog('storage', st);
+			blog('noisy coords', sanitized.coords);
 		}
 
 		// return noisy position
-		handler(position);
+		handler(sanitized);
 	});
 }
 
