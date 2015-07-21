@@ -185,25 +185,34 @@ function addNoise(position, handler) {
 	Browser.storage.get(function(st) {
 		var domain = Util.extractDomain(myUrl);
 		var level = st.domainLevel[domain] || st.defaultLevel;
+	    var sanitized = {
+		coords: {
+		    latitude: null,
+		    longitude: null,
+		    accuracy: null,
+		    // don't know how to add noise to those, so we set to null (they're most likely null anyway)
+		    altitude: null,
+		    altitudeAccuracy: null,
+		    heading: null,
+		    speed: null
+		},
+		timestamp: position.timestamp};
 
 		if(st.paused || level == 'real') {
-			// do nothing, use real location
-
+		    // copy real location
+		    sanitized.coords.latitude = position.coords.latitude;
+		    sanitized.coords.longitude = position.coords.longitude;
+		    sanitized.coords.accuracy = position.coords.accuracy;
 		} else if(level == 'fixed') {
-			position.coords = {
-				latitude: st.fixedPos.latitude,
-				longitude: st.fixedPos.longitude,
-				accuracy: 10,
-				altitude: null,
-				altitudeAccuracy: null,
-				heading: null,
-				speed: null
-			};
-
+		    sanitized.coords.latitude = st.fixedPos.latitude;
+		    sanitized.coords.longitude = st.fixedPos.longitude;
+		    sanitized.coords.accuracy = 10;
 		} else if(st.cachedPos[level] && ((new Date).getTime() - st.cachedPos[level].epoch)/60000 < st.levels[level].cacheTime) {
-			position = st.cachedPos[level].position;
-			blog('using cached', position);
-
+		    var cached = st.cachedPos[level].position;
+		    sanitized.coords.latitude = cached.coords.latitude;
+		    sanitized.coords.longitude = cached.coords.longitude;
+		    sanitized.coords.accuracy = cached.coords.accuracy;
+		    blog('using cached', position);
 		} else {
 			// add noise
 			var epsilon = st.epsilon / st.levels[level].radius;
@@ -211,39 +220,30 @@ function addNoise(position, handler) {
 			var pl = new PlannarLaplace();
 			var noisy = pl.addNoise(epsilon, position.coords);
 
-                        var sanitized = {};
-                        sanitized["coords"] = {}
-                        sanitized["coords"]["latitude"] = noisy.latitude;
-                        sanitized["coords"]["longitude"] = noisy.longitude;
+		    sanitized.coords.latitude = noisy.latitude;
+		    sanitized.coords.longitude = noisy.longitude;
 
 			// update accuracy
 			if(position.coords.accuracy && st.updateAccuracy)
 				sanitized.coords["accuracy"] = Math.round(pl.alphaDeltaAccuracy(epsilon, .9)) + position.coords.accuracy;
 
-			// don't know how to add noise to those, so we set to null (they're most likely null anyway)
-			sanitized.altitude = null;
-			sanitized.altitudeAccuracy = null;
-			sanitized.heading = null;
-			sanitized.speed = null;
-
 			// cache
 			st.cachedPos[level] = { epoch: (new Date).getTime(), position: sanitized };
-                        // log
-                        if (!st.logs[domain]) { 
-                          st.logs[domain] = [];
-                        }
-                        st.logs[domain].push({real: position,
-                                              sanitized: sanitized,
-                                              level: level,
-                                              time: (new Date).getTime()});
-
-			Browser.storage.set(st);
-                    blog('storage', st);
 			blog('noisy coords', sanitized.coords);
 		}
-
-		// return noisy position
-		handler(sanitized);
+	    
+            // log
+            if (!st.logs[domain]) { 
+                st.logs[domain] = [];
+            }
+            st.logs[domain].push({real: position,
+                                  sanitized: sanitized,
+                                  level: level,
+                                  time: position.timestamp}); // todo redundant?
+	    Browser.storage.set(st);
+	    blog("logs",st.logs);
+	    // return noisy position
+	    handler(sanitized);
 	});
 }
 

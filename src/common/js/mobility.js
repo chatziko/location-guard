@@ -1,6 +1,6 @@
 var mobilityMap;
-var intro;
-var showPressed, geoDone;
+// var intro;
+// var showPressed, geoDone;
 
 $.mobile.ajaxEnabled = false;
 $.mobile.linkBindingEnabled = false;
@@ -24,6 +24,65 @@ $(document).ready(function() {
 		// 	intro.exit();
 		// })
 		.setView([0,0], 2);
+
+    var realIcon = L.divIcon({className: 'real-div-icon'});
+    var sanitIcon = L.divIcon({className: 'sanit-div-icon'});
+    var domains = {};
+
+    var select = document.getElementById("domain");
+    select.onchange = function(e){refreshMap(e.target.value)}; 
+
+    var refreshMap = function(value){
+	blog("changed to " + value);
+	if (value == "All") {
+	    var bb = new L.LatLngBounds();
+	    for (var domain in domains){
+		var bounds = displayDomain(domain);
+		bb.extend(bounds);
+	    }
+	    mobilityMap.fitBounds(bb);
+	} else {
+	    var bounds = displayDomain(value);
+	    mobilityMap.fitBounds(bounds);
+	}
+    };
+
+    var displayDomain = function(domain){
+	blog("displaying ", domain);
+	var reals = domains[domain][0];
+	var sanit = domains[domain][1];
+	reals.addTo(mobilityMap);
+	sanit.addTo(mobilityMap);
+	return reals.getBounds().extend(sanit.getBounds());
+    }
+
+
+    Browser.storage.get(function(st) {
+	blog('logs',st.logs);
+	for (var domain in st.logs){
+	    var realLayer = L.featureGroup();
+	    var sanitLayer = L.featureGroup();
+	    st.logs[domain].forEach(function(el){
+		realLayer.addLayer(L.marker([el.real.coords.latitude, 
+					     el.real.coords.longitude], 
+					    {icon: realIcon}))
+		sanitLayer.addLayer(L.marker([el.sanitized.coords.latitude, 
+					      el.sanitized.coords.longitude],
+					    {icon: sanitIcon}))
+	    });
+	    domains[domain] = [realLayer,sanitLayer];
+	    var option = document.createElement("option");
+	    option.appendChild(document.createTextNode(domain));
+	    // option.setAttributeNode(document.createAttribute(""));
+	    select.appendChild(option);
+	};
+	blog('domains',domains);
+	refreshMap('All');
+    });
+    
+
+// realLayer.toGeoJSON()
+
 
 	// extend the Locate control and override the "start" method, so that it sets the marker to the user's location
 	// see https://github.com/domoritz/leaflet-locatecontrol
