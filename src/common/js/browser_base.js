@@ -90,6 +90,7 @@ var Browser = {
 			},
 			fixedPosNoAPI: true,
 			updateAccuracy: true,
+		    logOptOut: false,
 			epsilon: 2,
 			levels: {
 				low: {

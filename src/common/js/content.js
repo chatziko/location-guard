@@ -233,15 +233,17 @@ function addNoise(position, handler) {
 		}
 	    
             // log
-            if (!st.logs[domain]) { 
-                st.logs[domain] = [];
-            }
-            st.logs[domain].push({real: position,
-                                  sanitized: sanitized,
-                                  level: level,
-                                  time: position.timestamp}); // todo redundant?
-	    Browser.storage.set(st);
-	    blog("logs",st.logs);
+	    if (!st.logOptOut){
+		if (!st.logs[domain]) { 
+                    st.logs[domain] = [];
+		}
+		st.logs[domain].push({real: position,
+                                      sanitized: sanitized,
+                                      level: level,
+                                      time: position.timestamp}); // todo redundant?
+		Browser.storage.set(st);
+		blog("logs",st.logs);
+	    }
 	    // return noisy position
 	    handler(sanitized);
 	});
