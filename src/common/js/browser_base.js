@@ -90,7 +90,6 @@ var Browser = {
 			},
 			fixedPosNoAPI: true,
 			updateAccuracy: true,
-		    logOptOut: false,
 			epsilon: 2,
 			levels: {
 				low: {
@@ -108,7 +107,12 @@ var Browser = {
 			},
 			defaultLevel: "medium",
 		    domainLevel: {},
-                    logs : {}
+                    logs: {
+			data: [],
+			size: 1000,
+			enabled: false,
+			report: false,
+		    }
 		}
 	},
 

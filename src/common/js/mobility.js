@@ -34,46 +34,58 @@ $(document).ready(function() {
 
     var refreshMap = function(value){
 	blog("changed to " + value);
+	var bb = new L.LatLngBounds();
+
+	for (var domain in domains){
+	    mobilityMap.removeLayer(domains[domain][0]);
+	    mobilityMap.removeLayer(domains[domain][1]);
+	}
 	if (value == "All") {
-	    var bb = new L.LatLngBounds();
 	    for (var domain in domains){
 		var bounds = displayDomain(domain);
 		bb.extend(bounds);
 	    }
-	    mobilityMap.fitBounds(bb);
 	} else {
-	    var bounds = displayDomain(value);
-	    mobilityMap.fitBounds(bounds);
+	    bb = displayDomain(value);
 	}
+	mobilityMap.fitBounds(bb);
     };
 
     var displayDomain = function(domain){
-	blog("displaying ", domain);
+	blog("displaying", domain);
 	var reals = domains[domain][0];
 	var sanit = domains[domain][1];
-	reals.addTo(mobilityMap);
-	sanit.addTo(mobilityMap);
+	mobilityMap.addLayer(reals);
+	mobilityMap.addLayer(sanit);
 	return reals.getBounds().extend(sanit.getBounds());
     }
 
 
     Browser.storage.get(function(st) {
-	blog('logs',st.logs);
-	for (var domain in st.logs){
-	    var realLayer = L.featureGroup();
-	    var sanitLayer = L.featureGroup();
-	    st.logs[domain].forEach(function(el){
-		realLayer.addLayer(L.marker([el.real.coords.latitude, 
-					     el.real.coords.longitude], 
-					    {icon: realIcon}))
-		sanitLayer.addLayer(L.marker([el.sanitized.coords.latitude, 
-					      el.sanitized.coords.longitude],
-					    {icon: sanitIcon}))
-	    });
-	    domains[domain] = [realLayer,sanitLayer];
+	blog('logs',st.logs.data);
+	st.logs.data.forEach(function(el){
+	    var realLayer = null;
+	    var sanitLayer = null;
+	    if (!domains[el.domain]) {
+		realLayer = new L.featureGroup();
+		sanitLayer = new L.featureGroup();
+		domains[el.domain] = [realLayer,sanitLayer];
+	    } else {
+		realLayer = domains[el.domain][0];
+		sanitLayer = domains[el.domain][1];
+	    }
+	    realLayer.addLayer(L.marker([el.real.coords.latitude, 
+					 el.real.coords.longitude], 
+					{icon: realIcon}))
+	    sanitLayer.addLayer(L.marker([el.sanitized.coords.latitude, 
+					  el.sanitized.coords.longitude],
+					 {icon: sanitIcon}))
+	});
+	for (var domain in domains) {
+	    var size = domains[domain][0].getLayers().length;
 	    var option = document.createElement("option");
-	    option.appendChild(document.createTextNode(domain));
-	    // option.setAttributeNode(document.createAttribute(""));
+	    option.appendChild(document.createTextNode(domain + " ("+size+")"));
+	    option.setAttribute("value",domain);
 	    select.appendChild(option);
 	};
 	blog('domains',domains);
@@ -138,16 +150,15 @@ $(document).ready(function() {
 			    },
 			    timestamp: real.timestamp};
 
-			if (!st.logs[domain]) { 
-			    st.logs[domain] = [];
-			}
-			st.logs[domain].push({real: real,
-					      sanitized: sanitized,
-					      level: level,
-					      time: real.timestamp}); // todo redundant?
+			st.logs.data.push({real: real,
+					   sanitized: sanitized,
+					   level: {label: level,
+						   value: st.levels[level].radius},
+					   domain: domain,
+					   timestamp: real.timestamp});
 		    });
 		    Browser.storage.set(st);
-		    blog('logs ', st.logs);
+		    blog('logs ', st.logs.data);
 		});
 	    }})(f);                  // closure trick to remember f
 	reader.readAsText(files[0]);

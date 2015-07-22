@@ -185,6 +185,7 @@ function addNoise(position, handler) {
 	Browser.storage.get(function(st) {
 		var domain = Util.extractDomain(myUrl);
 		var level = st.domainLevel[domain] || st.defaultLevel;
+	    var timestamp = position.timestamp;
 	    var sanitized = {
 		coords: {
 		    latitude: null,
@@ -196,53 +197,63 @@ function addNoise(position, handler) {
 		    heading: null,
 		    speed: null
 		},
-		timestamp: position.timestamp};
+		timestamp: null};
 
 		if(st.paused || level == 'real') {
 		    // copy real location
 		    sanitized.coords.latitude = position.coords.latitude;
 		    sanitized.coords.longitude = position.coords.longitude;
 		    sanitized.coords.accuracy = position.coords.accuracy;
+		    sanitized.timstamp = position.timestamp;
 		} else if(level == 'fixed') {
 		    sanitized.coords.latitude = st.fixedPos.latitude;
 		    sanitized.coords.longitude = st.fixedPos.longitude;
 		    sanitized.coords.accuracy = 10;
+		    sanitized.timestamp = position.timestamp;
 		} else if(st.cachedPos[level] && ((new Date).getTime() - st.cachedPos[level].epoch)/60000 < st.levels[level].cacheTime) {
 		    var cached = st.cachedPos[level].position;
 		    sanitized.coords.latitude = cached.coords.latitude;
 		    sanitized.coords.longitude = cached.coords.longitude;
 		    sanitized.coords.accuracy = cached.coords.accuracy;
+		    sanitized.timestamp = cached.timestamp;
 		    blog('using cached', position);
 		} else {
 			// add noise
 			var epsilon = st.epsilon / st.levels[level].radius;
-
 			var pl = new PlannarLaplace();
 			var noisy = pl.addNoise(epsilon, position.coords);
 
+		    var accuracy = 0; // in case real accuracy is not defined
+		    if(position.coords.accuracy) {
+			accuracy = position.coords.accuracy;
+		    }
+		    if(st.updateAccuracy) {
+			accuracy = Math.round(pl.alphaDeltaAccuracy(epsilon, .9)) + position.coords.accuracy;
+		    }
+
 		    sanitized.coords.latitude = noisy.latitude;
 		    sanitized.coords.longitude = noisy.longitude;
-
-			// update accuracy
-			if(position.coords.accuracy && st.updateAccuracy)
-				sanitized.coords["accuracy"] = Math.round(pl.alphaDeltaAccuracy(epsilon, .9)) + position.coords.accuracy;
-
+		    sanitized.coords.accuracy = accuracy
+		    sanitized.timestamp = timestamp
+		    
 			// cache
-			st.cachedPos[level] = { epoch: (new Date).getTime(), position: sanitized };
+			st.cachedPos[level] = { epoch: position.timestamp, position: sanitized }; //redundant
 			blog('noisy coords', sanitized.coords);
 		}
 	    
             // log
 	    if (!st.logOptOut){
-		if (!st.logs[domain]) { 
-                    st.logs[domain] = [];
+		while (st.logs.data.length >= st.logs.size) {
+		    st.logs.data.pop();
 		}
-		st.logs[domain].push({real: position,
-                                      sanitized: sanitized,
-                                      level: level,
-                                      time: position.timestamp}); // todo redundant?
+		st.logs.data.push({real: position,
+				   sanitized: sanitized,
+				   level: {label: level,
+					   value: st.levels[level].radius},
+				   domain: domain,
+				   timestamp: timestamp});
 		Browser.storage.set(st);
-		blog("logs",st.logs);
+		blog("logs",st.logs.data);
 	    }
 	    // return noisy position
 	    handler(sanitized);
