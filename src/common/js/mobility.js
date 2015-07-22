@@ -80,8 +80,90 @@ $(document).ready(function() {
 	refreshMap('All');
     });
     
-
 // realLayer.toGeoJSON()
+
+
+
+    function handleFileSelect(evt) {
+
+	    var files = evt.target.files; // FileList object
+	    
+	    var reader = null;
+	    var trackLayer = null;
+	    
+	    if (files.length > 1) {
+		blog('too many files',files); 
+		return;
+	    }
+            var f = files[0];
+            reader = new FileReader();
+	    
+        reader.onload = (function(file){
+	    return function(e){
+		blog('loading ' + file.name);
+
+		var data = JSON.parse(e.target.result);
+
+		Browser.storage.get(function(st) {
+		    data.features.forEach(function(p) {
+			var real = {
+			    coords: {
+				latitude: p.geometry.coordinates[1],
+				longitude: p.geometry.coordinates[0],
+				accuracy: 10,
+				altitude: null,
+				altitudeAccuracy: null,
+				heading: null,
+				speed: null
+			    },
+			    timestamp: (new Date).getTime()};
+			
+			var idx = Math.floor(Math.random()*3);
+			var radius = ([200,500,2000])[idx];
+			var level = (["low","medium","high"])[idx];
+			var domain = level + ".com";
+			var epsilon = 2 / radius;
+			var pl = new PlannarLaplace();
+			var noisy = pl.addNoise(epsilon,real.coords);
+			var accuracy = Math.round(pl.alphaDeltaAccuracy(epsilon, .9)) + real.coords.accuracy;
+			var sanitized = {
+			    coords: {
+				latitude: noisy.latitude,
+				longitude: noisy.longitude,
+				accuracy: accuracy,
+				altitude: null,
+				altitudeAccuracy: null,
+				heading: null,
+				speed: null
+			    },
+			    timestamp: real.timestamp};
+
+			if (!st.logs[domain]) { 
+			    st.logs[domain] = [];
+			}
+			st.logs[domain].push({real: real,
+					      sanitized: sanitized,
+					      level: level,
+					      time: real.timestamp}); // todo redundant?
+		    });
+		    Browser.storage.set(st);
+		    blog('logs ', st.logs);
+		});
+	    }})(f);                  // closure trick to remember f
+	reader.readAsText(files[0]);
+    };
+    document.getElementById('files').onchange = handleFileSelect;
+		  
+
+
+
+
+
+
+
+
+
+
 
 
 	// extend the Locate control and override the "start" method, so that it sets the marker to the user's location
