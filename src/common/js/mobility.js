@@ -116,8 +116,73 @@ $(document).ready(function() {
 	refreshMap('All');
     });
     
-// realLayer.toGeoJSON()
 
+    var exportGeojson = function(){
+	function exportLog(log) {
+	    var realGeojson = { "type": "Feature",
+    				"geometry": {"type": "Point", 
+    					     "coordinates": [log.real.coords.longitude,
+							     log.real.coords.latitude]},
+    				"properties": {
+				    "accuracy": log.real.coords.accuracy,
+				    "timestamp": log.timestamp
+				}
+    			      };
+	    var sanitGeojson = { "type": "Feature",
+    				 "geometry": {"type": "Point", 
+    					      "coordinates": [log.sanitized.coords.longitude,
+							      log.sanitized.coords.latitude]},
+    				 "properties": {
+				     "accuracy": log.sanitized.coords.accuracy,
+				     "level": (log.level.label + ": " + log.level.value),
+				     "domain": log.domain,
+				     "timestamp": log.timestamp,
+				 }
+    			       };
+	    return [realGeojson,sanitGeojson]
+	}
+
+	Browser.storage.get(function(st) {
+	    var features = [];
+	    st.logs.data.forEach(function(log){
+		var points = exportLog(log);
+		features.push(points[0]);
+		features.push(points[1]);
+	    });
+    	    var geojson = { "type": "FeatureCollection",
+    			    "features": features
+    			  };
+	    var geojsonString = JSON.stringify(geojson);
+	    
+	    var a         = document.createElement('a');
+	    a.href        = 'data:attachment/json,' + geojsonString;
+	    a.target      = '_blank';
+	    a.download    = 'location-guard.json';
+	    document.body.appendChild(a);
+	    a.click();
+	});
+    }
+    document.getElementById('exportGeojson').onclick = exportGeojson;
+	// var allLayer = new L.featureGroup();
+	// for (var domain in domains){
+	//     allLayer.addLayer(domains[domain][0]);
+	//     allLayer.addLayer(domains[domain][1]);
+	// }
+	    // var geojsonString = JSON.stringify(allLayer.toGeoJSON());
+
+    function exportJson(){
+	Browser.storage.get(function(st) {
+	    var jsonString = JSON.stringify(st.logs.data);
+	    
+	    var a         = document.createElement('a');
+	    a.href        = 'data:attachment/json,' + jsonString;
+	    a.target      = '_blank';
+	    a.download    = 'location-guard.json';
+	    document.body.appendChild(a);
+	    a.click();
+	});
+    }
+    document.getElementById('export').onclick = exportJson;
 
 
     function handleFileSelect(evt) {
