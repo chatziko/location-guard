@@ -153,11 +153,13 @@ $(document).ready(function() {
     			    "features": features
     			  };
 	    var geojsonString = JSON.stringify(geojson);
+	    var now = new Date();
+	    var filename = 'location-guard-'+now.getFullYear()+'-'+(now.getMonth()+1)+'-'+now.getDate()+'-geo.json';
 	    
 	    var a         = document.createElement('a');
 	    a.href        = 'data:attachment/json,' + geojsonString;
 	    a.target      = '_blank';
-	    a.download    = 'location-guard.json';
+	    a.download    = filename;
 	    document.body.appendChild(a);
 	    a.click();
 	});
@@ -173,11 +175,13 @@ $(document).ready(function() {
     function exportJson(){
 	Browser.storage.get(function(st) {
 	    var jsonString = JSON.stringify(st.logs.data);
+	    var now = new Date();
+	    var filename = 'location-guard-'+now.getFullYear()+'-'+(now.getMonth()+1)+'-'+now.getDate()+'.json';
 	    
 	    var a         = document.createElement('a');
 	    a.href        = 'data:attachment/json,' + jsonString;
 	    a.target      = '_blank';
-	    a.download    = 'location-guard.json';
+	    a.download    = filename;
 	    document.body.appendChild(a);
 	    a.click();
 	});
@@ -185,75 +189,133 @@ $(document).ready(function() {
     document.getElementById('export').onclick = exportJson;
 
 
-    function handleFileSelect(evt) {
 
-	    var files = evt.target.files; // FileList object
-	    
+    function deleteAll(){
+	Browser.storage.get(function(st) {
+	    st.logs.data = [];
+	    Browser.storage.set(st);
+	    blog('delete all data');
+	})	
+    }
+    document.getElementById('deleteAll').onclick = deleteAll;
+
+    function deletePastInterval(time){
+	var now = Date.now();
+	Browser.storage.get(function(st) {
+	    st.logs.data = st.logs.data.filter(function(log){
+		var str = 
+		    "time: " + (new Date(time)).toISOString() + "\n" + 
+		    "now: " + (new Date(now)).toISOString() + "\n" + 
+		    "stamp: " + (new Date(log.timestamp)).toISOString() + "\n";
+		blog(str);
+		if (log.timestamp < now - time) {return true}
+		else {return false}
+	    });
+	    Browser.storage.set(st);
+	})	
+    }
+    function deleteHour(){
+	var hour = 60 * 60 * 1000;
+	deletePastInterval(hour);
+	blog('delete past hour');
+    }
+    document.getElementById('deleteHour').onclick = deleteHour;
+
+    function deleteDay(){
+	var day = 24 * 60 * 60 * 1000;
+	deletePastInterval(day);
+	blog('delete past day');
+    }
+    document.getElementById('deleteDay').onclick = deleteDay;
+
+
+
+
+
+
+
+
+    function handleEventFile(fileHandler) {
+	return function(evt){
+	    var file = evt.target.files[0];
 	    var reader = null;
-	    var trackLayer = null;
 	    
-	    if (files.length > 1) {
-		blog('too many files',files); 
-		return;
-	    }
-            var f = files[0];
             reader = new FileReader();
 	    
-        reader.onload = (function(file){
-	    return function(e){
-		blog('loading ' + file.name);
-
-		var data = JSON.parse(e.target.result);
-
-		Browser.storage.get(function(st) {
-		    data.features.forEach(function(p) {
-			var real = {
-			    coords: {
-				latitude: p.geometry.coordinates[1],
-				longitude: p.geometry.coordinates[0],
-				accuracy: 10,
-				altitude: null,
-				altitudeAccuracy: null,
-				heading: null,
-				speed: null
-			    },
-			    timestamp: (new Date).getTime()};
-			
-			var idx = Math.floor(Math.random()*3);
-			var radius = ([200,500,2000])[idx];
-			var level = (["low","medium","high"])[idx];
-			var domain = level + ".com";
-			var epsilon = 2 / radius;
-			var pl = new PlannarLaplace();
-			var noisy = pl.addNoise(epsilon,real.coords);
-			var accuracy = Math.round(pl.alphaDeltaAccuracy(epsilon, .9)) + real.coords.accuracy;
-			var sanitized = {
-			    coords: {
-				latitude: noisy.latitude,
-				longitude: noisy.longitude,
-				accuracy: accuracy,
-				altitude: null,
-				altitudeAccuracy: null,
-				heading: null,
-				speed: null
-			    },
-			    timestamp: real.timestamp};
-
-			st.logs.data.push({real: real,
-					   sanitized: sanitized,
-					   level: {label: level,
-						   value: st.levels[level].radius},
-					   domain: domain,
-					   timestamp: real.timestamp});
-		    });
-		    Browser.storage.set(st);
-		    blog('logs ', st.logs.data);
-		});
-	    }})(f);                  // closure trick to remember f
-	reader.readAsText(files[0]);
+            reader.onload = (function(file){
+		return function(e){
+		    
+		    blog('loading ' + file.name);
+		    fileHandler(e.target.result);
+		    
+		}})(file);                  // closure trick to remember file
+	    reader.readAsText(file);
+	}
     };
-    document.getElementById('files').onchange = handleFileSelect;
-		  
+
+
+    function importProfile(filedata) {
+	blog('import profile');
+	Browser.storage.get(function(st) {
+	    st.logs.data = JSON.parse(filedata);
+	    Browser.storage.set(st);
+	})
+    };
+    document.getElementById('profile').onchange = handleEventFile(importProfile);
+
+
+
+    function generateProfile(filedata) {
+	blog('generate profile');
+	Browser.storage.get(function(st) {
+
+	    var data = JSON.parse(filedata);
+	    data.features.forEach(function(p) {
+		var real = {
+		    coords: {
+			latitude: p.geometry.coordinates[1],
+			longitude: p.geometry.coordinates[0],
+			accuracy: 10,
+			altitude: null,
+			altitudeAccuracy: null,
+			heading: null,
+			speed: null
+		    },
+		    timestamp: (new Date).getTime()};
+		
+		var idx = Math.floor(Math.random()*3);
+		var radius = ([200,500,2000])[idx];
+		var level = (["low","medium","high"])[idx];
+		var domain = level + ".com";
+		var epsilon = 2 / radius;
+		var pl = new PlannarLaplace();
+		var noisy = pl.addNoise(epsilon,real.coords);
+		var accuracy = Math.round(pl.alphaDeltaAccuracy(epsilon, .9)) + real.coords.accuracy;
+		var sanitized = {
+		    coords: {
+			latitude: noisy.latitude,
+			longitude: noisy.longitude,
+			accuracy: accuracy,
+			altitude: null,
+			altitudeAccuracy: null,
+			heading: null,
+			speed: null
+		    },
+		    timestamp: real.timestamp};
+
+		st.logs.data.push({real: real,
+				   sanitized: sanitized,
+				   level: {label: level,
+					   value: st.levels[level].radius},
+				   domain: domain,
+				   timestamp: real.timestamp});
+	    });
+	    Browser.storage.set(st);
+	    blog('logs ', st.logs.data);
+	})
+    }
+    document.getElementById('reals').onchange = handleEventFile(generateProfile);
+    if (!Browser.debugging) {document.getElementById('reals').remove()}
 
 
 
