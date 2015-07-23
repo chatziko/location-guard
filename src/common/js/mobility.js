@@ -61,62 +61,82 @@ $(document).ready(function() {
     }
 
 
-    Browser.storage.get(function(st) {
-	blog('logs',st.logs.data);
-	st.logs.data.forEach(function(el){
-	    var realLayer = null;
-	    var sanitLayer = null;
-	    if (!domains[el.domain]) {
-		realLayer = new L.featureGroup();
-		sanitLayer = new L.featureGroup();
-		domains[el.domain] = [realLayer,sanitLayer];
-	    } else {
-		realLayer = domains[el.domain][0];
-		sanitLayer = domains[el.domain][1];
-	    }
-            
-	    var circleStyleMaker = function(color,opa){
-		return {
-		    radius: 5,
-		    fillColor: color,
-		    color: "#000",
-		    weight: 1,
-		    opacity: opa,
-		    fillOpacity: opa
-		}
-	    }
-	    var makeMarker = function(p,color,opa){
-		var popupString = '<div class="popup">';
-		popupString += 'Coord [' + p.coords.latitude + ',' + p.coords.latitude + '] <br />';
-		popupString += 'Time: ' + (new Date(p.timestamp)).toISOString() + '<br />';
-		popupString += '</div>';
-	    
-		var marker = L.circleMarker([p.coords.latitude, 
-					     p.coords.longitude], 
-					    circleStyleMaker(color,opa));
-		marker.bindPopup(popupString, { maxHeight: 200 });
-		return marker
-	    }
-	    realLayer.addLayer(makeMarker(el.real,'#FF0000',1));
-	    sanitLayer.addLayer(makeMarker(el.sanitized,'#0000FF',1));
-	});
-	//make select menu
-	var options = [];
-	for (var domain in domains) {
-	    var size = domains[domain][0].getLayers().length;
-	    var option = document.createElement("option");
-	    option.appendChild(document.createTextNode(domain + " ("+size+")"));
-	    option.setAttribute("value",domain);
-	    options.push([size,option]);
-	};
-	options.sort(function(a,b){return a[0] < b[0]});
-	options.forEach(function(option){select.appendChild(option[1])});
+    var refreshUI = function(){
+	Browser.storage.get(function(st) {
 
-	blog('domains',domains);
-	refreshMap('All');
-    });
+	    // clear domains data structure
+	    for (var domain in domains){
+		mobilityMap.removeLayer(domains[domain][0]);
+		mobilityMap.removeLayer(domains[domain][1]);
+	    }
+	    domains = [];
+
+	    // populate domains data structure with new layers of points
+	    blog('logs',st.logs.data);
+	    st.logs.data.forEach(function(el){
+		var realLayer = null;
+		var sanitLayer = null;
+		if (!domains[el.domain]) {
+		    realLayer = new L.featureGroup();
+		    sanitLayer = new L.featureGroup();
+		    domains[el.domain] = [realLayer,sanitLayer];
+		} else {
+		    realLayer = domains[el.domain][0];
+		    sanitLayer = domains[el.domain][1];
+		}
+		
+		var circleStyleMaker = function(color,opa){
+		    return {
+			radius: 5,
+			fillColor: color,
+			color: "#000",
+			weight: 1,
+			opacity: opa,
+			fillOpacity: opa
+		    }
+		}
+		var makeMarker = function(p,color,opa){
+		    var popupString = '<div class="popup">';
+		    popupString += 'Coord [' + p.coords.latitude + ',' + p.coords.latitude + '] <br />';
+		    popupString += 'Time: ' + (new Date(p.timestamp)).toISOString() + '<br />';
+		    popupString += '</div>';
+		    
+		    var marker = L.circleMarker([p.coords.latitude, 
+						 p.coords.longitude], 
+						circleStyleMaker(color,opa));
+		    marker.bindPopup(popupString, { maxHeight: 200 });
+		    return marker
+		}
+		realLayer.addLayer(makeMarker(el.real,'#FF0000',1));
+		sanitLayer.addLayer(makeMarker(el.sanitized,'#0000FF',1));
+	    });
+	    // clear select menu
+	    while (select.firstChild) {
+		select.removeChild(select.firstChild);
+	    }	
+	    // make select menu
+	    var optionAll = document.createElement("option");
+	    optionAll.appendChild(document.createTextNode("All"));
+	    select.appendChild(optionAll);
+	    var options = [];
+	    for (var domain in domains) {
+		var size = domains[domain][0].getLayers().length;
+		var option = document.createElement("option");
+		option.appendChild(document.createTextNode(domain + " ("+size+")"));
+		option.setAttribute("value",domain);
+		options.push([size,option]);
+	    };
+	    options.sort(function(a,b){return a[0] < b[0]});
+	    options.forEach(function(option){select.appendChild(option[1])});
+
+	    blog('domains',domains);
+	    refreshMap('All');
+	})
+    }
+    refreshUI();
     
 
+    // display on http://geojsonlint.com/
     var exportGeojson = function(){
 	function exportLog(log) {
 	    var realGeojson = { "type": "Feature",
@@ -194,6 +214,7 @@ $(document).ready(function() {
 	Browser.storage.get(function(st) {
 	    st.logs.data = [];
 	    Browser.storage.set(st);
+	    refreshUI();
 	    blog('delete all data');
 	})	
     }
@@ -212,6 +233,7 @@ $(document).ready(function() {
 		else {return false}
 	    });
 	    Browser.storage.set(st);
+	    refreshUI();
 	})	
     }
     function deleteHour(){
@@ -259,6 +281,7 @@ $(document).ready(function() {
 	Browser.storage.get(function(st) {
 	    st.logs.data = JSON.parse(filedata);
 	    Browser.storage.set(st);
+	    refreshUI();
 	})
     };
     document.getElementById('profile').onchange = handleEventFile(importProfile);
@@ -268,9 +291,27 @@ $(document).ready(function() {
     function generateProfile(filedata) {
 	blog('generate profile');
 	Browser.storage.get(function(st) {
-
 	    var data = JSON.parse(filedata);
-	    data.features.forEach(function(p) {
+
+	    var makeTimestamp =
+		(function(){
+		    var day = 24 * 3600 * 1000;
+		    var days = data.features.length * day; 
+		    var start = Date.now() - days;
+		    return function(idx){
+			if (idx == data.features.length -1) { 
+			    return Date.now() - (30 * 60 * 1000); //to test deleteHour
+			} else if (idx == data.features.length -2) { 
+			    return Date.now() - (2 * 3600 * 1000); //to test deleteDay
+			} else { // random
+			    start += Math.random() * day;
+			    blog('timestamp', (new Date(start)).toISOString());
+			    return start
+			}
+		    }})()
+	    
+
+	    data.features.forEach(function(p,i) {
 		var real = {
 		    coords: {
 			latitude: p.geometry.coordinates[1],
@@ -281,7 +322,7 @@ $(document).ready(function() {
 			heading: null,
 			speed: null
 		    },
-		    timestamp: (new Date).getTime()};
+		    timestamp: makeTimestamp(i)};
 		
 		var idx = Math.floor(Math.random()*3);
 		var radius = ([200,500,2000])[idx];
@@ -311,6 +352,7 @@ $(document).ready(function() {
 				   timestamp: real.timestamp});
 	    });
 	    Browser.storage.set(st);
+	    refreshUI();
 	    blog('logs ', st.logs.data);
 	})
     }
