@@ -25,8 +25,8 @@ $(document).ready(function() {
 		// })
 		.setView([0,0], 2);
 
-    var realIcon = L.divIcon({className: 'real-div-icon'});
-    var sanitIcon = L.divIcon({className: 'sanit-div-icon'});
+
+
     var domains = {};
 
     var select = document.getElementById("domain");
@@ -74,12 +74,31 @@ $(document).ready(function() {
 		realLayer = domains[el.domain][0];
 		sanitLayer = domains[el.domain][1];
 	    }
-	    realLayer.addLayer(L.marker([el.real.coords.latitude, 
-					 el.real.coords.longitude], 
-					{icon: realIcon}))
-	    sanitLayer.addLayer(L.marker([el.sanitized.coords.latitude, 
-					  el.sanitized.coords.longitude],
-					 {icon: sanitIcon}))
+            
+	    var circleStyleMaker = function(color,opa){
+		return {
+		    radius: 5,
+		    fillColor: color,
+		    color: "#000",
+		    weight: 1,
+		    opacity: opa,
+		    fillOpacity: opa
+		}
+	    }
+	    var makeMarker = function(p,color,opa){
+		var popupString = '<div class="popup">';
+		popupString += 'Coord [' + p.coords.latitude + ',' + p.coords.latitude + '] <br />';
+		popupString += 'Time: ' + (new Date(p.timestamp)).toISOString() + '<br />';
+		popupString += '</div>';
+	    
+		var marker = L.circleMarker([p.coords.latitude, 
+					     p.coords.longitude], 
+					    circleStyleMaker(color,opa));
+		marker.bindPopup(popupString, { maxHeight: 200 });
+		return marker
+	    }
+	    realLayer.addLayer(makeMarker(el.real,'#FF0000',1));
+	    sanitLayer.addLayer(makeMarker(el.sanitized,'#0000FF',1));
 	});
 	for (var domain in domains) {
 	    var size = domains[domain][0].getLayers().length;
