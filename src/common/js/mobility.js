@@ -100,13 +100,18 @@ $(document).ready(function() {
 	    realLayer.addLayer(makeMarker(el.real,'#FF0000',1));
 	    sanitLayer.addLayer(makeMarker(el.sanitized,'#0000FF',1));
 	});
+	//make select menu
+	var options = [];
 	for (var domain in domains) {
 	    var size = domains[domain][0].getLayers().length;
 	    var option = document.createElement("option");
 	    option.appendChild(document.createTextNode(domain + " ("+size+")"));
 	    option.setAttribute("value",domain);
-	    select.appendChild(option);
+	    options.push([size,option]);
 	};
+	options.sort(function(a,b){return a[0] < b[0]});
+	options.forEach(function(option){select.appendChild(option[1])});
+
 	blog('domains',domains);
 	refreshMap('All');
     });
