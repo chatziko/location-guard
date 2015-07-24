@@ -19,14 +19,13 @@
 
 	<link rel="stylesheet" href="options.css">
 
-	<script src="js/mobility.js"></script>
-
 	<!-- chrome does not support content scripts for internal pages, so we load content.js and its requirements as a normal script -->
 	<script src="js/util.js"></script>
 	<script src="js/browser_base.js"></script>
 	<script src="js/browser.js"></script>
 	<script src="js/laplace.js"></script>
 	<script src="js/content.js"></script>
+	<script src="js/mobility.js"></script>
 </head>
 <body class="ui-alt-icon ui-nodisc-icon">
 	<div data-role="page" id="mobility" data-title="Location Guard" class="page">
@@ -43,8 +42,11 @@
 			<button id="deleteAll">Delete All Data</button>
 			<input type="file" id="reals" name="reals">Generate profile from real locations</input>
 			<input type="file" id="profile" name="profile">Import profile</input>
-			<select id="domain">
-			</select>
+			<form>
+				<div class="ui-field-contain">
+					<select name="domain" id="domain"></select>
+				</div>
+			</form>
 			<div id="mobilityMap" class="flex">
 			</div>
 		</div>

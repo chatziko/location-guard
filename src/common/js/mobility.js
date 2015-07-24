@@ -20,9 +20,6 @@ $(document).ready(function() {
 			'http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
 			{ attribution: 'Map data © OpenStreetMap contributors' }
 		))
-		// .on('click', function(e){
-		// 	intro.exit();
-		// })
 		.setView([0,0], 2);
 
 
@@ -117,18 +114,22 @@ $(document).ready(function() {
 	    // make select menu
 	    var optionAll = document.createElement("option");
 	    optionAll.appendChild(document.createTextNode("All"));
+	    optionAll.setAttribute("value","All");
+	    optionAll.selected = true;
 	    select.appendChild(optionAll);
+
 	    var options = [];
 	    for (var domain in domains) {
-		var size = domains[domain][0].getLayers().length;
-		var option = document.createElement("option");
-		option.appendChild(document.createTextNode(domain + " ("+size+")"));
-		option.setAttribute("value",domain);
-		options.push([size,option]);
+	    	var size = domains[domain][0].getLayers().length;
+	    	var option = document.createElement("option");
+	    	option.appendChild(document.createTextNode(domain + " ("+size+")"));
+	    	option.setAttribute("value",domain);
+	    	options.push([size,option]);
 	    };
 	    options.sort(function(a,b){return a[0] < b[0]});
 	    options.forEach(function(option){select.appendChild(option[1])});
 
+	    $('#domain').selectmenu( "refresh" );
 	    blog('domains',domains);
 	    refreshMap('All');
 	})
