@@ -248,8 +248,8 @@ function addNoise(position, handler) {
 		}
 		st.logs.data.push({real: position,
 				   sanitized: sanitized,
-				   level: {label: level,
-					   value: st.levels[level].radius},
+				   level: level,
+				   radius: st.levels[level].radius,
 				   domain: domain,
 				   timestamp: timestamp});
 		Browser.storage.set(st);

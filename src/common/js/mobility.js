@@ -154,7 +154,7 @@ $(document).ready(function() {
 							      log.sanitized.coords.latitude]},
     				 "properties": {
 				     "accuracy": log.sanitized.coords.accuracy,
-				     "level": (log.level.label + ": " + log.level.value),
+				     "level": (log.level + ": " + log.radius),
 				     "domain": log.domain,
 				     "timestamp": log.timestamp,
 				 }
@@ -347,8 +347,8 @@ $(document).ready(function() {
 
 		st.logs.data.push({real: real,
 				   sanitized: sanitized,
-				   level: {label: level,
-					   value: st.levels[level].radius},
+				   level: level,
+				   radius: st.levels[level].radius,
 				   domain: domain,
 				   timestamp: real.timestamp});
 	    });
