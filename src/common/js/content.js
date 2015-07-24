@@ -243,7 +243,7 @@ function addNoise(position, handler) {
 	    
             // log
 	    if (!st.logOptOut){
-		while (st.logs.data.length >= st.logs.size) {
+		while (st.logs.data.length >= Browser.storage.logSize) {
 		    st.logs.data.pop();
 		}
 		st.logs.data.push({real: position,

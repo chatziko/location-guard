@@ -59,6 +59,8 @@ var Browser = {
 	// else that needs to be stored. It is fetched and stored as a whole.
 	//
 	storage: {
+	    // the number of logs we keep when logging is enabled
+	    logSize: 1000,  
 		// browser.storage.get(handler)
 		//
 		// fetches the storage object and passes it to the handler.
@@ -109,7 +111,6 @@ var Browser = {
 		    domainLevel: {},
                     logs: {
 			data: [],
-			size: 1000,
 			enabled: false,
 			report: false,
 		    }
