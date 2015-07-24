@@ -285,6 +285,7 @@ $(document).ready(function() {
 	})
     };
     document.getElementById('profile').onchange = handleEventFile(importProfile);
+    if (!Browser.debugging) {document.getElementById('profile').remove()}
 
 
 
