@@ -1,4 +1,4 @@
-var mobilityMap;
+var map;
 // var intro;
 // var showPressed, geoDone;
 
@@ -15,7 +15,7 @@ $(document).ready(function() {
 	});
 
 	// setup map
-	mobilityMap = new L.map('mobilityMap')
+	map = new L.map('map')
 		.addLayer(new L.TileLayer(
 			'http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
 			{ attribution: 'Map data © OpenStreetMap contributors' }
@@ -34,7 +34,7 @@ $(document).ready(function() {
 	var bb = new L.LatLngBounds();
 
 	for (var domain in domains){
-	    mobilityMap.removeLayer(domains[domain]);
+	    map.removeLayer(domains[domain]);
 	}
 	if (value == "All") {
 	    for (var domain in domains){
@@ -44,13 +44,13 @@ $(document).ready(function() {
 	} else {
 	    bb = displayDomain(value);
 	}
-	mobilityMap.fitBounds(bb);
+	map.fitBounds(bb);
     };
 
     var displayDomain = function(domain){
 	blog("displaying", domain);
 	var logs = domains[domain];
-	mobilityMap.addLayer(logs);
+	map.addLayer(logs);
 	return logs.getBounds();
     }
 
@@ -60,7 +60,7 @@ $(document).ready(function() {
 
 	    // clear domains data structure
 	    for (var domain in domains){
-		mobilityMap.removeLayer(domains[domain]);
+		map.removeLayer(domains[domain]);
 	    }
 	    domains = [];
 
@@ -123,9 +123,9 @@ $(document).ready(function() {
 			visible = false;
 		    } else {
 			logLayer.addLayer(line);
-			mobilityMap.fitBounds(logLayer.getBounds());
-			popup.openOn(mobilityMap);
-			mobilityMap.addOneTimeEventListener('click',toggleLine);
+			map.fitBounds(logLayer.getBounds());
+			popup.openOn(map);
+			map.addOneTimeEventListener('click',toggleLine);
 			visible = true;
 		    }
 		}
