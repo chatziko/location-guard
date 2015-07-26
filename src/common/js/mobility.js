@@ -71,7 +71,7 @@ $(document).ready(function() {
 	    // populate domains data structure with new layers of points
 	    blog('logs',st.logs.data);
 	    st.logs.data.forEach(function(el){
-		if (!el.real){blog('skipping fixed location');break;}
+		if (!el.real){blog('skipping fixed location');return;}
 		var realLayer = null;
 		var sanitLayer = null;
 		if (!domains[el.domain]) {
@@ -299,24 +299,35 @@ $(document).ready(function() {
 	Browser.storage.get(function(st) {
 	    var data = JSON.parse(filedata);
 
-	    var makeTimestamp =
-		(function(){
-		    var day = 24 * 3600 * 1000;
-		    var days = data.features.length * day; 
-		    var start = Date.now() - days;
-		    return function(idx){
-			if (idx == data.features.length -1) { 
-			    return Date.now() - (30 * 60 * 1000); //to test deleteHour
-			} else if (idx == data.features.length -2) { 
-			    return Date.now() - (2 * 3600 * 1000); //to test deleteDay
-			} else { // random
-			    start += Math.random() * day;
-			    blog('timestamp', (new Date(start)).toISOString());
-			    return start
-			}
-		    }})()
+	    // TODO GENERATE SOME CACHED POINTS
 
-	    // TODO GENERATE FIXED POINTS
+	    var timestamps = [];
+	    var now = Date.now();
+	    var hour = 3600 * 1000;
+	    var day = 24 * hour;
+	    timestamps.push(now - (0.5 * hour)); //to test deleteHour
+	    timestamps.push(now - (2   * hour)); //to test deleteDay
+	    var size = data.features.length -2 +1; // minus the two previous points, plus the fixed one
+	    for (var i=1; i<=size; i++) {
+		timestamps.push(now - (i*day));
+	    }
+	    
+	    // blog('timestamp', (new Date(start)).toISOString());
+    
+
+	    var fixed = {
+		coords: {
+		    latitude: st.fixedPos.latitude,
+		    longitude: st.fixedPos.longitude,
+		    accuracy: 10,
+		    altitude: null,
+		    altitudeAccuracy: null,
+		    heading: null,
+		    speed: null
+		},
+		timestamp: timestamps[0]
+	    };
+	    st.logs.data.push(fixed);
 
 	    data.features.forEach(function(p,i) {
 		var real = {
@@ -329,12 +340,15 @@ $(document).ready(function() {
 			heading: null,
 			speed: null
 		    },
-		    timestamp: makeTimestamp(i)};
+		    timestamp: timestamps[i]};
 		
 		var idx = Math.floor(Math.random()*3);
 		var radius = ([200,500,2000])[idx];
 		var level = (["low","medium","high"])[idx];
-		var domain = level + ".com";
+		
+		var domains = ["http://openstreetmap.org/", "http://maps.google.com/", "http://accuweather.com/", "http://html5demos.com/geo", "http://forecast.io/", "http://facebook.com/", "https://foursquare.com/", "http://instagram.com/", "http://tripadvisor.it/", "http://yelp.com/"];
+		var domain = domains[Math.floor(Math.random()*domains.length)];
+
 		var epsilon = 2 / radius;
 		var pl = new PlannarLaplace();
 		var noisy = pl.addNoise(epsilon,real.coords);
