@@ -34,8 +34,7 @@ $(document).ready(function() {
 	var bb = new L.LatLngBounds();
 
 	for (var domain in domains){
-	    mobilityMap.removeLayer(domains[domain][0]);
-	    mobilityMap.removeLayer(domains[domain][1]);
+	    mobilityMap.removeLayer(domains[domain]);
 	}
 	if (value == "All") {
 	    for (var domain in domains){
@@ -50,11 +49,9 @@ $(document).ready(function() {
 
     var displayDomain = function(domain){
 	blog("displaying", domain);
-	var reals = domains[domain][0];
-	var sanit = domains[domain][1];
-	mobilityMap.addLayer(reals);
-	mobilityMap.addLayer(sanit);
-	return reals.getBounds().extend(sanit.getBounds());
+	var logs = domains[domain];
+	mobilityMap.addLayer(logs);
+	return logs.getBounds();
     }
 
 
@@ -70,17 +67,14 @@ $(document).ready(function() {
 
 	    // populate domains data structure with new layers of points
 	    blog('logs',st.logs.data);
-	    st.logs.data.forEach(function(el){
-		if (!el.real){blog('skipping fixed location');return;}
-		var realLayer = null;
-		var sanitLayer = null;
-		if (!domains[el.domain]) {
-		    realLayer = new L.featureGroup();
-		    sanitLayer = new L.featureGroup();
-		    domains[el.domain] = [realLayer,sanitLayer];
+	    st.logs.data.forEach(function(log){
+		if (!log.real){blog('skipping fixed location');return;}
+		var domainLayer = null;
+		if (!domains[log.domain]) {
+		    domainLayer = new L.featureGroup();
+		    domains[log.domain] = domainLayer;
 		} else {
-		    realLayer = domains[el.domain][0];
-		    sanitLayer = domains[el.domain][1];
+		    domainLayer = domains[log.domain];
 		}
 		
 		var circleStyleMaker = function(color,opa){
@@ -93,20 +87,52 @@ $(document).ready(function() {
 			fillOpacity: opa
 		    }
 		}
-		var makeMarker = function(p,color,opa){
-		    var popupString = '<div class="popup">';
-		    popupString += 'Coord [' + p.coords.latitude + ',' + p.coords.latitude + '] <br />';
-		    popupString += 'Time: ' + (new Date(p.timestamp)).toISOString() + '<br />';
-		    popupString += '</div>';
-		    
-		    var marker = L.circleMarker([p.coords.latitude, 
-						 p.coords.longitude], 
-						circleStyleMaker(color,opa));
-		    marker.bindPopup(popupString, { maxHeight: 200 });
-		    return marker
+		var red  = '#FF0000';
+		var blue = '#0000FF';
+
+		var cooReal = [log.real.coords.latitude,
+			       log.real.coords.longitude];
+		var cooSanit = [log.sanitized.coords.latitude,
+				log.sanitized.coords.longitude]
+		var markerReal = L.circleMarker(cooReal, circleStyleMaker(red,1));
+		var markerSanit = L.circleMarker(cooSanit, circleStyleMaker(blue,1));
+		var line = L.polyline([cooReal,cooSanit], {color: 'grey'});
+
+		var logLayer = new L.featureGroup();
+		logLayer.addLayer(markerReal);
+		logLayer.addLayer(markerSanit);
+
+		var distance = Math.floor(L.latLng(cooReal).distanceTo(cooSanit));
+		var popupString = '<div class="popup">';
+		// popupString += 'Coord [' + p.coords.latitude + ',' + p.coords.latitude + '] <br />';
+		popupString += '<a href='+log.domain+'>'+log.domain + '</a><br />';
+		popupString += 'Level: ' + log.level + '<br />';
+		popupString += 'Distance: ' + distance + ' m <br />';
+		popupString += 'Time: ' + (new Date(log.timestamp)).toLocaleString() + '<br />';
+		popupString += '</div>';
+
+		var popup = L.popup().setContent(popupString);
+		popup.setLatLng(line.getBounds().getCenter());
+
+		var removeLine = function(e){
+		    logLayer.removeLayer(line);
 		}
-		realLayer.addLayer(makeMarker(el.real,'#FF0000',1));
-		sanitLayer.addLayer(makeMarker(el.sanitized,'#0000FF',1));
+		var visible = false
+		var toggleLine = function(e){
+		    if (visible) {
+			logLayer.removeLayer(line);
+			visible = false;
+		    } else {
+			logLayer.addLayer(line);
+			mobilityMap.fitBounds(logLayer.getBounds());
+			popup.openOn(mobilityMap);
+			mobilityMap.addOneTimeEventListener('click',toggleLine);
+			visible = true;
+		    }
+		}
+		logLayer.on('click',toggleLine);
+
+		domainLayer.addLayer(logLayer);
 	    });
 	    // clear select menu
 	    while (select.firstChild) {
@@ -121,7 +147,7 @@ $(document).ready(function() {
 
 	    var options = [];
 	    for (var domain in domains) {
-	    	var size = domains[domain][0].getLayers().length;
+	    	var size = domains[domain].getLayers().length;
 	    	var option = document.createElement("option");
 	    	option.appendChild(document.createTextNode(domain + " ("+size+")"));
 	    	option.setAttribute("value",domain);
