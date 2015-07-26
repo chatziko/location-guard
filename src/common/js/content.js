@@ -142,9 +142,24 @@ rpc.register('getNoisyPosition', function(options, replyHandler) {
 				},
 				timestamp: new Date().getTime()
 			};
-			replyHandler(true, noisy);
-			blog("returning fixed", noisy);
-			return;
+		    // log
+		    if (!st.logOptOut){
+			while (st.logs.data.length >= Browser.storage.logSize) {
+			    st.logs.data.pop();
+			}
+			st.logs.data.push({real: null,
+					   sanitized: noisy,
+					   level: level,
+					   radius: null,
+					   domain: domain,
+					   timestamp: noisy.timestamp});
+			Browser.storage.set(st);
+			blog("logs",st.logs.data);
+		    }
+		    
+		    replyHandler(true, noisy);
+		    blog("returning fixed", noisy);
+		    return;
 		}
 
 		// we call getCurrentPosition here in the content script, instead of
@@ -185,7 +200,7 @@ function addNoise(position, handler) {
 	Browser.storage.get(function(st) {
 		var domain = Util.extractDomain(myUrl);
 		var level = st.domainLevel[domain] || st.defaultLevel;
-	    var timestamp = position.timestamp;
+	    var now = Date.now();
 	    var sanitized = {
 		coords: {
 		    latitude: null,
@@ -204,12 +219,12 @@ function addNoise(position, handler) {
 		    sanitized.coords.latitude = position.coords.latitude;
 		    sanitized.coords.longitude = position.coords.longitude;
 		    sanitized.coords.accuracy = position.coords.accuracy;
-		    sanitized.timstamp = position.timestamp;
+		    sanitized.timestamp = now;
 		} else if(level == 'fixed') {
 		    sanitized.coords.latitude = st.fixedPos.latitude;
 		    sanitized.coords.longitude = st.fixedPos.longitude;
 		    sanitized.coords.accuracy = 10;
-		    sanitized.timestamp = position.timestamp;
+		    sanitized.timestamp = now;
 		} else if(st.cachedPos[level] && ((new Date).getTime() - st.cachedPos[level].epoch)/60000 < st.levels[level].cacheTime) {
 		    var cached = st.cachedPos[level].position;
 		    sanitized.coords.latitude = cached.coords.latitude;
@@ -218,10 +233,10 @@ function addNoise(position, handler) {
 		    sanitized.timestamp = cached.timestamp;
 		    blog('using cached', position);
 		} else {
-			// add noise
-			var epsilon = st.epsilon / st.levels[level].radius;
-			var pl = new PlannarLaplace();
-			var noisy = pl.addNoise(epsilon, position.coords);
+		    // add noise
+		    var epsilon = st.epsilon / st.levels[level].radius;
+		    var pl = new PlannarLaplace();
+		    var noisy = pl.addNoise(epsilon, position.coords);
 
 		    var accuracy = 0; // in case real accuracy is not defined
 		    if(position.coords.accuracy) {
@@ -233,12 +248,12 @@ function addNoise(position, handler) {
 
 		    sanitized.coords.latitude = noisy.latitude;
 		    sanitized.coords.longitude = noisy.longitude;
-		    sanitized.coords.accuracy = accuracy
-		    sanitized.timestamp = timestamp
+		    sanitized.coords.accuracy = accuracy;
+		    sanitized.timestamp = now;
 		    
-			// cache
-			st.cachedPos[level] = { epoch: position.timestamp, position: sanitized }; //redundant
-			blog('noisy coords', sanitized.coords);
+		    // cache
+		    st.cachedPos[level] = { epoch: position.timestamp, position: sanitized }; //redundant
+		    blog('noisy coords', sanitized.coords);
 		}
 	    
             // log
@@ -251,7 +266,7 @@ function addNoise(position, handler) {
 				   level: level,
 				   radius: st.levels[level].radius,
 				   domain: domain,
-				   timestamp: timestamp});
+				   timestamp: now});
 		Browser.storage.set(st);
 		blog("logs",st.logs.data);
 	    }

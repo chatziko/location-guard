@@ -71,6 +71,7 @@ $(document).ready(function() {
 	    // populate domains data structure with new layers of points
 	    blog('logs',st.logs.data);
 	    st.logs.data.forEach(function(el){
+		if (!el.real){blog('skipping fixed location');break;}
 		var realLayer = null;
 		var sanitLayer = null;
 		if (!domains[el.domain]) {
@@ -140,15 +141,6 @@ $(document).ready(function() {
     // display on http://geojsonlint.com/
     var exportGeojson = function(){
 	function exportLog(log) {
-	    var realGeojson = { "type": "Feature",
-    				"geometry": {"type": "Point", 
-    					     "coordinates": [log.real.coords.longitude,
-							     log.real.coords.latitude]},
-    				"properties": {
-				    "accuracy": log.real.coords.accuracy,
-				    "timestamp": log.timestamp
-				}
-    			      };
 	    var sanitGeojson = { "type": "Feature",
     				 "geometry": {"type": "Point", 
     					      "coordinates": [log.sanitized.coords.longitude,
@@ -160,15 +152,27 @@ $(document).ready(function() {
 				     "timestamp": log.timestamp,
 				 }
     			       };
-	    return [realGeojson,sanitGeojson]
+	    if (log.real) {
+		var realGeojson = { "type": "Feature",
+    				    "geometry": {"type": "Point", 
+    						 "coordinates": [log.real.coords.longitude,
+								 log.real.coords.latitude]},
+    				    "properties": {
+					"accuracy": log.real.coords.accuracy,
+					"timestamp": log.timestamp
+				    }
+    				  };
+		return [realGeojson,sanitGeojson]
+	    } else {
+		return [sanitGeojson]
+	    }
 	}
 
 	Browser.storage.get(function(st) {
 	    var features = [];
 	    st.logs.data.forEach(function(log){
 		var points = exportLog(log);
-		features.push(points[0]);
-		features.push(points[1]);
+		features.concat(points);
 	    });
     	    var geojson = { "type": "FeatureCollection",
     			    "features": features
@@ -191,7 +195,7 @@ $(document).ready(function() {
 	//     allLayer.addLayer(domains[domain][0]);
 	//     allLayer.addLayer(domains[domain][1]);
 	// }
-	    // var geojsonString = JSON.stringify(allLayer.toGeoJSON());
+        // var geojsonString = JSON.stringify(allLayer.toGeoJSON());
 
     function exportJson(){
 	Browser.storage.get(function(st) {
@@ -311,7 +315,8 @@ $(document).ready(function() {
 			    return start
 			}
 		    }})()
-	    
+
+	    // TODO GENERATE FIXED POINTS
 
 	    data.features.forEach(function(p,i) {
 		var real = {
