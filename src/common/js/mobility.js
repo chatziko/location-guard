@@ -60,8 +60,7 @@ $(document).ready(function() {
 
 	    // clear domains data structure
 	    for (var domain in domains){
-		mobilityMap.removeLayer(domains[domain][0]);
-		mobilityMap.removeLayer(domains[domain][1]);
+		mobilityMap.removeLayer(domains[domain]);
 	    }
 	    domains = [];
 
