@@ -32,7 +32,7 @@
 		</div>
 
 		<div role="main" class="ui-content no-space">
-			<div data-role="controlgroup" data-type="horizontal">
+			<div id="controls" data-role="controlgroup" data-type="horizontal">
 				<a href="#popupMenu" data-rel="popup" class="ui-btn ui-corner-all ui-shadow ui-btn-inline" data-position-to="window">Menu</a>
 				<div data-role="popup" id="popupMenu"> 
 					<!-- <div data-role="collapsibleset" data-collapsed-icon="arrow-r" data-expanded-icon="arrow-d" style="margin:0; width:250px;">
@@ -48,7 +48,7 @@
 					</div>
 					<button id="disable">Disable Mobility Profile</button>
 					<form>
-					<label for="report" class="ui-hidden-accessible">Report Statistics</label>
+					<label for="report">Report Statistics</label>
 					<input name="report" id="report" data-role="flipswitch" checked="" type="checkbox">
 					</form>
 					<div id="reals"><input type="file" name="reals"/>Generate profile from real locations</div>
@@ -61,6 +61,11 @@
 						<button id="deleteHour">Delete Past Hour</button>
 						<button id="deleteDay">Delete Past Day</button>
 						<button id="deleteAll">Delete All Data</button>
+						<label>
+							<input class="send" name="send" type="checkbox" data-theme="a">Send Statistics
+						</label>
+						<button id="deactivate">Disable Mobility Profile</button>
+
 						<input type="file" id="reals" name="reals">Generate profile from real locations</input>
 						<input type="file" id="profile" name="profile">Import profile</input>
 					</ul>
@@ -70,6 +75,20 @@
 				</div>
 			</div><!-- controlgroup -->
 			<div id="map" class="flex"></div>
+
+		<div data-role="popup" id="activationDialog" data-dismissible="false" data-overlay-theme="b" data-theme="b" style="max-width:400px;">
+			<div data-role="header" data-theme="b">
+				<h1>Activate Mobility Profile</h1>
+			</div>
+			<div role="main" class="ui-content" data-theme="b">
+				<p>Activate logging of your locations to display in the Mobility Profile.</p>
+
+					<label>
+						<input class="send" name="send" type="checkbox" data-theme="a" data-mini="true">Send Statistics
+					</label>
+					<a href="#" class="ui-btn ui-corner-all ui-shadow ui-btn-inline ui-btn-b" data-rel="back" data-transition="flow" id="activate">Activate</a>
+			</div>
+		</div>
 		</div><!-- main -->
 	</div><!-- /page -->
 

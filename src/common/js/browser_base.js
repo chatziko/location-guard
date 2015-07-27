@@ -112,7 +112,7 @@ var Browser = {
                     logs: {
 			data: [],
 			enabled: false,
-			report: false,
+			send: true,
 		    }
 		}
 	},
