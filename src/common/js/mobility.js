@@ -3,7 +3,7 @@ var map;
 // var showPressed, geoDone;
 
 $.mobile.ajaxEnabled = false;
-$.mobile.linkBindingEnabled = false;
+// $.mobile.linkBindingEnabled = false;
 
 $(document).ready(function() {
 	$("#left-panel").panel().enhanceWithin();			// initialize panel
@@ -215,6 +215,8 @@ $(document).ready(function() {
 	});
     }
     document.getElementById('exportGeojson').onclick = exportGeojson;
+    if (!Browser.debugging) {document.getElementById('exportGeojson').remove()}
+
 	// var allLayer = new L.featureGroup();
 	// for (var domain in domains){
 	//     allLayer.addLayer(domains[domain][0]);
@@ -241,12 +243,14 @@ $(document).ready(function() {
 
 
     function deleteAll(){
-	Browser.storage.get(function(st) {
-	    st.logs.data = [];
-	    Browser.storage.set(st);
-	    refreshUI();
-	    blog('delete all data');
-	})	
+	if(window.confirm('Are you sure you want to delete all data?')) {
+	    Browser.storage.get(function(st) {
+		st.logs.data = [];
+		Browser.storage.set(st);
+		refreshUI();
+		blog('delete all data');
+	    })	
+	}
     }
     document.getElementById('deleteAll').onclick = deleteAll;
 
@@ -267,16 +271,22 @@ $(document).ready(function() {
 	})	
     }
     function deleteHour(){
-	var hour = 60 * 60 * 1000;
-	deletePastInterval(hour);
-	blog('delete past hour');
+	if(window.confirm('Are you sure you want to delete the past hour?')) {
+	    var hour = 60 * 60 * 1000;
+	    deletePastInterval(hour);
+	    blog('delete past hour');
+	}
     }
     document.getElementById('deleteHour').onclick = deleteHour;
 
     function deleteDay(){
-	var day = 24 * 60 * 60 * 1000;
-	deletePastInterval(day);
-	blog('delete past day');
+	if(window.confirm('Are you sure you want to delete the last day?')) {
+	    var day = 24 * 60 * 60 * 1000;
+	    deletePastInterval(day);
+	    blog('delete past day');
+	}
+	blog('closeit');
+	$('popupMenu').popup('close');
     }
     document.getElementById('deleteDay').onclick = deleteDay;
 
@@ -314,8 +324,10 @@ $(document).ready(function() {
 	    refreshUI();
 	})
     };
-    document.getElementById('profile').onchange = handleEventFile(importProfile);
-    if (!Browser.debugging) {document.getElementById('profile').remove()}
+    // document.getElementById('profile').onchange = handleEventFile(importProfile);
+    // if (!Browser.debugging) {document.getElementById('profile').remove()}
+    $('#profile input').change(handleEventFile(importProfile));
+    if (!Browser.debugging) {$('#profile').remove()}
 
 
 
@@ -402,8 +414,8 @@ $(document).ready(function() {
 	    blog('logs ', st.logs.data);
 	})
     }
-    document.getElementById('reals').onchange = handleEventFile(generateProfile);
-    if (!Browser.debugging) {document.getElementById('reals').remove()}
+    $('#reals input').change(handleEventFile(generateProfile));
+    if (!Browser.debugging) {$('#reals').remove()}
 
 
 
