@@ -98,39 +98,53 @@ function drawPosition(pos) {
 }
 
 function startDemo() {
+	var steps = [ {
+			element: ".placeholder-step1",
+			intro: '<p>Location Guard was successfully installed.</p><p>This demo illustrates its use.</p>',
+			position: "floating",
+			tooltipClass: 'tooltip-step1',
+		}, {
+			element: ".leaflet-control-locate",
+			intro:
+				'<p>The demo asks the browser for your location when you press the ' +
+				'<span class="popup-location-btn ui-btn ui-btn-inline ui-icon-location ui-btn-icon-notext"></span> ' +
+				'button.</p><p>Press it!</p>',
+			position: 'bottom',
+			tooltipClass: 'tooltip-step2',
+		}, {
+			element: ".placeholder-step3",
+			intro:
+				'<p>The browser asks permission to disclose your location. At the same time, the ' +
+				'<img src="images/pin_19.png" style="width: 0.9em"/> icon appears, showing that Location Guard is active.</p>' +
+				'<p>To continue, allow access to your location.</p>',
+			position: 'bottom-right-aligned',
+			tooltipClass: 'tooltip-step3',
+		}, {
+			element: ".placeholder-step4",
+			intro:
+				'<p>This is the location disclosed by your browser. Location Guard added "noise" to it so that it\'s not ' +
+				'very accurate.</p><p>Click on the <img src="images/pin_19.png" style="width: 0.9em"/> icon to try more options.</p>',
+			position: "bottom-middle-aligned",
+			highlightClass: 'highlight-step4',
+			tooltipClass: 'tooltip-step4',
+	} ];
+
+	// demo not working on Desktop Firefox 41
+	if(~navigator.userAgent.indexOf('Firefox/41') && !~navigator.userAgent.indexOf('Android'))
+		steps = [{
+				element: ".placeholder-step1",
+				intro:
+					'<p>Location Guard was successfully installed.</p><p>To see it in action, try this <a href="http://html5demos.com/geo" target="_blank">online demo</a>.</p>' +
+					'<p style="font-size:small">Note: the current page used to be a demo of Location Guard, but it was disabled in Firefox 41 due to a browser bug. ' +
+					'It will be available again in Firefox 42.<br><br>Location Guard, however, <i>is still enabled</i> on all pages!</p>',
+				position: "floating",
+				tooltipClass: 'tooltip-step1',
+		}];
+
 	intro = introJs();
 	intro
 	.setOptions({
-		steps: [ {
-				element: ".placeholder-step1",
-				intro: '<p>Location Guard was successfully installed.</p><p>This demo illustrates its use.</p>',
-				position: "floating",
-				tooltipClass: 'tooltip-step1',
-			}, {
-				element: ".leaflet-control-locate",
-				intro:
-					'<p>The demo asks the browser for your location when you press the ' +
-					'<span class="popup-location-btn ui-btn ui-btn-inline ui-icon-location ui-btn-icon-notext"></span> ' +
-					'button.</p><p>Press it!</p>',
-				position: 'bottom',
-				tooltipClass: 'tooltip-step2',
-			}, {
-				element: ".placeholder-step3",
-				intro:
-					'<p>The browser asks permission to disclose your location. At the same time, the ' +
-					'<img src="images/pin_19.png" style="width: 0.9em"/> icon appears, showing that Location Guard is active.</p>' +
-					'<p>To continue, allow access to your location.</p>',
-				position: 'bottom-right-aligned',
-				tooltipClass: 'tooltip-step3',
-			}, {
-				element: ".placeholder-step4",
-				intro:
-					'<p>This is the location disclosed by your browser. Location Guard added "noise" to it so that it\'s not ' +
-					'very accurate.</p><p>Click on the <img src="images/pin_19.png" style="width: 0.9em"/> icon to try more options.</p>',
-				position: "bottom-middle-aligned",
-				highlightClass: 'highlight-step4',
-				tooltipClass: 'tooltip-step4',
-		} ],
+		steps: steps,
 		overlayOpacity: 0,
 		showStepNumbers: false,
 		skipLabel: "Close",
