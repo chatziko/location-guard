@@ -1,13 +1,21 @@
 // popup implementation for firefox mobile (fennec)
 // reimplements popup.js using fennec's native ui
 //
-PopupFennec = {};
+'use strict';
+
+let Cu = require("chrome").Cu;
+Cu.import("resource://gre/modules/Services.jsm");
+Cu.import("resource://gre/modules/Prompt.jsm");
+
+let { Browser, Util } = require('main');
+
+let PopupFennec = exports;
 
 PopupFennec.show = function() {
 	// we need storage and url
 	Browser.gui.getActiveCallUrl(function(callUrl) {
 	Browser.storage.get(function(st) {
-		blog("androidPopup: callUrl", callUrl, "settings", st);
+		Browser.log("androidPopup: callUrl", callUrl, "settings", st);
 
 		var domain = Util.extractDomain(callUrl);
 		var level = st.domainLevel[domain] || st.defaultLevel;
