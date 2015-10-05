@@ -35,7 +35,13 @@ Browser._install_update = function(){
 }
 
 Browser._main_script = function() {
+	exports.Browser = Browser;
+	exports.Util = Util;
+
 	var data = require("sdk/self").data;
+
+	// make resource://location-guard/... likes to point to our data dir
+	require('resource').set('location-guard', data.url(''));
 
 	// refresh icon when a tab is activated
 	//
@@ -64,7 +70,7 @@ Browser._main_script = function() {
 	// our internal pages (options, demo, popup): insert only messageProxy for communication
 	//
 	require("sdk/page-mod").PageMod({
-		include: [data.url("*")],
+		include: ["resource://location-guard/*"],
 		contentScriptWhen: 'start', // sets up comm. before running the page scripts
 		contentScriptFile: [data.url("js/messageProxy.js")],
 		onAttach: Browser._onWorkerAttach,
@@ -246,7 +252,6 @@ Browser.gui._init = function(){
 	if(Browser.gui._fennec) {
 		Cu.import("resource://gre/modules/PageActions.jsm");
 		Cu.import("resource://gre/modules/NetUtil.jsm");
-		Cu.import("resource://gre/modules/Prompt.jsm");
 
 	} else {
 		// The fact that we create/destroy the button multiple times doesn't play well with Firefox about:customizing page.
@@ -410,7 +415,7 @@ Browser.gui._showPopup = function() {
 }
 
 Browser.gui._refreshPageAction = function(info) {
-	 var nw = Services.wm.getMostRecentWindow("navigator:browser").NativeWindow;
+	var nw = Services.wm.getMostRecentWindow("navigator:browser").NativeWindow;
 
 	if(this._pageaction)
 		PageActions.remove(this._pageaction);
@@ -426,7 +431,7 @@ Browser.gui._refreshPageAction = function(info) {
 		//
 		this._menu = nw.menu.add({
 			name: "Location Guard",
-			callback: PopupFennec.show
+			callback: require('PopupFennec').show
 		});
 
 	} else {
@@ -440,7 +445,7 @@ Browser.gui._refreshPageAction = function(info) {
 		this._pageaction = PageActions.add({
 			icon: "data:image/png;base64," + this._base64_cache[icon],
 			title: "Location Guard",
-			clickCallback: PopupFennec.show
+			clickCallback: require('PopupFennec').show
 		});
 	}
 
@@ -448,7 +453,7 @@ Browser.gui._refreshPageAction = function(info) {
 	nw.toast.show("Location Guard is enabled", "long", {
 		button: {
 			label: "SHOW",
-			callback: PopupFennec.show
+			callback: require('PopupFennec').show
 		}
 	});
 	*/
@@ -500,7 +505,7 @@ Browser.gui.showPage = function(name) {
 		// if there is any tab showing an internal page, activate and update it, otherwise open new
 		//
 		var data = require("sdk/self").data;
-		var baseUrl = data.url("");
+		var baseUrl = 'resource://location-guard/';
 		var fullUrl = baseUrl + name;
 
 		if(this._fennec) {
@@ -528,7 +533,8 @@ Browser.gui.showPage = function(name) {
 
 			for(var i = 0; i < tabs.length; i++) {
 				if(tabs[i].url.search(baseUrl) != -1) {
-					tabs[i].url = fullUrl;
+					if(tabs[i].url != fullUrl)		// avoid refresh
+						tabs[i].url = fullUrl;
 					tabs[i].activate();
 					return;
 				}
