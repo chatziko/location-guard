@@ -153,21 +153,7 @@ rpc.register('getNoisyPosition', function(options, replyHandler) {
 		getCurrentPosition.apply(navigator.geolocation, [
 			function(position) {
 				// clone, modifying/sending the native object returns error
-				//FF: position is XRayWrapper and Util.clone fails
-				var clonedPosition = {
-					coords: {
-						latitude: position.coords.latitude,
-						longitude: position.coords.longitude,
-						accuracy: position.coords.accuracy,
-						altitude: position.coords.altitude,
-						altitudeAccuracy: position.coords.altitudeAccuracy,
-						heading: position.coords.heading,
-						speed: position.coords.speed
-					},
-					timestamp: position.timestamp
-				};
-
-				addNoise(clonedPosition, function(noisy) {
+				addNoise(Util.clone(position), function(noisy) {
 					replyHandler(true, noisy);
 				});
 			},
