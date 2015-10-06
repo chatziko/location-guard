@@ -14,7 +14,18 @@ var Util = {
 		return match ? match[1] : "";
 	},
 	clone: function(obj) {
-		return JSON.parse(JSON.stringify(obj));
+		// Note: JSON stringify/parse doesn't work for cloning native objects such as Position and PositionError
+		//
+		var t = typeof obj;
+		if(obj === null || t === 'undefined' || t === 'boolean' || t === 'string' || t === 'number')
+			return obj;
+		if(t !== 'object')
+			return null;
+
+		var o = {};
+		for (var k in obj)
+			o[k] = Util.clone(obj[k]);
+		return o;
 	},
 	delegate: function(obj, name) {
 		return function() {
