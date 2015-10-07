@@ -14,12 +14,18 @@ var Util = {
 		return match ? match[1] : "";
 	},
 	clone: function(obj) {
-		return JSON.parse(JSON.stringify(obj));
-	},
-	delegate: function(obj, name) {
-		return function() {
-			return obj[name].apply(obj, arguments);
-		};
+		// Note: JSON stringify/parse doesn't work for cloning native objects such as Position and PositionError
+		//
+		var t = typeof obj;
+		if(obj === null || t === 'undefined' || t === 'boolean' || t === 'string' || t === 'number')
+			return obj;
+		if(t !== 'object')
+			return null;
+
+		var o = {};
+		for (var k in obj)
+			o[k] = Util.clone(obj[k]);
+		return o;
 	},
 
 	// Get icon information for a specific tabId. Returns:
@@ -99,7 +105,7 @@ function _PostRPC() {		// include all code here to inject easily
 		if(!receiveObj) return;		// send-only RPC
 
 		if(receiveObj.emit) {
-			receiveObj.on(this._ns, Util.delegate(this, '_receiveMessage'));
+			receiveObj.on(this._ns, this._receiveMessage.bind(this));
 		} else {
 			var _this = this;
 			receiveObj.addEventListener("message", function(event) {
