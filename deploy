@@ -21,7 +21,7 @@ case "$1" in
 		# lib/ and data/
 		#
         cat $DIST/firefox/data/js/{util,browser_base,browser,main}.js > $DIST/firefox/lib/main.js
-        rm $DIST/firefox/data/js/{main}.js	# not needed, avoid duplicates
+        rm $DIST/firefox/data/js/main.js	# not needed, avoid duplicates
         ;;
     clean)
         rm -rf $DIST
