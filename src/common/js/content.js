@@ -153,9 +153,7 @@ rpc.register('getNoisyPosition', function(options, replyHandler) {
 		getCurrentPosition.apply(navigator.geolocation, [
 			function(position) {
 				// clone, modifying/sending the native object returns error
-				addNoise(Util.clone(position), function(noisy) {
-					replyHandler(true, noisy);
-				});
+				addNoise(Util.clone(position), replyHandler);
 			},
 			function(error) {
 				replyHandler(false, Util.clone(error));		// clone, sending the native object returns error
@@ -185,6 +183,38 @@ function addNoise(position, handler) {
 				heading: null,
 				speed: null
 			};
+
+		} else if(level == 'ip') {
+			// IP-based geolocation using Mozilla Location Services
+			Browser.ajax({
+				url: "https://location.services.mozilla.com/v1/geolocate?key=test",
+				//url: "https://www.googleapis.com/geolocation/v1/geolocate?key=AIzaSyDmJ9wDRezNNsKOwxumzcvOjSqXbSNapTk",
+				data: { fallbacks: { ipf: true } }
+			}, function(err, res) {
+				if(err) {
+					var poserr = { // PositionError
+						PERMISSION_DENIED: 1,
+						POSITION_UNAVAILABLE: 2,
+						TIMEOUT: 3,
+						code: 2,
+						message: "Unknown error acquiring position"
+					};
+					handler(false, poserr);
+				} else {
+					position.coords = {
+						latitude: res.location.lat,
+						longitude: res.location.lng,
+						accuracy: res.accuracy,
+						altitude: null,
+						altitudeAccuracy: null,
+						heading: null,
+						speed: null
+					};
+					handler(true, position);
+				}
+			});
+
+			return;		// wait for now, will call handler later
 
 		} else if(st.cachedPos[level] && ((new Date).getTime() - st.cachedPos[level].epoch)/60000 < st.levels[level].cacheTime) {
 			position = st.cachedPos[level].position;
@@ -218,7 +248,7 @@ function addNoise(position, handler) {
 		}
 
 		// return noisy position
-		handler(position);
+		handler(true, position);
 	});
 }
 

@@ -161,6 +161,15 @@ var Browser = {
 		resizePopup: function(width, height) {},
 	},
 
+	// Browser.ajax(opt, handler)
+	//
+	// Performs an ajax call to opt.url
+	// handler(err, res) is called when the request is complete.
+	// err is true if status != 200 or data is not json
+	// res contains the parsed result
+	//
+	ajax: function(opt, handler) {},
+
 	// Browser.log(text, value)
 	//
 	// Logs the given text/value pair

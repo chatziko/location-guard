@@ -87,6 +87,7 @@ function drawUI() {
 			st.paused		? "Location Guard is paused" :
 			level == 'real'	? "Using your real location" :
 			level == 'fixed'? "Using a fixed location" :
+			level == 'ip'   ? "Using IP-based location" :
 			"Privacy level: " + level
 		);
 

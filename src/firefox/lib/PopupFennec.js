@@ -24,6 +24,7 @@ PopupFennec.show = function() {
 			st.paused		? "Location Guard is paused" :
 			level == 'real'	? "Using your real location" :
 			level == 'fixed'? "Using a fixed location" :
+			level == 'ip'   ? "Using IP-based location" :
 			"Privacy level: " + level;
 
 		var items = [
@@ -74,11 +75,12 @@ PopupFennec.show = function() {
 
 PopupFennec.setLevel = function(domain, level) {
 	var items = [
-		{ label: "Use fixed location", selected: (level == "fixed"),  level: "fixed"  },
-		{ label: "High",               selected: (level == "high"),   level: "high"   },
-		{ label: "Medium",             selected: (level == "medium"), level: "medium" },
-		{ label: "Low",                selected: (level == "low"),    level: "low"    },
-		{ label: "Use real location",  selected: (level == "real"),   level: "real"   },
+		{ label: "Fixed location",    selected: (level == "fixed"),  level: "fixed"  },
+		{ label: "IP-based location", selected: (level == "ip"),     level: "ip"     },
+		{ label: "High",              selected: (level == "high"),   level: "high"   },
+		{ label: "Medium",            selected: (level == "medium"), level: "medium" },
+		{ label: "Low",               selected: (level == "low"),    level: "low"    },
+		{ label: "Real location",     selected: (level == "real"),   level: "real"   },
 	];
 
 	new Prompt({

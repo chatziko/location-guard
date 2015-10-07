@@ -42,6 +42,11 @@ Browser._main_script = function() {
 	// make resource://location-guard/... likes to point to our data dir
 	require('resource').set('location-guard', data.url(''));
 
+	// register rpc methods
+	Browser.rpc.register('ajax', function(opt, tabId, handler) {
+		Browser.ajax(opt, handler);
+	});
+
 	// refresh icon when a tab is activated
 	//
 	require('sdk/tabs').on('activate', function (tab) {
@@ -565,6 +570,30 @@ Browser.gui.resizePopup = function(width, height) {
 		Browser.rpc.call(null, 'resizePopup', [width, height]);
 	}
 };
+
+
+// in firefox we can do http requests without cross-domain restictions
+// only from the main script, using the 'request' module
+//
+Browser.ajax = function(opt, handler) {
+	if(Browser._script == 'main') {
+		var method = (opt.method || 'GET').toLowerCase();
+		require("sdk/request").Request({
+			url: opt.url,
+			content: JSON.stringify(opt.data),
+			contentType: 'application/json',
+			onComplete: function (response) {
+				if(response.status == 200 && response.json)
+					handler(null, response.json);
+				else
+					handler(true);
+			}
+		}).post();
+
+	} else {
+		Browser.rpc.call(null, 'ajax', [opt], handler);
+	}
+}
 
 
 Browser.log = function() {

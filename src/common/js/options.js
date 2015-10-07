@@ -211,7 +211,7 @@ function initFixedPosMap() {
 		// popup
 		var popupHtml =
 			'<div class="map-popup">' +
-				'<p>This is the location reported when the privacy level is set to <b>"Use fixed location"</b>.</p>' +
+				'<p>This is the location reported when the privacy level is set to <b>"Fixed location"</b>.</p>' +
 				'<p>Click on the map or drag the marker to set a new fixed location.</p>' +
 			'</div>';
 

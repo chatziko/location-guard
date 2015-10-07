@@ -194,6 +194,29 @@ Browser.gui.resizePopup = function(width, height) {
 }
 
 
+// in chrome we can directly use XMLHttpRequest from any script, there
+// is no cross-domain restiction
+//
+Browser.ajax = function(opt, handler) {
+	var xhttp = new XMLHttpRequest();
+	xhttp.onreadystatechange = function() {
+		if(xhttp.readyState != 4) return;
+
+		var res;
+		try {
+			if(xhttp.status != 200) throw 1;
+			res = JSON.parse(xhttp.responseText);
+		} catch(e) {
+			return handler(true);
+		}
+		handler(null, res);
+	};
+	xhttp.open('POST', opt.url);
+	xhttp.setRequestHeader("Content-Type", "application/json");
+	xhttp.send(JSON.stringify(opt.data));
+}
+
+
 // in chrome, apart from the current console, we also log to the background page, if possible and loaded
 //
 Browser.log = function() {
