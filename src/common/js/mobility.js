@@ -413,7 +413,7 @@ $(document).ready(function() {
 	    blog('logs ', st.logs.data);
 	})
     }
-    $('#reals input').change(handleEventFile(generateProfile));
+    $('#reals').change(handleEventFile(generateProfile));
     if (!Browser.debugging) {$('#reals').remove()}
 
 
