@@ -577,7 +577,16 @@ Browser.gui.resizePopup = function(width, height) {
 //
 Browser.ajax = function(opt, handler) {
 	if(Browser._script == 'main') {
-		var method = (opt.method || 'GET').toLowerCase();
+
+		// for geolocation, use the url from 'geo.wifi.uri', formated with formatURL to get the API key
+		if(opt.url == 'geolocate') {
+			var prefs = require("sdk/preferences/service");
+			var { Cc, Ci } = require('chrome');
+			var formatter = Cc["@mozilla.org/toolkit/URLFormatterService;1"].getService(Ci.nsIURLFormatter);
+
+			opt.url = formatter.formatURL(prefs.get('geo.wifi.uri'));
+		}
+
 		require("sdk/request").Request({
 			url: opt.url,
 			content: JSON.stringify(opt.data),

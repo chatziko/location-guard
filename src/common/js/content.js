@@ -185,10 +185,9 @@ function addNoise(position, handler) {
 			};
 
 		} else if(level == 'ip') {
-			// IP-based geolocation using Mozilla Location Services
+			// IP-based geolocation
 			Browser.ajax({
-				url: "https://location.services.mozilla.com/v1/geolocate?key=test",
-				//url: "https://www.googleapis.com/geolocation/v1/geolocate?key=AIzaSyDmJ9wDRezNNsKOwxumzcvOjSqXbSNapTk",
+				url: "geolocate",
 				data: { fallbacks: { ipf: true } }
 			}, function(err, res) {
 				if(err) {

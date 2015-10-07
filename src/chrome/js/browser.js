@@ -198,6 +198,10 @@ Browser.gui.resizePopup = function(width, height) {
 // is no cross-domain restiction
 //
 Browser.ajax = function(opt, handler) {
+	// use Mozilla Location Services for geolocation
+	if(opt.url == 'geolocate')
+		opt.url = "https://location.services.mozilla.com/v1/geolocate?key=test";
+
 	var xhttp = new XMLHttpRequest();
 	xhttp.onreadystatechange = function() {
 		if(xhttp.readyState != 4) return;
