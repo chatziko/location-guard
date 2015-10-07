@@ -27,11 +27,6 @@ var Util = {
 			o[k] = Util.clone(obj[k]);
 		return o;
 	},
-	delegate: function(obj, name) {
-		return function() {
-			return obj[name].apply(obj, arguments);
-		};
-	},
 
 	// Get icon information for a specific tabId. Returns:
 	//   { hidden:   true if the icon should be hidden,
@@ -110,7 +105,7 @@ function _PostRPC() {		// include all code here to inject easily
 		if(!receiveObj) return;		// send-only RPC
 
 		if(receiveObj.emit) {
-			receiveObj.on(this._ns, Util.delegate(this, '_receiveMessage'));
+			receiveObj.on(this._ns, this._receiveMessage.bind(this));
 		} else {
 			var _this = this;
 			receiveObj.addEventListener("message", function(event) {
