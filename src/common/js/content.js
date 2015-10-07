@@ -156,7 +156,12 @@ rpc.register('getNoisyPosition', function(options, replyHandler) {
 				addNoise(Util.clone(position), replyHandler);
 			},
 			function(error) {
-				replyHandler(false, Util.clone(error));		// clone, sending the native object returns error
+				if(error.code != error.PERMISSION_DENIED && (level == 'fixed' || level == 'ip')) {
+					// we're not using the actual geolocation, so we don't care that it failed
+					var position = { timestamp: new Date().getTime() };
+					addNoise(position, replyHandler);
+				} else
+					replyHandler(false, Util.clone(error));		// clone, sending the native object returns error
 			},
 			options
 		]);
