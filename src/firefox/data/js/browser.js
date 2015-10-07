@@ -4,10 +4,9 @@ Browser.init = function (script) {
 	Browser._script = script;
 	Browser.log('initializing', script);
 
-	Browser.storage._init();
-
 	if(script == 'main') {
 		Browser._main_script();
+		Browser.storage._init();
 		Browser.gui._init();
 		Browser._install_update();
 	} else {
@@ -174,69 +173,57 @@ Browser.rpc.call = function(tabId, name, args, cb) {
 //////////////////// storage ///////////////////////////
 
 Browser.storage._key = "global";		// store everything under this key
-Browser.storage._init = function(){
-	if (Browser._script == 'main') {
-
-		var ss = require("sdk/simple-storage").storage;
-
-		Browser.storage.get = function(handler) {
-			var st = ss[Browser.storage._key];
-
-			// default values
-			if(!st) {
-				// Browser.log('initializing settings');
-				st = Browser.storage._default;
-				Browser.storage.set(st);
-			}
-			// Browser.log('returning st');
-			handler(st);
-		};
-
-		Browser.storage.set = function(st, handler) {
-			// Browser.log('setting st');
-			ss[Browser.storage._key] = st;
-
-			if(handler) handler();
-		};
-
-		Browser.storage.clear = function(handler) {
-			// Browser.log('clearing st');
-			delete ss[Browser.storage._key];
-
-			if(handler) handler();
-		};
-
-		Browser.rpc.register('storage.get',function(tabId, handler) {
-			Browser.storage.get(handler);
-		});
-		Browser.rpc.register('storage.set',function(st, tabId, handler) {
-			Browser.storage.set(st, handler);
-		});
-		Browser.rpc.register('storage.clear',function(tabId, handler) {
-			Browser.storage.clear(handler);
-		});
-
-	}
-	// content and popup
-	else{
-
-		Browser.storage.get = function(cb) {
-			// Browser.log('getting state');
-			Browser.rpc.call(null, 'storage.get', null, cb);
-		}
-
-		Browser.storage.set = function(st, cb) {
-			// Browser.log('setting state');
-			Browser.rpc.call(null, 'storage.set', [st], cb);
-		}
-
-		Browser.storage.clear = function(cb) {
-			// Browser.log('clearing state');
-			Browser.rpc.call(null, 'storage.clear', [], cb);
-		}
-
-	}
+Browser.storage._init = function() {
+	// only called in main script
+	Browser.rpc.register('storage.get',function(tabId, handler) {
+		Browser.storage.get(handler);
+	});
+	Browser.rpc.register('storage.set',function(st, tabId, handler) {
+		Browser.storage.set(st, handler);
+	});
+	Browser.rpc.register('storage.clear',function(tabId, handler) {
+		Browser.storage.clear(handler);
+	});
 }
+
+Browser.storage.get = function(handler) {
+	if (Browser._script == 'main') {
+		var ss = require("sdk/simple-storage").storage;
+		var st = ss[Browser.storage._key];
+
+		// default values
+		if(!st) {
+			st = Browser.storage._default;
+			Browser.storage.set(st);
+		}
+		handler(st);
+
+	} else {
+		Browser.rpc.call(null, 'storage.get', null, handler);
+	}
+};
+
+Browser.storage.set = function(st, handler) {
+	if (Browser._script == 'main') {
+		var ss = require("sdk/simple-storage").storage;
+		ss[Browser.storage._key] = st;
+		if(handler) handler();
+
+	} else {
+		Browser.rpc.call(null, 'storage.set', [st], handler);
+	}
+};
+
+Browser.storage.clear = function(handler) {
+	if (Browser._script == 'main') {
+		var ss = require("sdk/simple-storage").storage;
+		delete ss[Browser.storage._key];
+		if(handler) handler();
+
+	} else {
+		Browser.rpc.call(null, 'storage.clear', [], handler);
+	}
+};
 
 
 //////////////////// gui ///////////////////////////
