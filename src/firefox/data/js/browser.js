@@ -313,9 +313,9 @@ Browser.gui._init = function(){
 		Browser.gui.refreshIcon(tabId || callerTabId);		// null tabId in the content script means refresh its own tab
 	});
 
-	Browser.rpc.register('refreshAllIcons', Util.delegate(Browser.gui, 'refreshAllIcons'));
-	Browser.rpc.register('showPage',        Util.delegate(Browser.gui, 'showPage'));
-	Browser.rpc.register('resizePopup',     Util.delegate(Browser.gui, 'resizePopup'));
+	Browser.rpc.register('refreshAllIcons', this.refreshAllIcons.bind(this));
+	Browser.rpc.register('showPage',        this.showPage.bind(this));
+	Browser.rpc.register('resizePopup',     this.resizePopup.bind(this));
 
 	// register options button
 	//
