@@ -40,7 +40,7 @@ Browser._main_script = function() {
 	var data = require("sdk/self").data;
 
 	// make resource://location-guard/... likes to point to our data dir
-	require('resource').set('location-guard', data.url(''));
+	require('./resource').set('location-guard', data.url(''));
 
 	// refresh icon when a tab is activated
 	//
@@ -415,10 +415,9 @@ Browser.gui._refreshPageAction = function(info) {
 
 	} else if(info.hidden) {
 		// if the API is called by the icon is hidden, add menu
-		//
 		this._menu = nw.menu.add({
 			name: "Location Guard",
-			callback: require('PopupFennec').show
+			callback: require('../../lib/PopupFennec').show
 		});
 
 	} else {
@@ -432,7 +431,7 @@ Browser.gui._refreshPageAction = function(info) {
 		this._pageaction = PageActions.add({
 			icon: "data:image/png;base64," + this._base64_cache[icon],
 			title: "Location Guard",
-			clickCallback: require('PopupFennec').show
+			clickCallback: require('../../lib/PopupFennec').show
 		});
 	}
 
@@ -440,7 +439,7 @@ Browser.gui._refreshPageAction = function(info) {
 	nw.toast.show("Location Guard is enabled", "long", {
 		button: {
 			label: "SHOW",
-			callback: require('PopupFennec').show
+			callback: require('../../lib/PopupFennec').show
 		}
 	});
 	*/

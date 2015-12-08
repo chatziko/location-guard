@@ -1,7 +1,8 @@
 {
   "name": "location-guard",
   "fullName": "Location Guard",
-  "id": "jid1-HdwPLukcGQeOSh",
+  "id": "jid1-HdwPLukcGQeOSh@jetpack",
+  "main": "lib/main.js",
   "description": "Hide your geographic location from websites.",
   "author": "Konstantinos Chatzikokolakis (http://www.lix.polytechnique.fr/~kostas/) <kostas@chatzi.org>",
   "contributors": ["Marco Stronati (http://stronati.org) <marco@stronati.org>"],
