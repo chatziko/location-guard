@@ -63,12 +63,12 @@ function saveOptions() {
 			st.updateAccuracy = updateAccuracy;
 		}
 
-	    var logOptOut = $("#logOptOut").prop('checked');
-	    if (!st.logOptOut && logOptOut) {
-		blog('deleting ' + Object.keys(st.logs).length + ' existing domain logs');
-		st.logs = {} //delete existing logs
-	    }
-	    st.logOptOut = logOptOut;
+		var logEnable = $("#logEnable").prop('checked');
+		if (st.logs.enabled && !logEnable) {
+			blog('deleting ' + Object.keys(st.logs).length + ' existing domain logs');
+			st.logs = {} //delete existing logs
+		}
+		st.logs.enabled = logEnable;
 
 
 		Browser.storage.set(st, function() {
@@ -360,7 +360,7 @@ function initPages() {
 				$('#defaultLevel').val(st.defaultLevel).selectmenu("refresh");
 				$('#paused').prop('checked', st.paused).checkboxradio("refresh");
 				$('#hideIcon').prop('checked', st.hideIcon).checkboxradio("refresh");
-				$('#logOptOut').prop('checked', st.logOptOut).checkboxradio("refresh");
+				$('#logEnable').prop('checked', st.logs.enabled).checkboxradio("refresh");
 				$('#updateAccuracy').prop('checked', st.updateAccuracy).checkboxradio("refresh");
 			});
 

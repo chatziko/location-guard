@@ -142,24 +142,24 @@ rpc.register('getNoisyPosition', function(options, replyHandler) {
 				},
 				timestamp: new Date().getTime()
 			};
-		    // log
-		    if (!st.logOptOut){
-			while (st.logs.data.length >= Browser.storage.logSize) {
-			    st.logs.data.pop();
+			// log fixed
+			if (st.logs.enabled){
+				while (st.logs.data.length >= Browser.storage.logSize) {
+					st.logs.data.pop();
+				}
+				st.logs.data.push({real: null,
+						   sanitized: noisy,
+						   level: level,
+						   radius: null,
+						   domain: domain,
+						   timestamp: noisy.timestamp});
+				Browser.storage.set(st);
+				blog("logs",st.logs.data);
 			}
-			st.logs.data.push({real: null,
-					   sanitized: noisy,
-					   level: level,
-					   radius: null,
-					   domain: domain,
-					   timestamp: noisy.timestamp});
-			Browser.storage.set(st);
-			blog("logs",st.logs.data);
-		    }
-		    
-		    replyHandler(true, noisy);
-		    blog("returning fixed", noisy);
-		    return;
+
+			replyHandler(true, noisy);
+			blog("returning fixed", noisy);
+			return;
 		}
 
 		// we call getCurrentPosition here in the content script, instead of
@@ -173,6 +173,21 @@ rpc.register('getNoisyPosition', function(options, replyHandler) {
 				});
 			},
 			function(error) {
+				// log failed API call
+				if (st.logs.enabled){
+					while (st.logs.data.length >= Browser.storage.logSize) {
+						st.logs.data.pop();
+					}
+					st.logs.data.push({real: null,
+							   sanitized: {error : error},
+							   level: level,
+							   radius: st.levels[level].radius,
+							   domain: domain,
+							   timestamp: Date.now()});
+					Browser.storage.set(st);
+					blog("logs",st.logs.data);
+				}
+
 				replyHandler(false, Util.clone(error));		// clone, sending the native object returns error
 			},
 			options
@@ -186,78 +201,78 @@ function addNoise(position, handler) {
 	Browser.storage.get(function(st) {
 		var domain = Util.extractDomain(myUrl);
 		var level = st.domainLevel[domain] || st.defaultLevel;
-	    var now = Date.now();
-	    var sanitized = {
-		coords: {
-		    latitude: null,
-		    longitude: null,
-		    accuracy: null,
-		    // don't know how to add noise to those, so we set to null (they're most likely null anyway)
-		    altitude: null,
-		    altitudeAccuracy: null,
-		    heading: null,
-		    speed: null
-		},
-		timestamp: null};
+		var now = Date.now();
+		var sanitized = {
+			coords: {
+				latitude: null,
+				longitude: null,
+				accuracy: null,
+				// don't know how to add noise to those, so we set to null (they're most likely null anyway)
+				altitude: null,
+				altitudeAccuracy: null,
+				heading: null,
+				speed: null
+			},
+			timestamp: null};
 
 		if(st.paused || level == 'real') {
-		    // copy real location
-		    sanitized.coords.latitude = position.coords.latitude;
-		    sanitized.coords.longitude = position.coords.longitude;
-		    sanitized.coords.accuracy = position.coords.accuracy;
-		    sanitized.timestamp = now;
+			// copy real location
+			sanitized.coords.latitude = position.coords.latitude;
+			sanitized.coords.longitude = position.coords.longitude;
+			sanitized.coords.accuracy = position.coords.accuracy;
+			sanitized.timestamp = now;
 		} else if(level == 'fixed') {
-		    sanitized.coords.latitude = st.fixedPos.latitude;
-		    sanitized.coords.longitude = st.fixedPos.longitude;
-		    sanitized.coords.accuracy = 10;
-		    sanitized.timestamp = now;
+			sanitized.coords.latitude = st.fixedPos.latitude;
+			sanitized.coords.longitude = st.fixedPos.longitude;
+			sanitized.coords.accuracy = 10;
+			sanitized.timestamp = now;
 		} else if(st.cachedPos[level] && ((new Date).getTime() - st.cachedPos[level].epoch)/60000 < st.levels[level].cacheTime) {
-		    var cached = st.cachedPos[level].position;
-		    sanitized.coords.latitude = cached.coords.latitude;
-		    sanitized.coords.longitude = cached.coords.longitude;
-		    sanitized.coords.accuracy = cached.coords.accuracy;
-		    sanitized.timestamp = cached.timestamp;
-		    blog('using cached', position);
+			var cached = st.cachedPos[level].position;
+			sanitized.coords.latitude = cached.coords.latitude;
+			sanitized.coords.longitude = cached.coords.longitude;
+			sanitized.coords.accuracy = cached.coords.accuracy;
+			sanitized.timestamp = cached.timestamp;
+			blog('using cached', position);
 		} else {
-		    // add noise
-		    var epsilon = st.epsilon / st.levels[level].radius;
-		    var pl = new PlannarLaplace();
-		    var noisy = pl.addNoise(epsilon, position.coords);
+			// add noise
+			var epsilon = st.epsilon / st.levels[level].radius;
+			var pl = new PlannarLaplace();
+			var noisy = pl.addNoise(epsilon, position.coords);
 
-		    var accuracy = 0; // in case real accuracy is not defined
-		    if(position.coords.accuracy) {
-			accuracy = position.coords.accuracy;
-		    }
-		    if(st.updateAccuracy) {
-			accuracy = Math.round(pl.alphaDeltaAccuracy(epsilon, .9)) + position.coords.accuracy;
-		    }
+			var accuracy = 0; // in case real accuracy is not defined
+			if(position.coords.accuracy) {
+				accuracy = position.coords.accuracy;
+			}
+			if(st.updateAccuracy) {
+				accuracy = Math.round(pl.alphaDeltaAccuracy(epsilon, .9)) + position.coords.accuracy;
+			}
 
-		    sanitized.coords.latitude = noisy.latitude;
-		    sanitized.coords.longitude = noisy.longitude;
-		    sanitized.coords.accuracy = accuracy;
-		    sanitized.timestamp = now;
-		    
-		    // cache
-		    st.cachedPos[level] = { epoch: position.timestamp, position: sanitized }; //redundant
-		    blog('noisy coords', sanitized.coords);
+			sanitized.coords.latitude = noisy.latitude;
+			sanitized.coords.longitude = noisy.longitude;
+			sanitized.coords.accuracy = accuracy;
+			sanitized.timestamp = now;
+
+			// update cache
+			st.cachedPos[level] = { epoch: position.timestamp, position: sanitized }; //redundant
+			blog('noisy coords', sanitized.coords);
 		}
-	    
-            // log
-	    if (!st.logOptOut){
-		while (st.logs.data.length >= Browser.storage.logSize) {
-		    st.logs.data.pop();
+
+		// log
+		if (st.logs.enabled){
+			while (st.logs.data.length >= Browser.storage.logSize) {
+				st.logs.data.pop();
+			}
+			st.logs.data.push({real: position,
+					   sanitized: sanitized,
+					   level: level,
+					   radius: st.levels[level].radius,
+					   domain: domain,
+					   timestamp: now});
+			Browser.storage.set(st);
+			blog("logs",st.logs.data);
 		}
-		st.logs.data.push({real: position,
-				   sanitized: sanitized,
-				   level: level,
-				   radius: st.levels[level].radius,
-				   domain: domain,
-				   timestamp: now});
-		Browser.storage.set(st);
-		blog("logs",st.logs.data);
-	    }
-	    // return noisy position
-	    handler(sanitized);
+		// return noisy position
+		handler(sanitized);
 	});
 }
 
