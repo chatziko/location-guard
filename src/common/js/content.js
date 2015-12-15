@@ -166,7 +166,8 @@ rpc.register('getNoisyPosition', function(options, replyHandler) {
 					domain: domain,
 					timestamp: noisy.timestamp,
 					levelConfig: {before: null, after: configBefore},
-					error: null
+					error: null,
+					cached: false
 				});
 				Browser.storage.set(st);
 				blog("logs",st.logs.data);
@@ -213,7 +214,8 @@ rpc.register('getNoisyPosition', function(options, replyHandler) {
 						domain: domain,
 						timestamp: Date.now(),
 						levelConfig: {before : configBefore, after : configAfter},
-						error : error
+						error : error,
+						cached: false
 					});
 					Browser.storage.set(st);
 					blog("logs",st.logs.data);
@@ -232,6 +234,7 @@ rpc.register('getNoisyPosition', function(options, replyHandler) {
 //
 function addNoise(position, configBefore, handler) {
 	Browser.storage.get(function(st) {
+		var cached = false;
 		var domain = Util.extractDomain(myUrl);
 		var level = st.domainLevel[domain] || st.defaultLevel;
 		var now = Date.now();
@@ -260,12 +263,13 @@ function addNoise(position, configBefore, handler) {
 			sanitized.coords.accuracy = 10;
 			sanitized.timestamp = now;
 		} else if(st.cachedPos[level] && ((new Date).getTime() - st.cachedPos[level].epoch)/60000 < st.levels[level].cacheTime) {
-			var cached = st.cachedPos[level].position;
-			sanitized.coords.latitude = cached.coords.latitude;
-			sanitized.coords.longitude = cached.coords.longitude;
-			sanitized.coords.accuracy = cached.coords.accuracy;
-			sanitized.timestamp = cached.timestamp;
-			blog('using cached', position);
+			var pos = st.cachedPos[level].position;
+			sanitized.coords.latitude = pos.coords.latitude;
+			sanitized.coords.longitude = pos.coords.longitude;
+			sanitized.coords.accuracy = pos.coords.accuracy;
+			sanitized.timestamp = pos.timestamp;
+			cached = true;
+			blog('using cached');
 		} else {
 			// add noise
 			var epsilon = st.epsilon / st.levels[level].radius;
@@ -312,7 +316,8 @@ function addNoise(position, configBefore, handler) {
 				domain: domain,
 				timestamp: now,
 				levelConfig: {before: configBefore, after: configAfter},
-				error : null
+				error : null,
+				cached : cached
 			});
 			Browser.storage.set(st);
 			blog("logs",st.logs.data);
