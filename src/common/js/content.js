@@ -129,6 +129,19 @@ rpc.register('getNoisyPosition', function(options, replyHandler) {
 		var domain = Util.extractDomain(myUrl);
 		var level = st.domainLevel[domain] || st.defaultLevel;
 
+		// we save the configuration before the Geolocation API popup, to check if the user is changing the level before accepting
+		var configBefore = {
+			level: level,
+			defaultLevel: st.defaultLevel,
+			radius: null,
+			cacheTime: null
+		};
+		// only for high,medium,low these two values are non-null
+		if (level != 'fixed' && level != 'real') {
+			configBefore.radius = st.levels[level].radius;
+			configBefore.cacheTime = st.levels[level].cachedTime;
+		}
+
 		if(level == 'fixed' && st.fixedPosNoAPI) {
 			var noisy = {
 				coords: {
@@ -140,27 +153,31 @@ rpc.register('getNoisyPosition', function(options, replyHandler) {
 					heading: null,
 					speed: null
 				},
-				timestamp: new Date().getTime()
+				timestamp: Date.now()
 			};
 			// log fixed
 			if (st.logs.enabled){
 				while (st.logs.data.length >= Browser.storage.logSize) {
 					st.logs.data.pop();
 				}
-				st.logs.data.push({real: null,
-						   sanitized: noisy,
-						   level: level,
-						   radius: null,
-						   domain: domain,
-						   timestamp: noisy.timestamp});
+				st.logs.data.push({
+					real: null,
+					sanitized: noisy,
+					domain: domain,
+					timestamp: noisy.timestamp,
+					levelConfig: {before: null, after: configBefore},
+					error: null
+				});
 				Browser.storage.set(st);
 				blog("logs",st.logs.data);
 			}
 
-			replyHandler(true, noisy);
 			blog("returning fixed", noisy);
+			replyHandler(true, noisy);
 			return;
 		}
+
+
 
 		// we call getCurrentPosition here in the content script, instead of
 		// inside the page, because the content-script/page communication is not secure
@@ -168,7 +185,7 @@ rpc.register('getNoisyPosition', function(options, replyHandler) {
 		getCurrentPosition.apply(navigator.geolocation, [
 			function(position) {
 				// clone, modifying/sending the native object returns error
-				addNoise(Util.clone(position), function(noisy) {
+				addNoise(Util.clone(position), configBefore, function(noisy) {
 					replyHandler(true, noisy);
 				});
 			},
@@ -178,17 +195,33 @@ rpc.register('getNoisyPosition', function(options, replyHandler) {
 					while (st.logs.data.length >= Browser.storage.logSize) {
 						st.logs.data.pop();
 					}
-					st.logs.data.push({real: null,
-							   sanitized: {error : error},
-							   level: level,
-							   radius: st.levels[level].radius,
-							   domain: domain,
-							   timestamp: Date.now()});
+
+					var level = st.domainLevel[domain] || st.defaultLevel;
+					var configAfter = {
+						level: level,
+						defaultLevel: st.defaultLevel,
+						radius : st.levels[level].radius,
+						cacheTime : st.levels[level].cachedTime,
+					};
+					if (configBefore === configAfter) {
+						configBefore = null;
+					} else {blog("configs", [configBefore,configAfter])}
+					
+					st.logs.data.push({
+						real: null,
+						sanitized: null,
+						domain: domain,
+						timestamp: Date.now(),
+						levelConfig: {before : configBefore, after : configAfter},
+						error : error
+					});
 					Browser.storage.set(st);
 					blog("logs",st.logs.data);
 				}
 
+				blog("failed API call", error);
 				replyHandler(false, Util.clone(error));		// clone, sending the native object returns error
+				return;
 			},
 			options
 		]);
@@ -197,7 +230,7 @@ rpc.register('getNoisyPosition', function(options, replyHandler) {
 
 // gets position, returs noisy version based on the options
 //
-function addNoise(position, handler) {
+function addNoise(position, configBefore, handler) {
 	Browser.storage.get(function(st) {
 		var domain = Util.extractDomain(myUrl);
 		var level = st.domainLevel[domain] || st.defaultLevel;
@@ -220,8 +253,8 @@ function addNoise(position, handler) {
 			sanitized.coords.latitude = position.coords.latitude;
 			sanitized.coords.longitude = position.coords.longitude;
 			sanitized.coords.accuracy = position.coords.accuracy;
-			sanitized.timestamp = now;
-		} else if(level == 'fixed') {
+			sanitized.timestamp = position.timestamp;
+		} else if(level == 'fixed') { // in case the user sees the popup and changes the level to fixed
 			sanitized.coords.latitude = st.fixedPos.latitude;
 			sanitized.coords.longitude = st.fixedPos.longitude;
 			sanitized.coords.accuracy = 10;
@@ -262,12 +295,25 @@ function addNoise(position, handler) {
 			while (st.logs.data.length >= Browser.storage.logSize) {
 				st.logs.data.pop();
 			}
-			st.logs.data.push({real: position,
-					   sanitized: sanitized,
-					   level: level,
-					   radius: st.levels[level].radius,
-					   domain: domain,
-					   timestamp: now});
+			var level = st.domainLevel[domain] || st.defaultLevel;
+			var configAfter = {
+				level: level,
+				defaultLevel: st.defaultLevel,
+				radius : st.levels[level].radius,
+				cacheTime : st.levels[level].cachedTime
+			};
+			if (configBefore === configAfter) {
+				configBefore = null;
+			} else {blog("configs", [configBefore,configAfter])}
+
+			st.logs.data.push({
+				real: position,
+				sanitized: sanitized,
+				domain: domain,
+				timestamp: now,
+				levelConfig: {before: configBefore, after: configAfter},
+				error : null
+			});
 			Browser.storage.set(st);
 			blog("logs",st.logs.data);
 		}

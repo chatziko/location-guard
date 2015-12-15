@@ -104,7 +104,7 @@ $(document).ready(function() {
 				var popupString = '<div class="popup">';
 				// popupString += 'Coord [' + p.coords.latitude + ',' + p.coords.latitude + '] <br />';
 				popupString += '<a href='+log.domain+'>'+log.domain + '</a><br />';
-				popupString += 'Level: ' + log.level + '<br />';
+				popupString += 'Level: ' + log.levelConfig.after.level + '<br />';
 				popupString += 'Distance: ' + distance + ' m <br />';
 				popupString += 'Time: ' + (new Date(log.timestamp)).toLocaleString() + '<br />';
 				popupString += '</div>';
@@ -162,33 +162,40 @@ $(document).ready(function() {
 
 
 	// the output can be tested on http://geojsonlint.com/
+	// log result of an error in the API call are not exported
 	var exportGeojson = function(){
 		function exportLog(log) {
-			var sanitGeojson = { "type": "Feature",
-					     "geometry": {"type": "Point",
-							  "coordinates": [log.sanitized.coords.longitude,
-									  log.sanitized.coords.latitude]},
-					     "properties": {
-						     "accuracy": log.sanitized.coords.accuracy,
-						     "level": (log.level + ": " + log.radius),
-						     "domain": log.domain,
-						     "timestamp": log.timestamp,
-					     }
-					   };
-			if (log.real) {
-				var realGeojson = { "type": "Feature",
-						    "geometry": {"type": "Point",
-								 "coordinates": [log.real.coords.longitude,
-										 log.real.coords.latitude]},
-						    "properties": {
-							    "accuracy": log.real.coords.accuracy,
-							    "timestamp": log.timestamp
-						    }
-						  };
-				return [realGeojson,sanitGeojson]
-			} else {
-				return [sanitGeojson]
+			var result = [];
+			
+			if (log.sanitized) {
+				var sanitGeojson = {
+					"type": "Feature",
+					"geometry": {"type": "Point",
+								 "coordinates": [log.sanitized.coords.longitude,
+												 log.sanitized.coords.latitude]},
+					"properties": {
+						"accuracy": log.sanitized.coords.accuracy,
+						"level": (log.configLevel.after.level + ": " + log.configLevel.after.radius),
+						"domain": log.domain,
+						"timestamp": log.timestamp,
+					}
+				};
+				result.push(sanitGeojson);
 			}
+			if (log.real) {
+				var realGeojson = {
+					"type": "Feature",
+					"geometry": {"type": "Point",
+								 "coordinates": [log.real.coords.longitude,
+												 log.real.coords.latitude]},
+					"properties": {
+						"accuracy": log.real.coords.accuracy,
+						"timestamp": log.timestamp
+					}
+				};
+				result.push(realGeojson);
+			}
+			return result
 		}
 
 		Browser.storage.get(function(st) {
@@ -337,6 +344,7 @@ $(document).ready(function() {
 
 			// TODO GENERATE SOME CACHED POINTS
 			// TODO radiuses may change over time
+			// TODO generate some errors
 			
 			var timestamps = [];
 			var now = Date.now();
@@ -402,12 +410,21 @@ $(document).ready(function() {
 					},
 					timestamp: real.timestamp};
 
-				st.logs.data.push({real: real,
-						   sanitized: sanitized,
-						   level: level,
-						   radius: st.levels[level].radius,
-						   domain: domain,
-						   timestamp: real.timestamp});
+				var config = {
+					level: level,
+					defaultLevel: level,
+					radius : radius,
+					cacheTime : 30
+				};
+				
+				st.logs.data.push({
+					real: real,
+					sanitized: sanitized,
+					domain: domain,
+					timestamp: real.timestamp,
+					levelConfig: {before: null, after: config},
+					error: null
+				});
 			});
 			Browser.storage.set(st);
 			refreshMap();
