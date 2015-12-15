@@ -423,7 +423,8 @@ $(document).ready(function() {
 					domain: domain,
 					timestamp: real.timestamp,
 					levelConfig: {before: null, after: config},
-					error: null
+					error: null,
+					cached: false
 				});
 			});
 			Browser.storage.set(st);
