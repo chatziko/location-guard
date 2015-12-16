@@ -178,52 +178,61 @@ rpc.register('getNoisyPosition', function(options, replyHandler) {
 			return;
 		}
 
-
-
 		// we call getCurrentPosition here in the content script, instead of
 		// inside the page, because the content-script/page communication is not secure
 		//
+		// there are three outcomes: success, failure and no-reply.
+		// For the latter we set a timeout and consider it as a failure
+
+		var handleError = function(error) {
+			// log failed API call
+			if (st.logs.enabled){
+				while (st.logs.data.length >= Browser.storage.logSize) {
+					st.logs.data.pop();
+				}
+
+				var level = st.domainLevel[domain] || st.defaultLevel;
+				var configAfter = {
+					level: level,
+					defaultLevel: st.defaultLevel,
+					radius : st.levels[level].radius,
+					cacheTime : st.levels[level].cachedTime,
+				};
+				if (configBefore === configAfter) {
+					configBefore = null;
+				} else {blog("configs", [configBefore,configAfter])}
+				
+				st.logs.data.push({
+					real: null,
+					sanitized: null,
+					domain: domain,
+					timestamp: Date.now(),
+					levelConfig: {before : configBefore, after : configAfter},
+					error : error,
+					cached: false
+				});
+				Browser.storage.set(st);
+				blog("logs",st.logs.data);
+			}
+
+			blog("failed API call", error);
+			replyHandler(false, Util.clone(error));		// clone, sending the native object returns error
+			return;
+		};
+
+		timeoutID = window.setTimeout(function(){handleError({code: 3, message: "Location Guard: timeout"})}, 5000);
+		
 		getCurrentPosition.apply(navigator.geolocation, [
 			function(position) {
+				window.clearTimeout(timeoutID);
 				// clone, modifying/sending the native object returns error
 				addNoise(Util.clone(position), configBefore, function(noisy) {
 					replyHandler(true, noisy);
 				});
 			},
 			function(error) {
-				// log failed API call
-				if (st.logs.enabled){
-					while (st.logs.data.length >= Browser.storage.logSize) {
-						st.logs.data.pop();
-					}
-
-					var level = st.domainLevel[domain] || st.defaultLevel;
-					var configAfter = {
-						level: level,
-						defaultLevel: st.defaultLevel,
-						radius : st.levels[level].radius,
-						cacheTime : st.levels[level].cachedTime,
-					};
-					if (configBefore === configAfter) {
-						configBefore = null;
-					} else {blog("configs", [configBefore,configAfter])}
-					
-					st.logs.data.push({
-						real: null,
-						sanitized: null,
-						domain: domain,
-						timestamp: Date.now(),
-						levelConfig: {before : configBefore, after : configAfter},
-						error : error,
-						cached: false
-					});
-					Browser.storage.set(st);
-					blog("logs",st.logs.data);
-				}
-
-				blog("failed API call", error);
-				replyHandler(false, Util.clone(error));		// clone, sending the native object returns error
-				return;
+				window.clearTimeout(timeoutID);
+				return handleError(error);
 			},
 			options
 		]);
