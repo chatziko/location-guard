@@ -7,7 +7,7 @@ let Cu = require("chrome").Cu;
 Cu.import("resource://gre/modules/Services.jsm");
 Cu.import("resource://gre/modules/Prompt.jsm");
 
-let { Browser, Util } = require('main');
+let { Browser, Util } = require('./main');
 
 let PopupFennec = exports;
 
