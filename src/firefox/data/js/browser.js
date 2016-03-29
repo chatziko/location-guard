@@ -417,7 +417,7 @@ Browser.gui._refreshPageAction = function(info) {
 		// if the API is called by the icon is hidden, add menu
 		this._menu = nw.menu.add({
 			name: "Location Guard",
-			callback: require('../../lib/PopupFennec').show
+			callback: require('./PopupFennec').show
 		});
 
 	} else {
@@ -431,7 +431,7 @@ Browser.gui._refreshPageAction = function(info) {
 		this._pageaction = PageActions.add({
 			icon: "data:image/png;base64," + this._base64_cache[icon],
 			title: "Location Guard",
-			clickCallback: require('../../lib/PopupFennec').show
+			clickCallback: require('./PopupFennec').show
 		});
 	}
 
@@ -439,7 +439,7 @@ Browser.gui._refreshPageAction = function(info) {
 	nw.toast.show("Location Guard is enabled", "long", {
 		button: {
 			label: "SHOW",
-			callback: require('../../lib/PopupFennec').show
+			callback: require('./PopupFennec').show
 		}
 	});
 	*/

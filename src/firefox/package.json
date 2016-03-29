@@ -1,18 +1,27 @@
 {
   "name": "location-guard",
-  "fullName": "Location Guard",
+  "title": "Location Guard",
   "id": "jid1-HdwPLukcGQeOSh@jetpack",
+  "homepage": "https://github.com/chatziko/location-guard/",
   "main": "lib/main.js",
   "description": "Hide your geographic location from websites.",
-  "author": "Konstantinos Chatzikokolakis (http://www.lix.polytechnique.fr/~kostas/) <kostas@chatzi.org>",
-  "contributors": ["Marco Stronati (http://stronati.org) <marco@stronati.org>"],
-  "icon" : "data/images/pin_38.png",
+  "author": "Kostas Chatzikokolakis",
+  "contributors": ["Marco Stronati"],
+  "icon": {
+    "64": "resource://location-guard/images/pin_64.png",
+    "48": "resource://location-guard/images/pin_38.png",
+    "32": "resource://location-guard/images/pin_32.png"
+  },
   "license": "MPL 2.0",
-  "version": "1.2.1",
-  "preferences" : [{
+  "version": "1.2.2",
+  "preferences": [{
           "type": "control",
           "label": "Show",
           "name": "optionButton",
           "title": "Options Page"
-      }]
+  }],
+  "engines": {
+    "firefox": ">=38.0a1",
+    "fennec": ">=38.0a1"
+  }
 }
