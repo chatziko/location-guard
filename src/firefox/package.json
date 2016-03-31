@@ -13,7 +13,7 @@
     "32": "resource://location-guard/images/pin_32.png"
   },
   "license": "MPL 2.0",
-  "version": "1.2.2",
+  "version": "1.2.3",
   "preferences": [{
           "type": "control",
           "label": "Show",
@@ -23,5 +23,8 @@
   "engines": {
     "firefox": ">=38.0a1",
     "fennec": ">=38.0a1"
+  },
+  "dependencies": {
+    "fennec-addon-preferences-workaround": "github:rpl/fennec-addon-preferences-workaround"
   }
 }
