@@ -237,6 +237,9 @@ Browser.gui._init = function(){
 	Browser.gui._fennec = Services.wm.getMostRecentWindow("navigator:browser").NativeWindow != undefined;
 
 	if(Browser.gui._fennec) {
+		// enable workaround for options not appearing in fennec: https://bugzilla.mozilla.org/show_bug.cgi?id=1243467
+		require("fennec-addon-preferences-workaround");
+
 		Cu.import("resource://gre/modules/PageActions.jsm");
 		Cu.import("resource://gre/modules/NetUtil.jsm");
 
