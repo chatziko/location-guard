@@ -7,6 +7,7 @@ const { Cu } = require('chrome');
 const { on } = require('sdk/system/events');
 const { preferencesBranch } = require('sdk/self');
 const { localizeInlineOptions } = require('sdk/l10n/prefs');
+const { Services } = require("resource://gre/modules/Services.jsm");
 const { AddonManager } = Cu.import("resource://gre/modules/AddonManager.jsm");
 const { defer } = require("sdk/core/promise");
 
@@ -40,11 +41,9 @@ function enable({ preferences, id }) {
     }
 
     if (data === id) {
-      optionsBox.style.display = "block";
-
-      let header = doc.querySelector(".options-header").cloneNode(true);
-      header.style.display = "block";
-      optionsBox.appendChild(header);
+      // NOTE: This disable the CSS rule that makes the options invisible
+      let item = doc.querySelector('#addons-details .addon-item');
+      item.removeAttribute("optionsURL");
 
       injectOptions({
         preferences: preferences,
@@ -88,8 +87,9 @@ function injectOptions({ preferences, preferencesBranch, document, parent, id })
       button.setAttribute('pref-name', name);
       button.setAttribute('data-jetpack-id', id);
       button.setAttribute('label', label);
-      button.setAttribute('oncommand', "Services.obs.notifyObservers(null, '" +
-                                        id + "-cmdPressed', '" + name + "');");
+      button.addEventListener('command', () => {
+        Services.obs.notifyObservers(null, `${id}-cmdPressed`, name);
+      }, true);
       setting.appendChild(button);
     }
     else if (type === 'boolint') {
@@ -100,7 +100,7 @@ function injectOptions({ preferences, preferencesBranch, document, parent, id })
       let menulist = document.createElementNS(XUL_NS, 'menulist');
       let menupopup = document.createElementNS(XUL_NS, 'menupopup');
       for (let { value, label } of options) {
-        let menuitem = document.createElement(XUL_NS, 'menuitem');
+        let menuitem = document.createElementNS(XUL_NS, 'menuitem');
         menuitem.setAttribute('value', value);
         menuitem.setAttribute('label', label);
         menupopup.appendChild(menuitem);
