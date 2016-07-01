@@ -155,11 +155,17 @@ of Nicolas Bordenabe.
 
 #### Complete list of publications related to Location Guard
 
-##### Thesis
+##### Theses
 
 * **Measuring Privacy with Distinguishability Metrics: Definitions, Mechanisms and Application to Location Privacy**.  
-  N. Bordenabe.  
-  _PhD dissertation_, École Polytechnique, Paris, 2014. [[pdf](https://pastel.archives-ouvertes.fr/tel-01098088/document)]
+  N. Bordenabe.
+  _PhD dissertation_, École Polytechnique, Paris, 2014.
+  [SIGSAC Doctoral Dissertation Award 2015](http://www.sigsac.org/award/diss-awards.html).
+  [[pdf](https://pastel.archives-ouvertes.fr/tel-01098088/document)]
+
+* **Designing Location Privacy Mechanisms for flexibility over time and space**.
+  M. Stronati.
+  _PhD dissertation_, École Polytechnique, Paris, 2015. [[pdf](https://pastel.archives-ouvertes.fr/tel-01243295/document)]
 
 ##### Papers
 
@@ -180,5 +186,5 @@ of Nicolas Bordenabe.
   _Proc. of ICDCIT '15_, Springer, LNCS 8956, pp. 49-72, 2015. [[report](http://hal.inria.fr/hal-01114241)]
 * **Constructing elastic distinguishability metrics for location privacy**.  
   K. Chatzikokolakis, C. Palamidessi and M. Stronati.  
-  _PETS'15 / PoPETs_, De Gruyter Open, to appear, 2015. [[report](http://arxiv.org/abs/1503.00756)]
+  _PETS'15 / PoPETs_, De Gruyter Open, 2015(2): 156-170, 2015. [[report](http://arxiv.org/abs/1503.00756)]
 
