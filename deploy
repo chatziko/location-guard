@@ -2,30 +2,34 @@
 
 set -e
 
-DIST=dist
+DIST='dist'
+
+#an alternative to web-ext is to load any file of the dist directory
+#from about:debugging
+
+#local installation with `npm install web-ext`
+WEBEXT="./node_modules/web-ext/bin/web-ext" 
+FIREFOX=$(which firefox) # -f
+if [ -f "$2" ]; then FIREFOX="$2"; fi
+export WEB_EXT_SOURCE_DIR="$DIST/firefox" # -s
+export WEB_EXT_ARTIFACTS_DIR="$DIST" # -a
 
 case "$1" in
-    chrome)
+    make)
         mkdir -p $DIST/chrome
         cp -r src/common/* $DIST/chrome/
-        cp -r src/chrome $DIST/
-        ;;
-    firefox)
-        mkdir -p $DIST/firefox/data
-
-        cp -r src/common/* $DIST/firefox/data/
-        cp -r src/firefox $DIST/
-
-		# create lib/main.js containing data/js/{util,browser_base,browser,main}.js
-		# This avoids the use of require() as well as the duplicate files in
-		# lib/ and data/
-		#
-        cat $DIST/firefox/data/js/{util,browser_base,browser,main}.js > $DIST/firefox/lib/main.js
-        rm $DIST/firefox/data/js/main.js	# not needed, avoid duplicates
+        cp -r src/chrome/* $DIST/chrome/
+        cp -r $DIST/chrome $DIST/firefox
+        cp -r src/firefox/manifest.json $DIST/firefox/
+        $WEBEXT -a $DIST -s $DIST/firefox build
         ;;
     clean)
         rm -rf $DIST
         ;;
+    testff)
+        $WEBEXT -v -f $FIREFOX run --start-url https://www.openstreetmap.org
+        ;;
     *)
-        echo use deploy {chrome,firefox,clean}
+        echo 'use ./deploy {make, clean, testff, testff /path/firefox}'
+        ;;   
 esac
