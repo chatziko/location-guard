@@ -16,18 +16,42 @@ export WEB_EXT_ARTIFACTS_DIR="$DIST" # -a
 
 case "$1" in
     make)
+        rm -rf $DIST
         mkdir -p $DIST/chrome
         cp -r src/common/* $DIST/chrome/
         cp -r src/chrome/* $DIST/chrome/
         cp -r $DIST/chrome $DIST/firefox
         cp -r src/firefox/manifest.json $DIST/firefox/
         $WEBEXT -a $DIST -s $DIST/firefox build
+
+        #push xpi to the phone
+        #adb push $DIST/location_guard-*.zip /mnt/sdcard/location_guard.xpi
         ;;
+    legacy)
+        # old extension
+        rm -rf $DIST
+        mkdir $DIST
+        cp -r src/firefox $DIST/
+        rm $DIST/firefox/manifest.json
+
+        # new extension in webextension/ dir
+        mkdir -p $DIST/chrome
+        cp -r src/common/* $DIST/chrome/
+        cp -r src/chrome/* $DIST/chrome/
+
+        cp -r $DIST/chrome $DIST/firefox/webextension
+        cp -r src/firefox/manifest.json $DIST/firefox/webextension/
+
+        $WEBEXT -f $FIREFOX run --browser-console
+        ;;
+
     clean)
         rm -rf $DIST
         ;;
     testff)
-        $WEBEXT -v -f $FIREFOX run --start-url https://www.openstreetmap.org
+        $WEBEXT -f $FIREFOX run --browser-console
+#        $WEBEXT -f $FIREFOX run --start-url https://www.openstreetmap.org
+#        $WEBEXT -v -f $FIREFOX run --start-url https://www.openstreetmap.org
         ;;
     *)
         echo 'use ./deploy {make, clean, testff, testff /path/firefox}'
