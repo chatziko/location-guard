@@ -3,7 +3,8 @@
   "title": "Location Guard",
   "id": "jid1-HdwPLukcGQeOSh@jetpack",
   "homepage": "https://github.com/chatziko/location-guard/",
-  "main": "lib/main.js",
+  "main": "lib/migrate.js",
+  "hasEmbeddedWebExtension": true,
   "description": "Hide your geographic location from websites.",
   "author": "Kostas Chatzikokolakis",
   "contributors": ["Marco Stronati"],
@@ -13,18 +14,9 @@
     "32": "resource://location-guard/images/pin_32.png"
   },
   "license": "MPL 2.0",
-  "version": "1.2.3",
-  "preferences": [{
-          "type": "control",
-          "label": "Show",
-          "name": "optionButton",
-          "title": "Options Page"
-  }],
+  "version": "1.3.0",
   "engines": {
-    "firefox": ">=38.0a1",
-    "fennec": ">=38.0a1"
-  },
-  "dependencies": {
-    "fennec-addon-preferences-workaround": "github:rpl/fennec-addon-preferences-workaround"
+    "firefox": ">=56.0",
+    "fennec": ">=56.0"
   }
 }
