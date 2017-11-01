@@ -148,17 +148,30 @@ var Browser = {
 		//
 		showPage: function(name) {},
 
-		// Browser.gui.getActiveCallUrl(handler)
+		// Browser.gui.getCallUrl(tabId, handler)
 		//
-		// Gets the callUrl of the active tab and passes it to 'handler'
+		// Gets the callUrl of given tab and passes it to 'handler'
 		//
-		getActiveCallUrl: function(handler) {},
+		getActiveCallUrl: function(tabId, handler) {},
 
-		// Browser.gui.resizePopup(width, height)
+		// Browser.gui.closePopup()
 		//
-		// Resizes the popup to the given width/height, closes it if width/height are null
+		// Closes the popup.
 		//
-		resizePopup: function(width, height) {},
+		closePopup: function() {},
+	},
+
+	// Browser.version
+	//
+	// Class for browser detection
+	//
+	version: {
+		isFirefox: function() {
+			return navigator.userAgent.toLowerCase().indexOf('firefox') > -1;
+		},
+		isAndroid: function() {
+			return navigator.userAgent.toLowerCase().indexOf('android') > -1;
+		}
 	},
 
 	// Browser.log(text, value)

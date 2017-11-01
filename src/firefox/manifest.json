@@ -7,19 +7,25 @@
 		"64": "images/pin_64.png",
 		"128": "images/pin_128.png"
 	},
-	"version": "1.2.0",
+	"version": "1.3.0",
 
-	"permissions": ["http://*/*", "https://*/*", "storage", "tabs"],
+	"applications": {
+		"gecko": {
+			"id": "kostas@chatzi.org"
+		}
+	},
+
+	"permissions": ["http://*/*", "https://*/*", "storage"],
 	"manifest_version": 2,
 
 	"background": {
 		"scripts": ["js/util.js", "js/browser_base.js", "js/browser.js", "js/main.js"]
 	},
 
-    "options_ui": {
-        "page": "options.html",
-        "open_in_tab": true
-    },
+	"options_ui": {
+		"page": "options.html",
+		"open_in_tab": true
+	},
 
 	"page_action": {
 		"default_icon": {

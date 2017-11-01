@@ -15,7 +15,7 @@ var url;
 function closePopup() {
 	// delay closing to allow scripts to finish executing
 	setTimeout(function() {
-		Browser.gui.resizePopup(null, null);
+		Browser.gui.closePopup();
 	}, 50);
 }
 
@@ -74,8 +74,10 @@ function doAction() {
 }
 
 function drawUI() {
+	var tabId = parseInt(window.location.href.match(/tabId=(\d+)/)[1]);
+
 	// we need storage and url
-	Browser.gui.getActiveCallUrl(function(callUrl) {
+	Browser.gui.getCallUrl(tabId, function(callUrl) {
 	Browser.storage.get(function(st) {
 		blog("popup: callUrl", callUrl, "settings", st);
 
@@ -103,16 +105,22 @@ function drawUI() {
 		// we're ready, init
 		$.mobile.initializePage();
 
-		// resize body to match #container, and call Browser.gui.resizePopup
-		var width = $("#container").width();
-		var height = $("#container").height();
+		if(Browser.version.isFirefox() && Browser.version.isAndroid()) {
+			// in Firefox@Android the popup is displayed as a normal tab, so set 100% width/height
+			$("html, body, #container").css({
+				width:  "100%",
+				height: "100%"
+			});
+		} else {
+			// normal popup, resize body to match #container
+			var width = $("#container").width();
+			var height = $("#container").height();
 
-		$("html, body").css({
-			width:  width,
-			height: height,
-		});
-
-		Browser.gui.resizePopup(width, height);
+			$("html, body").css({
+				width:  width,
+				height: height,
+			});
+		}
 	});
 	});
 }

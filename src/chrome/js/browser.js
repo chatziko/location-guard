@@ -34,6 +34,10 @@ Browser._main_script = function() {
 	Browser.rpc.register('refreshIcon', function(tabId, callerTabId) {
 		Browser.gui.refreshIcon(tabId || callerTabId);		// null tabId in the content script means refresh its own tab
 	});
+
+	Browser.rpc.register('closeTab', function(tabId) {
+		chrome.tabs.remove(tabId);
+	});
 }
 
 
@@ -130,16 +134,25 @@ Browser.gui.refreshIcon = function(tabId) {
 			chrome.pageAction.hide(tabId);
 
 		} else {
-			chrome.pageAction.setIcon({
+			// Firefox on Android (version 56) doesn't support pageAction.setIcon/setTitle so we try/catch
+			try {
+				chrome.pageAction.setIcon({
+					tabId: tabId,
+					path: {
+						19: '/images/' + (info.private ? 'pin_19.png' : 'pin_disabled_19.png'),
+						38: '/images/' + (info.private ? 'pin_38.png' : 'pin_disabled_38.png')
+					}
+				});
+				chrome.pageAction.setTitle({
+					tabId: tabId,
+					title: info.title
+				});
+			} catch(e) {
+			}
+
+			chrome.pageAction.setPopup({
 				tabId: tabId,
-				path: {
-					19: '/images/' + (info.private ? 'pin_19.png' : 'pin_disabled_19.png'),
-					38: '/images/' + (info.private ? 'pin_38.png' : 'pin_disabled_38.png')
-				}
-			});
-			chrome.pageAction.setTitle({
-				tabId: tabId,
-				title: info.title
+				popup: "popup.html?tabId=" + tabId		// pass tabId in the url
 			});
 			chrome.pageAction.show(tabId);
 		}
@@ -154,58 +167,43 @@ Browser.gui.refreshAllIcons = function() {
 };
 
 Browser.gui.showPage = function(name) {
-	var baseUrl = chrome.extension.getURL('');
-	var fullUrl = baseUrl + name;
+	chrome.tabs.create({ url: chrome.extension.getURL(name) });
+};
 
-	// if there is any tab showing an internal page, activate and update it, otherwise open new
+Browser.gui.getCallUrl = function(tabId, handler) {
+	// we call getState from the content script
 	//
-	chrome.tabs.query({ url: baseUrl + "*" }, function(tabs) {
-		blog("tabs",tabs);
-		if (tabs.length)
-			chrome.tabs.update(tabs[0].id, { active: true, url: fullUrl });
-		else
-			chrome.tabs.create({ url: fullUrl });
+	Browser.rpc.call(tabId, 'getState', [], function(state) {
+		handler(state.callUrl);
 	});
 };
 
-Browser.gui.getActiveCallUrl = function(handler) {
-	chrome.tabs.query(
-		{ active: true,               // Select active tabs
-		  lastFocusedWindow: true     // In the current window
-		}, function(tabs) {
-			// there can be only one;
-			// we call getUrl from the content script (avoid asking for 'tabs' permisison)
-			//
-			Browser.rpc.call(tabs[0].id, 'getState', [], function(state) {
-				handler(state.callUrl);
-			});
-		}
-	);
-};
-
-Browser.gui.resizePopup = function(width, height) {
+Browser.gui.closePopup = function() {
 	if(Browser._script != 'popup') throw "only called from popup";
 
-	// nothing is needed for resize (chrome resizes automatically)
-	// for close we just to window.close()
-	//
-	if(!(width && height))
+	if(Browser.version.isFirefox() && Browser.version.isAndroid())
+		// Firefox@Android shows popup as normal tab, and window.close() doesn't
+		// work. Call closeTab in the main script
+		Browser.rpc.call(null, 'closeTab', []);
+	else
+		// normal popup closes with window.close()
 		window.close();
 }
 
-
-// in chrome, apart from the current console, we also log to the background page, if possible and loaded
-//
 Browser.log = function() {
 	if(!Browser.debugging) return;
 
 	console.log.apply(console, arguments);
 
-	var bp;
-	if(chrome.extension && chrome.extension.getBackgroundPage)
-		bp = chrome.extension.getBackgroundPage();
+	// in chrome, apart from the current console, we also log to the background page, if possible and loaded
+	//
+	if(!Browser.version.isFirefox()) {
+		var bp;
+		if(chrome.extension && chrome.extension.getBackgroundPage)
+			bp = chrome.extension.getBackgroundPage();
 
-	if(bp && bp.console != console)		// avoid logging twice
-		bp.console.log.apply(bp.console, arguments);
+		if(bp && bp.console != console)		// avoid logging twice
+			bp.console.log.apply(bp.console, arguments);
+	}
 }
 
