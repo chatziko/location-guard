@@ -5,6 +5,9 @@
   "homepage": "https://github.com/chatziko/location-guard/",
   "main": "lib/migrate.js",
   "hasEmbeddedWebExtension": true,
+  "permissions": {
+      "multiprocess": true
+  },
   "description": "Hide your geographic location from websites.",
   "author": "Kostas Chatzikokolakis",
   "contributors": ["Marco Stronati"],
