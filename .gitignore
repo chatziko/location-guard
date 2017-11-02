@@ -1,5 +1,5 @@
 *.swp
 *.swo
 *.swn
-/dist
+/build
 /node_modules
