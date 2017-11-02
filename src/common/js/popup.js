@@ -26,9 +26,14 @@ function doAction() {
 		case 'options':
 		case 'faq':
 			var page = action == 'options' ? 'options.html' : 'faq.html#general';
-			Browser.gui.showPage(page);
 
-			closePopup();
+			if(Browser.version.isFirefox() && Browser.version.isAndroid()) {
+				// we're in a normal tab, just navigate to the page
+				window.location.href = page;
+			} else {
+				Browser.gui.showPage(page);
+				closePopup();
+			}
 			break;
 
 		case 'hideIcon':
@@ -106,11 +111,16 @@ function drawUI() {
 		$.mobile.initializePage();
 
 		if(Browser.version.isFirefox() && Browser.version.isAndroid()) {
-			// in Firefox@Android the popup is displayed as a normal tab, so set 100% width/height
+			// in Firefox@Android the popup is displayed as a normal tab, so:
+			// 1: set 100% width/height
 			$("html, body, #container").css({
 				width:  "100%",
 				height: "100%"
 			});
+			// 2: show the close button
+			$("#close").css({ display: "block" })
+					   .on("click", closePopup);
+
 		} else {
 			// normal popup, resize body to match #container
 			var width = $("#container").width();
