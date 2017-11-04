@@ -247,7 +247,7 @@ function initFixedPosMap() {
 				var res = e.params.text.match(/^([-+]?[0-9]+\.[0-9]+)\s*,?\s*([-+]?[0-9]+\.[0-9]+)$/);
 				if(!res) return;
 
-				var latlng = { lat: parseFloat(res[1]), lon: parseFloat(res[2]) };
+				var latlng = L.latLng(parseFloat(res[1]), parseFloat(res[2]));
 				saveFixedPos(latlng);
 				fixedPosMap.setView(latlng, 14)
 				this.collapse();		// close the geocoder search
@@ -258,7 +258,8 @@ function initFixedPosMap() {
 
 function saveFixedPos(latlng) {
 	Browser.storage.get(function(st) {
-		st.fixedPos = { latitude: latlng.lat, longitude: latlng.lng };
+		var wrapped = latlng.wrap();			// force within normal range
+		st.fixedPos = { latitude: wrapped.lat, longitude: wrapped.lng };
 
 		fixedPosMap.marker.setLatLng(latlng);
 
