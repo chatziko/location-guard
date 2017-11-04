@@ -129,7 +129,7 @@ rpc.register('getNoisyPosition', function(options, replyHandler) {
 		var domain = Util.extractDomain(myUrl);
 		var level = st.domainLevel[domain] || st.defaultLevel;
 
-		if(level == 'fixed' && st.fixedPosNoAPI) {
+		if(!st.paused && level == 'fixed' && st.fixedPosNoAPI) {
 			var noisy = {
 				coords: {
 					latitude: st.fixedPos.latitude,
