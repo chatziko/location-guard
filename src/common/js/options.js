@@ -116,8 +116,7 @@ function initLevelMap() {
 				levelMap.closePopup();
 				return;
 			}
-			currentPos = { latitude: e.latlng.lat, longitude: e.latlng.lng };
-			moveCircles();
+			handleChangePosEvent(e);
 		});
 
 	// marker
@@ -126,10 +125,7 @@ function initLevelMap() {
 		.on('click', function() {
 			showPopup(levelMap);
 		})
-		.on('drag', function(e) {
-			currentPos = { latitude: e.target._latlng.lat, longitude: e.target._latlng.lng };
-			moveCircles();
-		});
+		.on('drag', handleChangePosEvent);
 
 	// popup
 	var popupHtml =
@@ -175,6 +171,15 @@ function initLevelMap() {
 			iconLoading: 'icon-trans ui-btn-icon-notext ui-icon-location',		// font awesome
 		})
 	.addTo(levelMap);
+
+	// geocoder control
+	if(!Browser.version.isAndroid()) // not enough space on smartphones, better have a cleaner interface
+		L.control.geocoder('mapzen-yHD9V2E', {
+			markers: false,
+			autocomplete: false
+		}).on('highlight', handleChangePosEvent)
+		  .on('select',    handleChangePosEvent)
+		  .addTo(levelMap);
 }
 
 function initFixedPosMap() {
@@ -231,6 +236,23 @@ function initFixedPosMap() {
 			icon: 'icon-trans ui-btn-icon-notext ui-icon-location',				// use jqm's icons to avoid loading
 			iconLoading: 'icon-trans ui-btn-icon-notext ui-icon-location',		// font awesome
 		}).addTo(fixedPosMap);
+
+		// geocoder control
+		if(!Browser.version.isAndroid()) // not enough space on smartphones, better have a cleaner interface
+			L.control.geocoder('mapzen-yHD9V2E', {
+				markers: false,
+				autocomplete: false
+			}).on('results', function(e) {
+				// directly set position if the text is a latlon
+				var res = e.params.text.match(/^([-+]?[0-9]+\.[0-9]+)\s*,?\s*([-+]?[0-9]+\.[0-9]+)$/);
+				if(!res) return;
+
+				var latlng = { lat: parseFloat(res[1]), lon: parseFloat(res[2]) };
+				saveFixedPos(latlng);
+				fixedPosMap.setView(latlng, 14)
+				this.collapse();		// close the geocoder search
+
+			}).addTo(fixedPosMap);
 	});
 }
 
@@ -260,6 +282,12 @@ function showLevelInfo() {
 		updateRadius(radius, true);
 		updateCache(ct);
 	});
+}
+
+// change current pos as a reaction to a Leaflet event
+function handleChangePosEvent(e) {
+	currentPos = { latitude: e.latlng.lat, longitude: e.latlng.lng };
+	moveCircles();
 }
 
 function moveCircles() {
