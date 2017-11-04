@@ -213,7 +213,7 @@ Browser.gui.closePopup = function() {
 }
 
 Browser.log = function() {
-	if(!Browser.debugging) return;
+	if(!Browser.version.isDebugging()) return;
 
 	console.log.apply(console, arguments);
 

@@ -2,7 +2,7 @@
 // Subclasses should implement the API defined here
 //
 var Browser = {
-	debugging: true,				// set this to false on production
+	debugging: null,				// null: auto set to true if running locally
 	testing: false,					// set to true to run tests on load
 
 	// Browser.init(script)
@@ -171,6 +171,12 @@ var Browser = {
 		},
 		isAndroid: function() {
 			return navigator.userAgent.toLowerCase().indexOf('android') > -1;
+		},
+		isDebugging: function() {
+			// update_url is only present if the extensioned is installed via the web store
+			if(Browser.debugging == null)
+				Browser.debugging = !('update_url' in chrome.runtime.getManifest());
+			return Browser.debugging;
 		}
 	},
 
@@ -179,7 +185,7 @@ var Browser = {
 	// Logs the given text/value pair
 	//
 	log: function(text, value) {
-		if(!Browser.debugging) return;
+		if(!Browser.version.isDebugging()) return;
 
 		console.log(text, value);
 	}
