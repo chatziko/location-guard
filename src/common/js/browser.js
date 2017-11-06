@@ -40,6 +40,29 @@ Browser._main_script = function() {
 		chrome.tabs.remove(tabId);
 	});
 
+	// Workaroud some Firefox page-action 'bugs' (different behaviour than chrome)
+	// - the icon is _not_ hidden automatically on refresh
+	// - [android-only] the icon is _not_ hidden when navigating away from a page
+	// - the icon _is_ hidden on history.pushstate (eg on google maps when
+	//   clicking on some label) although the same page remains loaded
+	//
+	if(!Browser.capabilities.usesBrowserAction()) {
+		Browser.gui.iconShown = {};
+
+		chrome.tabs.onUpdated.addListener(function(tabId, info) {
+			// minimize overhead: only act if we have shown an icon in this tab before
+			if(!Browser.gui.iconShown[tabId]) return;
+
+			if(info.status == 'loading')
+				// tab is loading, make sure the icon is hidden
+				chrome.pageAction.hide(tabId);
+			else if(info.status == 'complete')
+				// this fires after history.pushState. Call refreshIcon to reset
+				// the icon if it was incorrectly hidden
+				Browser.gui.refreshIcon(tabId);
+		});
+	}
+
 	// set default icon (for browser action)
 	//
 	Browser.gui.refreshAllIcons();
@@ -147,14 +170,18 @@ Browser.storage.migrate = function(oldSt) {
 //
 //
 Browser.gui.refreshIcon = function(tabId) {
-	if(Browser._script == 'content') {
-		// cannot do it in the content script, delegate to the main
+	// delegate the call to the 'main' script if:
+	// - we're in 'content': chrome.pageAction/browserAction is not available there
+	// - we use a pageAction: we need to update Browser.gui.iconShown for the FF workaround
+	//
+	var ba = Browser.capabilities.usesBrowserAction();
+	if(Browser._script == 'content' || (Browser._script != 'main' && !ba)) {
 		Browser.rpc.call(null, 'refreshIcon', [tabId]);
 		return;
 	}
 
 	Util.getIconInfo(tabId, function(info) {
-		if(Browser.capabilities.usesBrowserAction())
+		if(ba)
 			Browser.gui._refreshBrowserAction(tabId, info);
 		else
 			Browser.gui._refreshPageAction(tabId, info);
@@ -164,6 +191,8 @@ Browser.gui.refreshIcon = function(tabId) {
 Browser.gui._refreshPageAction = function(tabId, info) {
 	if(info.hidden || info.apiCalls == 0)
 		return chrome.pageAction.hide(tabId);
+
+	Browser.gui.iconShown[tabId] = 1;
 
 	// Firefox on Android (version 56) doesn't support pageAction.setIcon/setTitle so we try/catch
 	try {
