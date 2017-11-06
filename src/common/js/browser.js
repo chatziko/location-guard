@@ -170,8 +170,9 @@ Browser.gui._refreshPageAction = function(tabId, info) {
 		chrome.pageAction.setIcon({
 			tabId: tabId,
 			path: {
-				19: '/images/' + (info.private ? 'pin_19.png' : 'pin_disabled_19.png'),
-				38: '/images/' + (info.private ? 'pin_38.png' : 'pin_disabled_38.png')
+				16: '/images/' + (info.private ? 'pin_16.png' : 'pin_disabled_16.png'),
+				32: '/images/' + (info.private ? 'pin_32.png' : 'pin_disabled_32.png'),
+				64: '/images/' + (info.private ? 'pin_64.png' : 'pin_disabled_64.png')
 			}
 		});
 		chrome.pageAction.setTitle({
@@ -191,8 +192,12 @@ Browser.gui._refreshBrowserAction = function(tabId, info) {
 	chrome.browserAction.setIcon({
 		tabId: tabId,
 		path: {
+			// chrome used to have 19px icons, now it has 16px
+			16: '/images/' + (info.private ? 'pin_16.png' : 'pin_disabled_16.png'),
 			19: '/images/' + (info.private ? 'pin_19.png' : 'pin_disabled_19.png'),
-			38: '/images/' + (info.private ? 'pin_38.png' : 'pin_disabled_38.png')
+			32: '/images/' + (info.private ? 'pin_32.png' : 'pin_disabled_32.png'),
+			38: '/images/' + (info.private ? 'pin_38.png' : 'pin_disabled_38.png'),
+			64: '/images/' + (info.private ? 'pin_64.png' : 'pin_disabled_64.png')
 		}
 	});
 	chrome.browserAction.setTitle({

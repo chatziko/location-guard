@@ -24,8 +24,11 @@
 
 	"browser_action": {
 		"default_icon": {
+			"16": "images/pin_16.png",
 			"19": "images/pin_19.png",
-			"38": "images/pin_38.png"
+			"32": "images/pin_32.png",
+			"38": "images/pin_38.png",
+			"64": "images/pin_64.png"
 		},
 		"default_popup": "popup.html",
 		"default_title": "Location Guard"
