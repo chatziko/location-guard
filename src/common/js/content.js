@@ -104,7 +104,7 @@ if(inDemo) {
 }
 
 var inFrame = (window != window.top);	// are we in a frame?
-var apiCalled = false;					// true means that an API call has already happened (here or in a nested frame), so we need to show the icon
+var apiCalls = 0;						// how many times the API has been called here or in an iframe
 var myUrl = inDemo ? 'http://demo-page/' : window.location.href;	// DEMO: user-friendly url
 var callUrl = myUrl;					// the url from which the last call was made, it could be us or a nested frame
 
@@ -117,9 +117,9 @@ rpc.register('getNoisyPosition', function(options, replyHandler) {
 		new PostRPC('frames', window.top).call('apiCalledInFrame', [myUrl]);	// window.top.postMessage always works!
 	} else {
 		// refresh icon before fetching the location
-		apiCalled = true;
+		apiCalls++;
 		callUrl = myUrl;
-		Browser.gui.refreshIcon();
+		Browser.gui.refreshIcon('self');
 	}
 
 	Browser.storage.get(function(st) {
@@ -224,21 +224,33 @@ function addNoise(position, handler) {
 
 Browser.init('content');
 
+// if a browser action (always visible button) is used, we need to refresh the
+// icon immediately (before the API is called). HOWEVER: Browser.gui.refreshIcon
+// causes the background script to be awaken. To avoid doing this on every page,
+// we only call it if the icon is different than the default icon!
+//
+if(Browser.capabilities.usesBrowserAction() && !inFrame) {
+	Util.getIconInfo({ callUrl: myUrl, apiCalls: 0 }, function(info) {
+		if(info.private != info.defaultPrivate) // the icon for myUrl is different than the default
+			Browser.gui.refreshIcon('self');
+	})
+}
+
 // only the top frame handles getState and apiCalledInFrame requests
 var frames_rpc;
 if(!inFrame) {
 	Browser.rpc.register('getState', function(tabId, replyHandler) {
 		replyHandler({
 			callUrl: callUrl,
-			apiCalled: apiCalled
+			apiCalls: apiCalls
 		});
 	});
 
 	frames_rpc = new PostRPC("frames", window, window);
 	frames_rpc.register('apiCalledInFrame', function(url) {
-		apiCalled = true;
+		apiCalls++;
 		callUrl = url;
-		Browser.gui.refreshIcon();
+		Browser.gui.refreshIcon('self');
 	});
 }
 

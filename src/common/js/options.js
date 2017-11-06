@@ -173,7 +173,7 @@ function initLevelMap() {
 	.addTo(levelMap);
 
 	// geocoder control
-	if(!Browser.version.isAndroid()) // not enough space on smartphones, better have a cleaner interface
+	if(!Browser.capabilities.isAndroid()) // not enough space on smartphones, better have a cleaner interface
 		L.control.geocoder('mapzen-yHD9V2E', {
 			markers: false,
 			autocomplete: false
@@ -238,7 +238,7 @@ function initFixedPosMap() {
 		}).addTo(fixedPosMap);
 
 		// geocoder control
-		if(!Browser.version.isAndroid()) // not enough space on smartphones, better have a cleaner interface
+		if(!Browser.capabilities.isAndroid()) // not enough space on smartphones, better have a cleaner interface
 			L.control.geocoder('mapzen-yHD9V2E', {
 				markers: false,
 				autocomplete: false
@@ -363,6 +363,10 @@ function initPages() {
 	//$.mobile.hideUrlBar = false;
 	//$.mobile.defaultPageTransition = "none";
 
+	$(document).ready(function() {
+		$('#hideIcon').parent().toggle(!Browser.capabilities.usesBrowserAction());	// hiding the icon only works with page action (not browser action)
+	});
+
 	$(document).on("pagecontainershow", function(e, ui) {
 		var page = ui.toPage[0].id;
 
@@ -434,7 +438,9 @@ function showCurrentPosition() {
 function restoreDefaults() {
 	if(window.confirm('Are you sure you want to restore the default options?')) {
 		Browser.storage.clear(function() {
-			location.reload();
+			Browser.gui.refreshAllIcons();
+
+			setTimeout(location.reload.bind(location), 50);	// delay to allow refreshAllIcons to finish
 		});
 	}
 }

@@ -32,16 +32,21 @@ Browser._main_script = function() {
 	// handlers to do them in the main script
 	//
 	Browser.rpc.register('refreshIcon', function(tabId, callerTabId) {
-		Browser.gui.refreshIcon(tabId || callerTabId);		// null tabId in the content script means refresh its own tab
+		// 'self' tabId in the content script means refresh its own tab
+		Browser.gui.refreshIcon(tabId == 'self' ?  callerTabId : tabId);
 	});
 
 	Browser.rpc.register('closeTab', function(tabId) {
 		chrome.tabs.remove(tabId);
 	});
 
+	// set default icon (for browser action)
+	//
+	Browser.gui.refreshAllIcons();
+
 	// migrate from old Firefox extension
 	//
-	if(Browser.version.isFirefox())
+	if(Browser.capabilities.isFirefox())
 		browser.runtime.sendMessage("migrate").then(reply => {
 			console.log("migrate: response from legacy addon: ", reply);
 
@@ -148,44 +153,75 @@ Browser.gui.refreshIcon = function(tabId) {
 		return;
 	}
 
-	if(tabId == undefined)
-		throw "tabId not set";
-
 	Util.getIconInfo(tabId, function(info) {
-		if(!info || info.hidden) {
-			chrome.pageAction.hide(tabId);
-
-		} else {
-			// Firefox on Android (version 56) doesn't support pageAction.setIcon/setTitle so we try/catch
-			try {
-				chrome.pageAction.setIcon({
-					tabId: tabId,
-					path: {
-						19: '/images/' + (info.private ? 'pin_19.png' : 'pin_disabled_19.png'),
-						38: '/images/' + (info.private ? 'pin_38.png' : 'pin_disabled_38.png')
-					}
-				});
-				chrome.pageAction.setTitle({
-					tabId: tabId,
-					title: info.title
-				});
-			} catch(e) {
-			}
-
-			chrome.pageAction.setPopup({
-				tabId: tabId,
-				popup: "popup.html?tabId=" + tabId		// pass tabId in the url
-			});
-			chrome.pageAction.show(tabId);
-		}
+		if(Browser.capabilities.usesBrowserAction())
+			Browser.gui._refreshBrowserAction(tabId, info);
+		else
+			Browser.gui._refreshPageAction(tabId, info);
 	});
 };
+
+Browser.gui._refreshPageAction = function(tabId, info) {
+	if(info.hidden || info.apiCalls == 0)
+		return chrome.pageAction.hide(tabId);
+
+	// Firefox on Android (version 56) doesn't support pageAction.setIcon/setTitle so we try/catch
+	try {
+		chrome.pageAction.setIcon({
+			tabId: tabId,
+			path: {
+				19: '/images/' + (info.private ? 'pin_19.png' : 'pin_disabled_19.png'),
+				38: '/images/' + (info.private ? 'pin_38.png' : 'pin_disabled_38.png')
+			}
+		});
+		chrome.pageAction.setTitle({
+			tabId: tabId,
+			title: info.title
+		});
+	} catch(e) {
+	}
+	chrome.pageAction.setPopup({
+		tabId: tabId,
+		popup: "popup.html?tabId=" + tabId		// pass tabId in the url
+	});
+	chrome.pageAction.show(tabId);
+}
+
+Browser.gui._refreshBrowserAction = function(tabId, info) {
+	chrome.browserAction.setIcon({
+		tabId: tabId,
+		path: {
+			19: '/images/' + (info.private ? 'pin_19.png' : 'pin_disabled_19.png'),
+			38: '/images/' + (info.private ? 'pin_38.png' : 'pin_disabled_38.png')
+		}
+	});
+	chrome.browserAction.setTitle({
+		tabId: tabId,
+		title: info.title
+	});
+	chrome.browserAction.setBadgeText({
+		tabId: tabId,
+		text: (info.apiCalls || "").toString()
+	});
+	chrome.browserAction.setBadgeBackgroundColor({
+		tabId: tabId,
+		color: "#b12222"
+	});
+	chrome.browserAction.setPopup({
+		tabId: tabId,
+		popup: "popup.html" + (tabId ? "?tabId="+tabId : "")	// pass tabId in the url
+	});
+}
 
 Browser.gui.refreshAllIcons = function() {
 	chrome.tabs.query({}, function(tabs) {
 		for(var i = 0; i < tabs.length; i++)
 			Browser.gui.refreshIcon(tabs[i].id);
 	});
+
+	// for browser action, also refresh default state
+	if(Browser.capabilities.usesBrowserAction())
+		Browser.gui.refreshIcon(null);
 };
 
 Browser.gui.showPage = function(name) {
@@ -193,19 +229,30 @@ Browser.gui.showPage = function(name) {
 };
 
 Browser.gui.getCallUrl = function(tabId, handler) {
-	// we call getState from the content script
-	//
-	Browser.rpc.call(tabId, 'getState', [], function(state) {
-		handler(state.callUrl);
-	});
+	function fetch(tabId) {
+		// we call getState from the content script
+		//
+		Browser.rpc.call(tabId, 'getState', [], function(state) {
+			handler(state && state.callUrl);		// state might be null if no content script runs in the tab
+		});
+	}
+
+	if(tabId)
+		fetch(tabId);
+	else
+		chrome.tabs.query({
+			active: true,               // Select active tabs
+			lastFocusedWindow: true     // In the current window
+		}, function(tabs) {
+			fetch(tabs[0].id)
+		});
 };
 
 Browser.gui.closePopup = function() {
 	if(Browser._script != 'popup') throw "only called from popup";
 
-	if(Browser.version.isFirefox() && Browser.version.isAndroid())
-		// Firefox@Android shows popup as normal tab, and window.close() doesn't
-		// work. Call closeTab in the main script
+	if(Browser.capabilities.popupAsTab())
+		// popup is shown as a normal tab so window.close() doesn't work. Call closeTab in the main script
 		Browser.rpc.call(null, 'closeTab', []);
 	else
 		// normal popup closes with window.close()
@@ -213,13 +260,13 @@ Browser.gui.closePopup = function() {
 }
 
 Browser.log = function() {
-	if(!Browser.version.isDebugging()) return;
+	if(!Browser.capabilities.isDebugging()) return;
 
 	console.log.apply(console, arguments);
 
 	// in chrome, apart from the current console, we also log to the background page, if possible and loaded
 	//
-	if(!Browser.version.isFirefox()) {
+	if(!Browser.capabilities.isFirefox()) {
 		var bp;
 		if(chrome.extension && chrome.extension.getBackgroundPage)
 			bp = chrome.extension.getBackgroundPage();

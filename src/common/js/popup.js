@@ -27,7 +27,7 @@ function doAction() {
 		case 'faq':
 			var page = action == 'options' ? 'options.html' : 'faq.html#general';
 
-			if(Browser.version.isFirefox() && Browser.version.isAndroid()) {
+			if(Browser.capabilities.popupAsTab()) {
 				// we're in a normal tab, just navigate to the page
 				window.location.href = page;
 			} else {
@@ -61,6 +61,8 @@ function doAction() {
 			break;
 
 		default:	// set level
+			if(!url) throw "no url";				// just to be sure
+
 			Browser.storage.get(function(st) {
 				var domain = Util.extractDomain(url);
 				var level = action;
@@ -79,45 +81,55 @@ function doAction() {
 }
 
 function drawUI() {
-	var tabId = parseInt(window.location.href.match(/tabId=(\d+)/)[1]);
+	var res = window.location.href.match(/tabId=(\d+)/);
+	var tabId = res ? parseInt(res[1]) : null;
 
 	// we need storage and url
 	Browser.gui.getCallUrl(tabId, function(callUrl) {
 	Browser.storage.get(function(st) {
 		blog("popup: callUrl", callUrl, "settings", st);
 
-		url = callUrl;
-		var domain = Util.extractDomain(url);
-		var level = st.domainLevel[domain] || st.defaultLevel;
+		// we don't have a url if we are in chrome (browser action, visible in
+		// all tabs), and the active tab has no content-script running (eg. new
+		// tab page)
+		//
+		if(callUrl) {
+			url = callUrl;
+			var domain = Util.extractDomain(url);
+			var level = st.domainLevel[domain] || st.defaultLevel;
 
-		$("#title").text(
-			st.paused		? "Location Guard is paused" :
-			level == 'real'	? "Using your real location" :
-			level == 'fixed'? "Using a fixed location" :
-			"Privacy level: " + level
-		);
+			$("#title").text(
+				st.paused		? "Location Guard is paused" :
+				level == 'real'	? "Using your real location" :
+				level == 'fixed'? "Using a fixed location" :
+				"Privacy level: " + level
+			);
+			$("#setLevel").html("Set level for <b>" + domain + "</b>");
+			$("#"+level).attr("checked", true);
+
+		} else {
+			$("#title").parent().hide();
+		}
 
 		$("#pause").text((st.paused ? "Resume" : "Pause") + " Location Guard");
 		$("#pause").parent().attr("data-icon", st.paused ? "play" : "pause");
-		$("#setLevel").html("Set level for <b>" + domain + "</b>");
 
-		$("#setLevel,#hideIcon").toggle(!st.paused);
-
-		$("#"+level).attr("checked", true);
+		$("#setLevel").toggle(callUrl && !st.paused);
+		$("#hideIcon").toggle(callUrl && !st.paused && !Browser.capabilities.usesBrowserAction());	// hiding the icon only works with page action (not browser action)
 
 		$("a, input").on("click", doAction);
 
 		// we're ready, init
 		$.mobile.initializePage();
 
-		if(Browser.version.isFirefox() && Browser.version.isAndroid()) {
-			// in Firefox@Android the popup is displayed as a normal tab, so:
-			// 1: set 100% width/height
+		if(Browser.capabilities.popupAsTab()) {
+			// the popup is displayed as a normal tab
+			// set 100% width/height
 			$("html, body, #container").css({
 				width:  "100%",
 				height: "100%"
 			});
-			// 2: show the close button
+			// show the close button
 			$("#close").css({ display: "block" })
 					   .on("click", closePopup);
 
