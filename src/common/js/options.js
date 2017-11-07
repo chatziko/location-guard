@@ -438,9 +438,9 @@ function showCurrentPosition() {
 function restoreDefaults() {
 	if(window.confirm('Are you sure you want to restore the default options?')) {
 		Browser.storage.clear(function() {
-			Browser.gui.refreshAllIcons();
-
-			setTimeout(location.reload.bind(location), 50);	// delay to allow refreshAllIcons to finish
+			Browser.gui.refreshAllIcons(function() {
+				location.reload();
+			});
 		});
 	}
 }

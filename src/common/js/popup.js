@@ -12,13 +12,6 @@ $(document).ready(drawUI);
 
 var url;
 
-function closePopup() {
-	// delay closing to allow scripts to finish executing
-	setTimeout(function() {
-		Browser.gui.closePopup();
-	}, 50);
-}
-
 function doAction() {
 	var action = $(this).attr("id");
 
@@ -32,7 +25,7 @@ function doAction() {
 				window.location.href = page;
 			} else {
 				Browser.gui.showPage(page);
-				closePopup();
+				Browser.gui.closePopup();
 			}
 			break;
 
@@ -40,8 +33,7 @@ function doAction() {
 			Browser.storage.get(function(st) {
 				st.hideIcon = true;
 				Browser.storage.set(st, function() {
-					Browser.gui.refreshAllIcons();
-					closePopup();
+					Browser.gui.refreshAllIcons(Browser.gui.closePopup);
 				});
 			});
 			break;
@@ -50,8 +42,7 @@ function doAction() {
 			Browser.storage.get(function(st) {
 				st.paused = !st.paused;
 				Browser.storage.set(st, function() {
-					Browser.gui.refreshAllIcons();
-					closePopup();
+					Browser.gui.refreshAllIcons(Browser.gui.closePopup);
 				});
 			});
 			break;
@@ -72,8 +63,7 @@ function doAction() {
 					st.domainLevel[domain] = level;
 
 				Browser.storage.set(st, function() {
-					Browser.gui.refreshAllIcons();
-					closePopup();
+					Browser.gui.refreshAllIcons(Browser.gui.closePopup);
 				});
 			});
 			break;
@@ -131,7 +121,7 @@ function drawUI() {
 			});
 			// show the close button
 			$("#close").css({ display: "block" })
-					   .on("click", closePopup);
+					   .on("click", Browser.gui.closePopup);
 
 		} else {
 			// normal popup, resize body to match #container

@@ -31,9 +31,9 @@ Browser._main_script = function() {
 	// some operations cannot be done by other scripts, so we set
 	// handlers to do them in the main script
 	//
-	Browser.rpc.register('refreshIcon', function(tabId, callerTabId) {
+	Browser.rpc.register('refreshIcon', function(tabId, callerTabId, replyHandler) {
 		// 'self' tabId in the content script means refresh its own tab
-		Browser.gui.refreshIcon(tabId == 'self' ?  callerTabId : tabId);
+		Browser.gui.refreshIcon(tabId == 'self' ?  callerTabId : tabId, replyHandler);
 	});
 
 	Browser.rpc.register('closeTab', function(tabId) {
@@ -169,33 +169,43 @@ Browser.storage.migrate = function(oldSt) {
 //////////////////// gui ///////////////////////////
 //
 //
-Browser.gui.refreshIcon = function(tabId) {
+Browser.gui.refreshIcon = function(tabId, cb) {
 	// delegate the call to the 'main' script if:
 	// - we're in 'content': chrome.pageAction/browserAction is not available there
 	// - we use a pageAction: we need to update Browser.gui.iconShown for the FF workaround
 	//
 	var ba = Browser.capabilities.usesBrowserAction();
 	if(Browser._script == 'content' || (Browser._script != 'main' && !ba)) {
-		Browser.rpc.call(null, 'refreshIcon', [tabId]);
+		Browser.rpc.call(null, 'refreshIcon', [tabId], cb);
 		return;
 	}
 
 	Util.getIconInfo(tabId, function(info) {
 		if(ba)
-			Browser.gui._refreshBrowserAction(tabId, info);
+			Browser.gui._refreshBrowserAction(tabId, info, cb);
 		else
-			Browser.gui._refreshPageAction(tabId, info);
+			Browser.gui._refreshPageAction(tabId, info, cb);
 	});
 };
 
-Browser.gui._refreshPageAction = function(tabId, info) {
+Browser.gui._refreshPageAction = function(tabId, info, cb) {
 	if(info.hidden || info.apiCalls == 0)
 		return chrome.pageAction.hide(tabId);
 
 	Browser.gui.iconShown[tabId] = 1;
 
+	chrome.pageAction.setPopup({
+		tabId: tabId,
+		popup: "popup.html?tabId=" + tabId		// pass tabId in the url
+	});
+	chrome.pageAction.show(tabId);
+
 	// Firefox on Android (version 56) doesn't support pageAction.setIcon/setTitle so we try/catch
 	try {
+		chrome.pageAction.setTitle({
+			tabId: tabId,
+			title: info.title
+		});
 		chrome.pageAction.setIcon({
 			tabId: tabId,
 			path: {
@@ -203,32 +213,13 @@ Browser.gui._refreshPageAction = function(tabId, info) {
 				32: '/images/' + (info.private ? 'pin_32.png' : 'pin_disabled_32.png'),
 				64: '/images/' + (info.private ? 'pin_64.png' : 'pin_disabled_64.png')
 			}
-		});
-		chrome.pageAction.setTitle({
-			tabId: tabId,
-			title: info.title
-		});
+		}, cb);		// setIcon is the only pageAction.set* method with a callback
 	} catch(e) {
+		if(cb) cb();
 	}
-	chrome.pageAction.setPopup({
-		tabId: tabId,
-		popup: "popup.html?tabId=" + tabId		// pass tabId in the url
-	});
-	chrome.pageAction.show(tabId);
 }
 
-Browser.gui._refreshBrowserAction = function(tabId, info) {
-	chrome.browserAction.setIcon({
-		tabId: tabId,
-		path: {
-			// chrome used to have 19px icons, now it has 16px
-			16: '/images/' + (info.private ? 'pin_16.png' : 'pin_disabled_16.png'),
-			19: '/images/' + (info.private ? 'pin_19.png' : 'pin_disabled_19.png'),
-			32: '/images/' + (info.private ? 'pin_32.png' : 'pin_disabled_32.png'),
-			38: '/images/' + (info.private ? 'pin_38.png' : 'pin_disabled_38.png'),
-			64: '/images/' + (info.private ? 'pin_64.png' : 'pin_disabled_64.png')
-		}
-	});
+Browser.gui._refreshBrowserAction = function(tabId, info, cb) {
 	chrome.browserAction.setTitle({
 		tabId: tabId,
 		title: info.title
@@ -245,17 +236,32 @@ Browser.gui._refreshBrowserAction = function(tabId, info) {
 		tabId: tabId,
 		popup: "popup.html" + (tabId ? "?tabId="+tabId : "")	// pass tabId in the url
 	});
+	chrome.browserAction.setIcon({
+		tabId: tabId,
+		path: {
+			// chrome used to have 19px icons, now it has 16px
+			16: '/images/' + (info.private ? 'pin_16.png' : 'pin_disabled_16.png'),
+			19: '/images/' + (info.private ? 'pin_19.png' : 'pin_disabled_19.png'),
+			32: '/images/' + (info.private ? 'pin_32.png' : 'pin_disabled_32.png'),
+			38: '/images/' + (info.private ? 'pin_38.png' : 'pin_disabled_38.png'),
+			64: '/images/' + (info.private ? 'pin_64.png' : 'pin_disabled_64.png')
+		}
+	}, cb);		// setIcon is the only browserAction.set* method with a callback
 }
 
-Browser.gui.refreshAllIcons = function() {
+Browser.gui.refreshAllIcons = function(cb) {
 	chrome.tabs.query({}, function(tabs) {
-		for(var i = 0; i < tabs.length; i++)
-			Browser.gui.refreshIcon(tabs[i].id);
-	});
+		// for browser action, also refresh default state (null tabId)
+		if(Browser.capabilities.usesBrowserAction())
+			tabs.push({ id: null });
 
-	// for browser action, also refresh default state
-	if(Browser.capabilities.usesBrowserAction())
-		Browser.gui.refreshIcon(null);
+		var done = 0;
+		for(var i = 0; i < tabs.length; i++)
+			Browser.gui.refreshIcon(tabs[i].id, function() {
+				if(++done == tabs.length && cb)
+					cb();
+			});
+	});
 };
 
 Browser.gui.showPage = function(name) {
