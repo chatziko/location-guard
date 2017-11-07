@@ -66,19 +66,6 @@ Browser._main_script = function() {
 	// set default icon (for browser action)
 	//
 	Browser.gui.refreshAllIcons();
-
-	// migrate from old Firefox extension
-	//
-	if(Browser.capabilities.isFirefox())
-		browser.runtime.sendMessage("migrate").then(reply => {
-			console.log("migrate: response from legacy addon: ", reply);
-
-			if(reply && reply.storage)
-				Browser.storage.migrate(reply.storage);
-
-			if(reply && reply.install)
-				Util.events.fire('browser.install');
-		});
 }
 
 
@@ -155,15 +142,6 @@ Browser.storage.set = function(st, handler) {
 Browser.storage.clear = function(handler) {
 	chrome.storage.local.clear(handler);
 };
-
-Browser.storage.migrate = function(oldSt) {
-	// first check whether we have a st object stored in the new addon
-	chrome.storage.local.get(Browser.storage._key, function(items) {
-		var st = items[Browser.storage._key];
-		if(!st)
-			Browser.storage.set(oldSt);
-	});
-}
 
 
 //////////////////// gui ///////////////////////////
