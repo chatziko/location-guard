@@ -32,6 +32,8 @@ $(document).ready(function() {
 		}
 	});
 
+	$("#lgIcon").addClass(Browser.capabilities.usesBrowserAction() ? 'lg-icon-browseraction' : 'lg-icon-pageaction');
+
 	$(window).on("hashchange", openHash);
 
 	if(location.hash)
