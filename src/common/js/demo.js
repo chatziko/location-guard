@@ -98,6 +98,7 @@ function drawPosition(pos) {
 }
 
 function startDemo() {
+	var iconClass = Browser.capabilities.usesBrowserAction() ? 'lg-icon-browseraction' : 'lg-icon-pageaction';
 	var steps = [ {
 			element: ".placeholder-step1",
 			intro: '<p>Location Guard was successfully installed.</p><p>This demo illustrates its use.</p>',
@@ -114,16 +115,18 @@ function startDemo() {
 		}, {
 			element: ".placeholder-step3",
 			intro:
-				'<p>The browser asks permission to disclose your location. At the same time, the ' +
-				'<img src="images/pin_19.png" style="width: 0.9em"/> icon appears, showing that Location Guard is active.</p>' +
-				'<p>To continue, allow access to your location.</p>',
+				'<p>The browser asks permission to disclose your location. At the same time, the <span class="' + iconClass + '"></span> icon ' +
+				(Browser.capabilities.usesBrowserAction()
+					? 'shows that a location request has been made.</p>'
+					: 'appears, showing that Location Guard is active.</p>'
+				) + '<p>To continue, allow access to your location.</p>',
 			position: 'bottom-right-aligned',
 			tooltipClass: 'tooltip-step3',
 		}, {
 			element: ".placeholder-step4",
 			intro:
 				'<p>This is the location disclosed by your browser. Location Guard added "noise" to it so that it\'s not ' +
-				'very accurate.</p><p>Click on the <img src="images/pin_19.png" style="width: 0.9em"/> icon to try more options.</p>',
+				'very accurate.</p><p>Click on the <span class="' + iconClass + '"></span> icon to try more options.</p>',
 			position: "bottom-middle-aligned",
 			highlightClass: 'highlight-step4',
 			tooltipClass: 'tooltip-step4',

@@ -28,39 +28,49 @@ var Util = {
 		return o;
 	},
 
-	// Get icon information for a specific tabId. Returns:
-	//   { hidden:   true if the icon should be hidden,
-	//     private:  true if we are in a private mode,
-	//     title:    icon's title }
+	// Get icon information. 'about' can be:
+	//   tabId
+	//   null (get info for the default icon)
+	//   state object { callUrl: ..., apiCalls: ... }
 	//
-	// Note: we have this method here (instead of inside the content script) so
-	//       that the rpc call and the storage access are serialized, instead of nested.
-	//       Firefox has issues with nested calls (we should fix this at some point)
+	// Returns:
+	//   { hidden:          true if the icon should be hidden,
+	//     private:         true if the current tab is in a private mode,
+	//     defaultPrivate:  true if the default settings are in a private mode,
+	//     apiCalls:        no of times the API has been called in the current tab
+	//     title:           icon's title }
 	//
-	getIconInfo: function(tabId, handler) {
-		Browser.rpc.call(tabId, 'getState', [], function(state) {
-			if(!state) {
-				// this is not a tab with content script loaded, hide icon
-				handler({ hidden: true, private: false, title: "" });
-				return;
-			}
-
-			Browser.storage.get(function(st) {
-				var domain = Util.extractDomain(state.callUrl);
-				var level = st.domainLevel[domain] || st.defaultLevel;
-
-				var info = {
-					hidden:  st.hideIcon || !state.apiCalled,
-					apiCalled: state.apiCalled,
-					private: !st.paused && level != 'real',
-					title:
-						st.paused		? "Location Guard is paused" :
-						level == 'real'	? "Using your real location" :
-						level == 'fixed'? "Using a fixed location" :
-						"Privacy level: " + level
-				};
-				handler(info);
+	//
+	getIconInfo: function(about, handler) {
+		if(typeof(about) == 'object')						// null or state object
+			Util._getStateIconInfo(about, handler);
+		else												// tabId
+			Browser.rpc.call(about, 'getState', [], function(state) {
+				Util._getStateIconInfo(state, handler);
 			});
+	},
+
+	_getStateIconInfo: function(state, handler) {
+		// return info for the default icon if state is null
+		state = state || { callUrl: '', apiCalls: 0 };
+
+		Browser.storage.get(function(st) {
+			var domain = Util.extractDomain(state.callUrl);
+			var level = st.domainLevel[domain] || st.defaultLevel;
+
+			var info = {
+				hidden:  st.hideIcon,
+				private: !st.paused && level != 'real',
+				defaultPrivate: !st.paused && st.defaultLevel != 'real',
+				apiCalls: state.apiCalls,
+				title:
+					"Location Guard\n" +
+					(st.paused		? "Paused" :
+					level == 'real'	? "Using your real location" :
+					level == 'fixed'? "Using a fixed location" :
+					"Privacy level: " + level)
+			};
+			handler(info);
 		});
 	},
 

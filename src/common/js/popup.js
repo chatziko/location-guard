@@ -12,13 +12,6 @@ $(document).ready(drawUI);
 
 var url;
 
-function closePopup() {
-	// delay closing to allow scripts to finish executing
-	setTimeout(function() {
-		Browser.gui.resizePopup(null, null);
-	}, 50);
-}
-
 function doAction() {
 	var action = $(this).attr("id");
 
@@ -26,17 +19,21 @@ function doAction() {
 		case 'options':
 		case 'faq':
 			var page = action == 'options' ? 'options.html' : 'faq.html#general';
-			Browser.gui.showPage(page);
 
-			closePopup();
+			if(Browser.capabilities.popupAsTab()) {
+				// we're in a normal tab, just navigate to the page
+				window.location.href = page;
+			} else {
+				Browser.gui.showPage(page);
+				Browser.gui.closePopup();
+			}
 			break;
 
 		case 'hideIcon':
 			Browser.storage.get(function(st) {
 				st.hideIcon = true;
 				Browser.storage.set(st, function() {
-					Browser.gui.refreshAllIcons();
-					closePopup();
+					Browser.gui.refreshAllIcons(Browser.gui.closePopup);
 				});
 			});
 			break;
@@ -45,8 +42,7 @@ function doAction() {
 			Browser.storage.get(function(st) {
 				st.paused = !st.paused;
 				Browser.storage.set(st, function() {
-					Browser.gui.refreshAllIcons();
-					closePopup();
+					Browser.gui.refreshAllIcons(Browser.gui.closePopup);
 				});
 			});
 			break;
@@ -56,6 +52,8 @@ function doAction() {
 			break;
 
 		default:	// set level
+			if(!url) throw "no url";				// just to be sure
+
 			Browser.storage.get(function(st) {
 				var domain = Util.extractDomain(url);
 				var level = action;
@@ -65,8 +63,7 @@ function doAction() {
 					st.domainLevel[domain] = level;
 
 				Browser.storage.set(st, function() {
-					Browser.gui.refreshAllIcons();
-					closePopup();
+					Browser.gui.refreshAllIcons(Browser.gui.closePopup);
 				});
 			});
 			break;
@@ -74,45 +71,68 @@ function doAction() {
 }
 
 function drawUI() {
+	var res = window.location.href.match(/tabId=(\d+)/);
+	var tabId = res ? parseInt(res[1]) : null;
+
 	// we need storage and url
-	Browser.gui.getActiveCallUrl(function(callUrl) {
+	Browser.gui.getCallUrl(tabId, function(callUrl) {
 	Browser.storage.get(function(st) {
 		blog("popup: callUrl", callUrl, "settings", st);
 
-		url = callUrl;
-		var domain = Util.extractDomain(url);
-		var level = st.domainLevel[domain] || st.defaultLevel;
+		// we don't have a url if we are in chrome (browser action, visible in
+		// all tabs), and the active tab has no content-script running (eg. new
+		// tab page)
+		//
+		if(callUrl) {
+			url = callUrl;
+			var domain = Util.extractDomain(url);
+			var level = st.domainLevel[domain] || st.defaultLevel;
 
-		$("#title").text(
-			st.paused		? "Location Guard is paused" :
-			level == 'real'	? "Using your real location" :
-			level == 'fixed'? "Using a fixed location" :
-			"Privacy level: " + level
-		);
+			$("#title").text(
+				st.paused		? "Location Guard is paused" :
+				level == 'real'	? "Using your real location" :
+				level == 'fixed'? "Using a fixed location" :
+				"Privacy level: " + level
+			);
+			$("#setLevel b").text(domain);
+			$("#"+level).attr("checked", true);
+
+		} else {
+			$("#title").parent().hide();
+		}
 
 		$("#pause").text((st.paused ? "Resume" : "Pause") + " Location Guard");
 		$("#pause").parent().attr("data-icon", st.paused ? "play" : "pause");
-		$("#setLevel").html("Set level for <b>" + domain + "</b>");
 
-		$("#setLevel,#hideIcon").toggle(!st.paused);
-
-		$("#"+level).attr("checked", true);
+		$("#setLevel").toggle(callUrl && !st.paused);
+		$("#hideIcon").toggle(callUrl && !st.paused && !Browser.capabilities.usesBrowserAction());	// hiding the icon only works with page action (not browser action)
 
 		$("a, input").on("click", doAction);
 
 		// we're ready, init
 		$.mobile.initializePage();
 
-		// resize body to match #container, and call Browser.gui.resizePopup
-		var width = $("#container").width();
-		var height = $("#container").height();
+		if(Browser.capabilities.popupAsTab()) {
+			// the popup is displayed as a normal tab
+			// set 100% width/height
+			$("html, body, #container").css({
+				width:  "100%",
+				height: "100%"
+			});
+			// show the close button
+			$("#close").css({ display: "block" })
+					   .on("click", Browser.gui.closePopup);
 
-		$("html, body").css({
-			width:  width,
-			height: height,
-		});
+		} else {
+			// normal popup, resize body to match #container
+			var width = $("#container").width();
+			var height = $("#container").height();
 
-		Browser.gui.resizePopup(width, height);
+			$("html, body").css({
+				width:  width,
+				height: height,
+			});
+		}
 	});
 	});
 }

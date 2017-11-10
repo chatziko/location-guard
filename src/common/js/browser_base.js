@@ -2,7 +2,7 @@
 // Subclasses should implement the API defined here
 //
 var Browser = {
-	debugging: true,				// set this to false on production
+	debugging: null,				// null: auto set to true if running locally
 	testing: false,					// set to true to run tests on load
 
 	// Browser.init(script)
@@ -115,9 +115,11 @@ var Browser = {
 	// Class controlling the browser's GUI. The main GUI element is the extension's icon. Each tab has
 	// a possibly different icon, whose information can be obtained by calling the rpc method 'getIconInfo'
 	// of the content script. The method should return an object:
-	//   { hidden:   true if the icon should be hidden,
-	//     private:  true if we are in a private mode,
-	//     title:    icon's title }
+	//   { hidden:          true if the icon should be hidden,
+	//     private:         true if the current tab is in a private mode,
+	//     defaultPrivate:  true if the default settings are in a private mode,
+	//     apiCalls:        no of times the API has been called in the current tab
+	//     title:           icon's title }
 	//
 	// The GUI is free to render the icon in any way based on the above info. It can also render it
 	// at any moment, by calling getIconInfo to get the info object.
@@ -126,10 +128,8 @@ var Browser = {
 	gui: {
 		// Browser.gui.refreshIcon(tabId)
 		//
-		// Refreshes the icon of the tab with the given 'tabId'
-		// If tabId is undefined/null then
-		//  - if called from a content script it refreshes the icon of the content script's tab
-		//  - outside the content script it raises error
+		// Refreshes the icon of the tab with the given 'tabId'.
+		// If called from a content script and tabId = 'self' it refreshes the icon of the content script's tab.
 		// getIconInfo should be called to get the icon's info
 		//
 		refreshIcon: function(tabId) {},
@@ -148,17 +148,47 @@ var Browser = {
 		//
 		showPage: function(name) {},
 
-		// Browser.gui.getActiveCallUrl(handler)
+		// Browser.gui.getCallUrl(tabId, handler)
 		//
-		// Gets the callUrl of the active tab and passes it to 'handler'
+		// Gets the callUrl of given tab and passes it to 'handler'
 		//
-		getActiveCallUrl: function(handler) {},
+		getActiveCallUrl: function(tabId, handler) {},
 
-		// Browser.gui.resizePopup(width, height)
+		// Browser.gui.closePopup()
 		//
-		// Resizes the popup to the given width/height, closes it if width/height are null
+		// Closes the popup.
 		//
-		resizePopup: function(width, height) {},
+		closePopup: function() {},
+	},
+
+	// Browser.capabilities
+	//
+	// Class for browser detection
+	//
+	capabilities: {
+		isFirefox: function() {
+			return navigator.userAgent.toLowerCase().indexOf('firefox') > -1;
+		},
+		isAndroid: function() {
+			return navigator.userAgent.toLowerCase().indexOf('android') > -1;
+		},
+		isOpera: function() {
+			return !!navigator.userAgent.match(/Opera|OPR\//);
+		},
+		isDebugging: function() {
+			// update_url is only present if the extensioned is installed via the web store
+			if(Browser.debugging == null)
+				Browser.debugging = !('update_url' in chrome.runtime.getManifest());
+			return Browser.debugging;
+		},
+		popupAsTab: function() {
+			// Firefox@Android shows popup as normal tab
+			return Browser.capabilities.isFirefox() && Browser.capabilities.isAndroid();
+		},
+		usesBrowserAction: function() {
+			// use pageAction for Firefox/Opera, browserAction for Chrome
+			return !Browser.capabilities.isFirefox() && !Browser.capabilities.isOpera();
+		}
 	},
 
 	// Browser.log(text, value)
@@ -166,7 +196,7 @@ var Browser = {
 	// Logs the given text/value pair
 	//
 	log: function(text, value) {
-		if(!Browser.debugging) return;
+		if(!Browser.capabilities.isDebugging()) return;
 
 		console.log(text, value);
 	}

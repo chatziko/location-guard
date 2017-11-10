@@ -9,12 +9,17 @@
 	},
 	"version": "2.1.0",
 
+	"applications": {
+		"gecko": {
+			"id": "jid1-HdwPLukcGQeOSh@jetpack"
+		}
+	},
+
 	"permissions": ["http://*/*", "https://*/*", "storage"],
 	"manifest_version": 2,
 
 	"background": {
-		"scripts": ["js/util.js", "js/browser_base.js", "js/browser.js", "js/main.js"],
-		"persistent": false
+		"scripts": ["js/util.js", "js/browser_base.js", "js/browser.js", "js/main.js"]
 	},
 
 	"options_ui": {
@@ -22,12 +27,10 @@
 		"open_in_tab": true
 	},
 
-	"browser_action": {
+	"page_action": {
 		"default_icon": {
 			"16": "images/pin_16.png",
-			"19": "images/pin_19.png",
 			"32": "images/pin_32.png",
-			"38": "images/pin_38.png",
 			"64": "images/pin_64.png"
 		},
 		"default_popup": "popup.html",

@@ -10,16 +10,6 @@ Util.events.addListener('browser.install', function() {
 	Browser.gui.showPage('demo.html');
 });
 
-Util.events.addListener('browser.update', function() {
-	// upgrade options from previous versions
-	Browser.storage.get(function(st) {
-		if(st.fixedPosNoAPI == null)
-			st.fixedPosNoAPI = true;
-
-		Browser.storage.set(st);
-	});
-});
-
 Browser.init('main');
 
 if(Browser.testing) {

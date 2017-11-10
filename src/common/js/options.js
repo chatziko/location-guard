@@ -116,8 +116,7 @@ function initLevelMap() {
 				levelMap.closePopup();
 				return;
 			}
-			currentPos = { latitude: e.latlng.lat, longitude: e.latlng.lng };
-			moveCircles();
+			handleChangePosEvent(e);
 		});
 
 	// marker
@@ -126,10 +125,7 @@ function initLevelMap() {
 		.on('click', function() {
 			showPopup(levelMap);
 		})
-		.on('drag', function(e) {
-			currentPos = { latitude: e.target._latlng.lat, longitude: e.target._latlng.lng };
-			moveCircles();
-		});
+		.on('drag', handleChangePosEvent);
 
 	// popup
 	var popupHtml =
@@ -175,6 +171,15 @@ function initLevelMap() {
 			iconLoading: 'icon-trans ui-btn-icon-notext ui-icon-location',		// font awesome
 		})
 	.addTo(levelMap);
+
+	// geocoder control
+	if(!Browser.capabilities.isAndroid()) // not enough space on smartphones, better have a cleaner interface
+		L.control.geocoder('mapzen-yHD9V2E', {
+			markers: false,
+			autocomplete: false
+		}).on('highlight', handleChangePosEvent)
+		  .on('select',    handleChangePosEvent)
+		  .addTo(levelMap);
 }
 
 function initFixedPosMap() {
@@ -231,12 +236,30 @@ function initFixedPosMap() {
 			icon: 'icon-trans ui-btn-icon-notext ui-icon-location',				// use jqm's icons to avoid loading
 			iconLoading: 'icon-trans ui-btn-icon-notext ui-icon-location',		// font awesome
 		}).addTo(fixedPosMap);
+
+		// geocoder control
+		if(!Browser.capabilities.isAndroid()) // not enough space on smartphones, better have a cleaner interface
+			L.control.geocoder('mapzen-yHD9V2E', {
+				markers: false,
+				autocomplete: false
+			}).on('results', function(e) {
+				// directly set position if the text is a latlon
+				var res = e.params.text.match(/^([-+]?[0-9]+\.[0-9]+)\s*,?\s*([-+]?[0-9]+\.[0-9]+)$/);
+				if(!res) return;
+
+				var latlng = L.latLng(parseFloat(res[1]), parseFloat(res[2]));
+				saveFixedPos(latlng);
+				fixedPosMap.setView(latlng, 14)
+				this.collapse();		// close the geocoder search
+
+			}).addTo(fixedPosMap);
 	});
 }
 
 function saveFixedPos(latlng) {
 	Browser.storage.get(function(st) {
-		st.fixedPos = { latitude: latlng.lat, longitude: latlng.lng };
+		var wrapped = latlng.wrap();			// force within normal range
+		st.fixedPos = { latitude: wrapped.lat, longitude: wrapped.lng };
 
 		fixedPosMap.marker.setLatLng(latlng);
 
@@ -260,6 +283,12 @@ function showLevelInfo() {
 		updateRadius(radius, true);
 		updateCache(ct);
 	});
+}
+
+// change current pos as a reaction to a Leaflet event
+function handleChangePosEvent(e) {
+	currentPos = { latitude: e.latlng.lat, longitude: e.latlng.lng };
+	moveCircles();
 }
 
 function moveCircles() {
@@ -334,6 +363,10 @@ function initPages() {
 	//$.mobile.hideUrlBar = false;
 	//$.mobile.defaultPageTransition = "none";
 
+	$(document).ready(function() {
+		$('#hideIcon').parent().toggle(!Browser.capabilities.usesBrowserAction());	// hiding the icon only works with page action (not browser action)
+	});
+
 	$(document).on("pagecontainershow", function(e, ui) {
 		var page = ui.toPage[0].id;
 
@@ -405,7 +438,9 @@ function showCurrentPosition() {
 function restoreDefaults() {
 	if(window.confirm('Are you sure you want to restore the default options?')) {
 		Browser.storage.clear(function() {
-			location.reload();
+			Browser.gui.refreshAllIcons(function() {
+				location.reload();
+			});
 		});
 	}
 }
