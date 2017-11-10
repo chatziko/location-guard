@@ -172,6 +172,9 @@ var Browser = {
 		isAndroid: function() {
 			return navigator.userAgent.toLowerCase().indexOf('android') > -1;
 		},
+		isOpera: function() {
+			return !!navigator.userAgent.match(/Opera|OPR\//);
+		},
 		isDebugging: function() {
 			// update_url is only present if the extensioned is installed via the web store
 			if(Browser.debugging == null)
@@ -183,8 +186,8 @@ var Browser = {
 			return Browser.capabilities.isFirefox() && Browser.capabilities.isAndroid();
 		},
 		usesBrowserAction: function() {
-			// Firefox uses pageAction, other browsers use browserAction
-			return !Browser.capabilities.isFirefox();
+			// use pageAction for Firefox/Opera, browserAction for Chrome
+			return !Browser.capabilities.isFirefox() && !Browser.capabilities.isOpera();
 		}
 	},
 
