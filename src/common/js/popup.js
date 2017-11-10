@@ -94,7 +94,7 @@ function drawUI() {
 				level == 'fixed'? "Using a fixed location" :
 				"Privacy level: " + level
 			);
-			$("#setLevel").html("Set level for <b>" + domain + "</b>");
+			$("#setLevel b").text(domain);
 			$("#"+level).attr("checked", true);
 
 		} else {
