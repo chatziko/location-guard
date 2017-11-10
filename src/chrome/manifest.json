@@ -7,7 +7,7 @@
 		"64": "images/pin_64.png",
 		"128": "images/pin_128.png"
 	},
-	"version": "2.0.0",
+	"version": "2.1.0",
 
 	"permissions": ["http://*/*", "https://*/*", "storage"],
 	"manifest_version": 2,
