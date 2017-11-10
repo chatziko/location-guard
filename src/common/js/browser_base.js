@@ -1,6 +1,9 @@
 // Base class for browser-specific functionality
 // Subclasses should implement the API defined here
 //
+if(typeof(browser) === 'undefined')
+	window.browser = chrome;
+
 var Browser = {
 	debugging: null,				// null: auto set to true if running locally
 	testing: false,					// set to true to run tests on load
@@ -178,7 +181,7 @@ var Browser = {
 		isDebugging: function() {
 			// update_url is only present if the extensioned is installed via the web store
 			if(Browser.debugging == null)
-				Browser.debugging = !('update_url' in chrome.runtime.getManifest());
+				Browser.debugging = !('update_url' in browser.runtime.getManifest());
 			return Browser.debugging;
 		},
 		popupAsTab: function() {
