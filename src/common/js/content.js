@@ -163,6 +163,7 @@ rpc.register('getNoisyPosition', function(options, replyHandler) {
 			options
 		]);
 	});
+	return true;	// will reply later
 });
 
 // gets position, returs noisy version based on the options
