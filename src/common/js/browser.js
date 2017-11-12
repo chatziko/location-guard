@@ -34,6 +34,7 @@ Browser._main_script = function() {
 	Browser.rpc.register('refreshIcon', function(tabId, callerTabId, replyHandler) {
 		// 'self' tabId in the content script means refresh its own tab
 		Browser.gui.refreshIcon(tabId == 'self' ?  callerTabId : tabId, replyHandler);
+		return true;	// will reply later
 	});
 
 	Browser.rpc.register('closeTab', function(tabId) {
@@ -167,8 +168,11 @@ Browser.gui.refreshIcon = function(tabId, cb) {
 };
 
 Browser.gui._refreshPageAction = function(tabId, info, cb) {
-	if(info.hidden || info.apiCalls == 0)
-		return chrome.pageAction.hide(tabId);
+	if(info.hidden || info.apiCalls == 0) {
+		chrome.pageAction.hide(tabId);
+		if(cb) cb();
+		return;
+	}
 
 	Browser.gui.iconShown[tabId] = 1;
 
