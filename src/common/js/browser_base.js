@@ -188,6 +188,10 @@ var Browser = {
 			// Firefox@Android shows popup as normal tab
 			return Browser.capabilities.isFirefox() && Browser.capabilities.isAndroid();
 		},
+		needsPAManualHide: function() {
+			// Workaroud some Firefox page-action 'bugs'
+			return Browser.capabilities.isFirefox();
+		},
 		usesBrowserAction: function() {
 			// use pageAction for Firefox/Opera, browserAction for Chrome
 			return !Browser.capabilities.isFirefox() && !Browser.capabilities.isOpera();

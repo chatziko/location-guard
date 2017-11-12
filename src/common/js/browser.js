@@ -47,7 +47,7 @@ Browser._main_script = function() {
 	// - the icon _is_ hidden on history.pushstate (eg on google maps when
 	//   clicking on some label) although the same page remains loaded
 	//
-	if(!Browser.capabilities.usesBrowserAction()) {
+	if(!Browser.capabilities.needsPAManualHide()) {
 		Browser.gui.iconShown = {};
 
 		browser.tabs.onUpdated.addListener(function(tabId, info) {
@@ -151,16 +151,17 @@ Browser.storage.clear = function(handler) {
 Browser.gui.refreshIcon = function(tabId, cb) {
 	// delegate the call to the 'main' script if:
 	// - we're in 'content': browser.pageAction/browserAction is not available there
-	// - we use a pageAction: we need to update Browser.gui.iconShown for the FF workaround
+	// - we use the FF pageAction workaround: we need to update Browser.gui.iconShown in 'main'
 	//
-	var ba = Browser.capabilities.usesBrowserAction();
-	if(Browser._script == 'content' || (Browser._script != 'main' && !ba)) {
+	if(Browser._script == 'content' ||
+	   (Browser._script != 'main' && Browser.capabilities.needsPAManualHide())
+	) {
 		Browser.rpc.call(null, 'refreshIcon', [tabId], cb);
 		return;
 	}
 
 	Util.getIconInfo(tabId, function(info) {
-		if(ba)
+		if(Browser.capabilities.usesBrowserAction())
 			Browser.gui._refreshBrowserAction(tabId, info, cb);
 		else
 			Browser.gui._refreshPageAction(tabId, info, cb);
@@ -174,7 +175,8 @@ Browser.gui._refreshPageAction = function(tabId, info, cb) {
 		return;
 	}
 
-	Browser.gui.iconShown[tabId] = 1;
+	if(Browser.gui.iconShown)
+		Browser.gui.iconShown[tabId] = 1;
 
 	browser.pageAction.setPopup({
 		tabId: tabId,
