@@ -105,7 +105,7 @@ function drawUI() {
 		$("#pause").parent().attr("data-icon", st.paused ? "play" : "pause");
 
 		$("#setLevel").toggle(callUrl && !st.paused);
-		$("#hideIcon").toggle(callUrl && !st.paused && !Browser.capabilities.usesBrowserAction());	// hiding the icon only works with page action (not browser action)
+		$("#hideIcon").toggle(callUrl && !st.paused && !Browser.capabilities.permanentIcon());	// hiding the icon only works with page action (not browser action)
 
 		$("a, input").on("click", doAction);
 

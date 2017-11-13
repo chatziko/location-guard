@@ -38,6 +38,7 @@ build/%/: $(call find, src/common, *)
 	mkdir -p $@
 	cp -r src/common/* $@
 	cpp -P -Dis_$* src/common/manifest.json > $@manifest.json
+	sed -i 's/%BUILD%/$*/' $@js/browser_base.js
 
 
 # package #############################################################

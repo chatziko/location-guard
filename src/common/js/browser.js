@@ -1,5 +1,7 @@
-// Browser class for Google Chrome. For documentation of the various methods,
-// see browser_base.js
+// Browser class for the WebExtensions API.
+// After Firefox moved to WebExtensions this is the only API we use. Still as a
+// good practice we keep all API-specific code here.
+// For documentation of the various methods, see browser_base.js
 //
 
 Browser.init = function(script) {
@@ -161,12 +163,20 @@ Browser.gui.refreshIcon = function(tabId, cb) {
 	}
 
 	Util.getIconInfo(tabId, function(info) {
-		if(Browser.capabilities.usesBrowserAction())
+		if(Browser.capabilities.permanentIcon())
 			Browser.gui._refreshBrowserAction(tabId, info, cb);
 		else
 			Browser.gui._refreshPageAction(tabId, info, cb);
 	});
 };
+
+Browser.gui._icons = function(private) {
+	var sizes = Browser.capabilities.supportedIconSizes();
+	var ret = {};
+	for(var i = 0; i < sizes.length; i++)
+		ret[sizes[i]] = '/images/pin_' + (private ? '' : 'disabled_') + sizes[i] + '.png';
+	return ret;
+}
 
 Browser.gui._refreshPageAction = function(tabId, info, cb) {
 	if(info.hidden || info.apiCalls == 0) {
@@ -192,11 +202,7 @@ Browser.gui._refreshPageAction = function(tabId, info, cb) {
 		});
 		browser.pageAction.setIcon({
 			tabId: tabId,
-			path: {
-				16: '/images/' + (info.private ? 'pin_16.png' : 'pin_disabled_16.png'),
-				32: '/images/' + (info.private ? 'pin_32.png' : 'pin_disabled_32.png'),
-				64: '/images/' + (info.private ? 'pin_64.png' : 'pin_disabled_64.png')
-			}
+			path: Browser.gui._icons(info.private)
 		}, cb);		// setIcon is the only pageAction.set* method with a callback
 	} catch(e) {
 		if(cb) cb();
@@ -222,21 +228,14 @@ Browser.gui._refreshBrowserAction = function(tabId, info, cb) {
 	});
 	browser.browserAction.setIcon({
 		tabId: tabId,
-		path: {
-			// chrome used to have 19px icons, now it has 16px
-			16: '/images/' + (info.private ? 'pin_16.png' : 'pin_disabled_16.png'),
-			19: '/images/' + (info.private ? 'pin_19.png' : 'pin_disabled_19.png'),
-			32: '/images/' + (info.private ? 'pin_32.png' : 'pin_disabled_32.png'),
-			38: '/images/' + (info.private ? 'pin_38.png' : 'pin_disabled_38.png'),
-			64: '/images/' + (info.private ? 'pin_64.png' : 'pin_disabled_64.png')
-		}
+		path: Browser.gui._icons(info.private)
 	}, cb);		// setIcon is the only browserAction.set* method with a callback
 }
 
 Browser.gui.refreshAllIcons = function(cb) {
 	browser.tabs.query({}, function(tabs) {
 		// for browser action, also refresh default state (null tabId)
-		if(Browser.capabilities.usesBrowserAction())
+		if(Browser.capabilities.permanentIcon())
 			tabs.push({ id: null });
 
 		var done = 0;
@@ -283,14 +282,55 @@ Browser.gui.closePopup = function() {
 		window.close();
 }
 
+
+//////////////////// capabilities ///////////////////////////
+//
+//
+Browser.capabilities.isDebugging = function() {
+	// update_url is only present if the extensioned is installed via the web store
+	if(Browser.debugging == null)
+		Browser.debugging = !('update_url' in browser.runtime.getManifest());
+	return Browser.debugging;
+}
+
+Browser.capabilities.popupAsTab = function() {
+	// Firefox@Android shows popup as normal tab
+	return this._build == 'firefox' && this.isAndroid();
+}
+
+Browser.capabilities.needsPAManualHide = function() {
+	// Workaroud some Firefox page-action 'bugs'
+	return this._build == 'firefox';
+}
+
+Browser.capabilities.logInBackgroundPage = function() {
+	return this._build == 'chrome';
+}
+
+Browser.capabilities.permanentIcon = function() {
+	// we use browserAction in browsers where pageAction is not properly supported (eg Chrome)
+	return !!browser.runtime.getManifest().browser_action;
+}
+
+Browser.capabilities.supportedIconSizes = function() {
+	// edge complains if we use unsupported icon sizes
+	return this._build == 'edge'
+		? [19, 38]
+		: [16, 19, 32, 38, 64];
+}
+
+
 Browser.log = function() {
 	if(!Browser.capabilities.isDebugging()) return;
 
-	console.log.apply(console, arguments);
+	if(console.log.apply)			// edge doesn't like console.log.apply!
+		console.log.apply(console, arguments);
+	else
+		console.log(arguments[0], arguments[1], arguments[2], arguments[3]);
 
 	// in chrome, apart from the current console, we also log to the background page, if possible and loaded
 	//
-	if(!Browser.capabilities.isFirefox()) {
+	if(Browser.capabilities.logInBackgroundPage()) {
 		var bp;
 		if(browser.extension && browser.extension.getBackgroundPage)
 			bp = browser.extension.getBackgroundPage();

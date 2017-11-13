@@ -14,6 +14,12 @@ Browser.init('options');
 Browser.storage.get(function(st) {
 	epsilon = st.epsilon;
 });
+// getState should fail (call replyHandler with no args) on the options page. On
+// Chrome it fails (cause no handler is set?) but on Edge we never get a reply.
+// So we explicitly register a handler and send an empty reply.
+Browser.rpc.register('getState', function(tabId, replyHandler) {
+	replyHandler();
+});
 
 
 // slider wrapper class, cause sGlide interface sucks
@@ -364,7 +370,7 @@ function initPages() {
 	//$.mobile.defaultPageTransition = "none";
 
 	$(document).ready(function() {
-		$('#hideIcon').parent().toggle(!Browser.capabilities.usesBrowserAction());	// hiding the icon only works with page action (not browser action)
+		$('#hideIcon').parent().toggle(!Browser.capabilities.permanentIcon());	// hiding the icon only works with page action (not browser action)
 	});
 
 	$(document).on("pagecontainershow", function(e, ui) {

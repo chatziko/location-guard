@@ -230,7 +230,7 @@ Browser.init('content');
 // causes the background script to be awaken. To avoid doing this on every page,
 // we only call it if the icon is different than the default icon!
 //
-if(Browser.capabilities.usesBrowserAction() && !inFrame) {
+if(Browser.capabilities.permanentIcon() && !inFrame) {
 	Util.getIconInfo({ callUrl: myUrl, apiCalls: 0 }, function(info) {
 		if(info.private != info.defaultPrivate) // the icon for myUrl is different than the default
 			Browser.gui.refreshIcon('self');

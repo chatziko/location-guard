@@ -41,7 +41,11 @@
 	},
 #endif
 
-#if is_chrome
+// page_action is preferred wherever is properly supported. However:
+// - chrome recently shows page actions as disabled toolbar buttons, bad experience
+// - edge does not seem to show page actions in internal pages (eg the demo)
+//
+#if is_chrome || is_edge
 	"browser_action": {
 #else
 	"page_action": {

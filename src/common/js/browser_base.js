@@ -166,36 +166,13 @@ var Browser = {
 
 	// Browser.capabilities
 	//
-	// Class for browser detection
-	//
 	capabilities: {
-		isFirefox: function() {
-			return navigator.userAgent.toLowerCase().indexOf('firefox') > -1;
-		},
-		isAndroid: function() {
-			return navigator.userAgent.toLowerCase().indexOf('android') > -1;
-		},
-		isOpera: function() {
-			return !!navigator.userAgent.match(/Opera|OPR\//);
-		},
-		isDebugging: function() {
-			// update_url is only present if the extensioned is installed via the web store
-			if(Browser.debugging == null)
-				Browser.debugging = !('update_url' in browser.runtime.getManifest());
-			return Browser.debugging;
-		},
-		popupAsTab: function() {
-			// Firefox@Android shows popup as normal tab
-			return Browser.capabilities.isFirefox() && Browser.capabilities.isAndroid();
-		},
-		needsPAManualHide: function() {
-			// Workaroud some Firefox page-action 'bugs'
-			return Browser.capabilities.isFirefox();
-		},
-		usesBrowserAction: function() {
-			// use pageAction for Firefox/Opera, browserAction for Chrome
-			return !Browser.capabilities.isFirefox() && !Browser.capabilities.isOpera();
-		}
+		_build: '%BUILD%',		// this is replaced by "make build-foo"
+
+		isDebugging: function() { return Browser.debugging },
+		popupAsTab: function() { return false },
+		permanentIcon: function() { return false },
+		isAndroid: function() { return navigator.userAgent.toLowerCase().indexOf('android') > -1 }
 	},
 
 	// Browser.log(text, value)

@@ -98,7 +98,7 @@ function drawPosition(pos) {
 }
 
 function startDemo() {
-	var iconClass = Browser.capabilities.usesBrowserAction() ? 'lg-icon-browseraction' : 'lg-icon-pageaction';
+	var iconClass = Browser.capabilities.permanentIcon() ? 'lg-icon-browseraction' : 'lg-icon-pageaction';
 	var steps = [ {
 			element: ".placeholder-step1",
 			intro: '<p>Location Guard was successfully installed.</p><p>This demo illustrates its use.</p>',
@@ -116,7 +116,7 @@ function startDemo() {
 			element: ".placeholder-step3",
 			intro:
 				'<p>The browser asks permission to disclose your location. At the same time, the <span class="' + iconClass + '"></span> icon ' +
-				(Browser.capabilities.usesBrowserAction()
+				(Browser.capabilities.permanentIcon()
 					? 'shows that a location request has been made.</p>'
 					: 'appears, showing that Location Guard is active.</p>'
 				) + '<p>To continue, allow access to your location.</p>',
