@@ -315,8 +315,8 @@ Browser.capabilities.permanentIcon = function() {
 Browser.capabilities.supportedIconSizes = function() {
 	// edge complains if we use unsupported icon sizes
 	return this._build == 'edge'
-		? [19, 38]
-		: [16, 19, 32, 38, 64];
+		? [19, 20, 38, 40]
+		: [16, 19, 20, 32, 38, 40, 64];
 }
 
 
