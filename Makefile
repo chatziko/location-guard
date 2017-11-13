@@ -6,7 +6,7 @@ export PATH := ./node_modules/.bin:$(PATH)	# in case web-ext is locally installe
 FIREFOX ?= $(shell which firefox)
 CHROME  ?= $(shell which google-chrome)
 OPERA   ?= $(shell which opera)
-VER      = $(shell grep -Po '(?<="version": ")[^"]*' src/common/manifest.json)
+VER      = $(shell grep -Po '(?<="version": ")[^"]*' src/manifest.json)
 
 
 default:
@@ -33,11 +33,11 @@ build-opera: build/opera/
 build-firefox: build/firefox/
 build-edge: build/edge/
 
-build/%/: $(call find, src/common, *)
+build/%/: $(call find, src, *)
 	rm -rf $@
 	mkdir -p $@
-	cp -r src/common/* $@
-	cpp -P -Dis_$* src/common/manifest.json > $@manifest.json
+	cp -r src/* $@
+	cpp -P -Dis_$* src/manifest.json > $@manifest.json
 	sed -i 's/%BUILD%/$*/' $@js/browser_base.js
 
 
