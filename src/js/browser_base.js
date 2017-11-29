@@ -1,6 +1,9 @@
 // Base class for browser-specific functionality
 // Subclasses should implement the API defined here
 //
+if(typeof(browser) === 'undefined')
+	window.browser = chrome;
+
 var Browser = {
 	debugging: null,				// null: auto set to true if running locally
 	testing: false,					// set to true to run tests on load
@@ -163,32 +166,13 @@ var Browser = {
 
 	// Browser.capabilities
 	//
-	// Class for browser detection
-	//
 	capabilities: {
-		isFirefox: function() {
-			return navigator.userAgent.toLowerCase().indexOf('firefox') > -1;
-		},
-		isAndroid: function() {
-			return navigator.userAgent.toLowerCase().indexOf('android') > -1;
-		},
-		isOpera: function() {
-			return !!navigator.userAgent.match(/Opera|OPR\//);
-		},
-		isDebugging: function() {
-			// update_url is only present if the extensioned is installed via the web store
-			if(Browser.debugging == null)
-				Browser.debugging = !('update_url' in chrome.runtime.getManifest());
-			return Browser.debugging;
-		},
-		popupAsTab: function() {
-			// Firefox@Android shows popup as normal tab
-			return Browser.capabilities.isFirefox() && Browser.capabilities.isAndroid();
-		},
-		usesBrowserAction: function() {
-			// use pageAction for Firefox/Opera, browserAction for Chrome
-			return !Browser.capabilities.isFirefox() && !Browser.capabilities.isOpera();
-		}
+		_build: '%BUILD%',		// this is replaced by "make build-foo"
+
+		isDebugging: function() { return Browser.debugging },
+		popupAsTab: function() { return false },
+		permanentIcon: function() { return false },
+		isAndroid: function() { return navigator.userAgent.toLowerCase().indexOf('android') > -1 }
 	},
 
 	// Browser.log(text, value)

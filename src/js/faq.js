@@ -1,7 +1,10 @@
 blog("faq loading");
 
-// although we don't use it explicitly in faq.js, Browser should be always loaded, it might be needed internally
+// send an empty reply to getState (see options.js)
 Browser.init('options');
+Browser.rpc.register('getState', function(tabId, replyHandler) {
+	replyHandler();
+});
 
 $.mobile.ajaxEnabled = false;
 $.mobile.linkBindingEnabled = false;
@@ -32,7 +35,7 @@ $(document).ready(function() {
 		}
 	});
 
-	$("#lgIcon").addClass(Browser.capabilities.usesBrowserAction() ? 'lg-icon-browseraction' : 'lg-icon-pageaction');
+	$("#lgIcon").addClass(Browser.capabilities.permanentIcon() ? 'lg-icon-browseraction' : 'lg-icon-pageaction');
 
 	$(window).on("hashchange", openHash);
 
