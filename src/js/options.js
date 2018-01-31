@@ -1,3 +1,4 @@
+const mapboxToken = 'pk.eyJ1IjoiY2hhdHppa28iLCJhIjoiY2pkM2VrNzB5MHVjOTJ5cXF3cGk0aHNkNiJ9.zao3VqPFza1WprPiCzGIBQ';
 var levelMap, fixedPosMap;
 var epsilon;
 var activeLevel = "medium";
@@ -180,7 +181,7 @@ function initLevelMap() {
 
 	// geocoder control
 	if(!Browser.capabilities.isAndroid()) // not enough space on smartphones, better have a cleaner interface
-		L.control.geocoder('mapzen-yHD9V2E', {
+		L.control.geocoder(mapboxToken, {
 			markers: false,
 			autocomplete: false
 		}).on('highlight', handleChangePosEvent)
@@ -245,7 +246,7 @@ function initFixedPosMap() {
 
 		// geocoder control
 		if(!Browser.capabilities.isAndroid()) // not enough space on smartphones, better have a cleaner interface
-			L.control.geocoder('mapzen-yHD9V2E', {
+			L.control.geocoder(mapboxToken, {
 				markers: false,
 				autocomplete: false
 			}).on('results', function(e) {

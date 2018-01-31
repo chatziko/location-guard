@@ -137,7 +137,7 @@ var corslite = _dereq_('@mapbox/corslite');
 var throttle = _dereq_('./utils/throttle');
 var escapeRegExp = _dereq_('./utils/escapeRegExp');
 
-var VERSION = '1.9.4';
+var VERSION = '1.9.2';
 var MINIMUM_INPUT_LENGTH_FOR_AUTOCOMPLETE = 1;
 var FULL_WIDTH_MARGIN = 20; // in pixels
 var FULL_WIDTH_TOUCH_ADJUSTED_MARGIN = 4; // in pixels
@@ -174,7 +174,8 @@ var Geocoder = L.Control.extend({
   options: {
     position: 'topleft',
     attribution: 'Geocoding by <a href="https://mapzen.com/projects/search/">Mapzen</a>',
-    url: 'https://search.mapzen.com/v1',
+    // url: 'https://search.mapzen.com/v1',
+    url: 'https://api.mapbox.com/geocoding/v5/mapbox.places/',
     placeholder: null, // Note: this is now just an alias for textStrings.INPUT_PLACEHOLDER
     bounds: false,
     focus: true,
@@ -197,7 +198,8 @@ var Geocoder = L.Control.extend({
     // version, because XDomainRequest does not allow http-to-https requests
     // This is set first so it can always be overridden by the user
     if (window.XDomainRequest) {
-      this.options.url = '//search.mapzen.com/v1';
+      // this.options.url = '//search.mapzen.com/v1';
+      this.options.url = '//api.mapbox.com/geocoding/v5/mapbox.places/';
     }
 
     // If the apiKey is omitted entirely and the
@@ -292,7 +294,7 @@ var Geocoder = L.Control.extend({
     // If set to true, use map bounds
     // If it is a valid L.LatLngBounds object, get its values
     // If it is an array, try running it through L.LatLngBounds
-    if (bounds === true && this._map) {
+    if (bounds === true) {
       bounds = this._map.getBounds();
       params = makeParamsFromLeaflet(params, bounds);
     } else if (typeof bounds === 'object' && bounds.isValid && bounds.isValid()) {
@@ -331,7 +333,7 @@ var Geocoder = L.Control.extend({
       return params;
     }
 
-    if (focus === true && this._map) {
+    if (focus === true) {
       // If focus option is Boolean true, use current map center
       var mapCenter = this._map.getCenter();
       params['focus.point.lat'] = mapCenter.lat;
@@ -364,7 +366,7 @@ var Geocoder = L.Control.extend({
 
     // Search API key
     if (this.apiKey) {
-      params.api_key = this.apiKey;
+      params.access_token = this.apiKey;
     }
 
     var newParams = this.options.params;
@@ -382,49 +384,16 @@ var Geocoder = L.Control.extend({
     return params;
   },
 
-  serialize: function (params) {
-    var data = '';
-
-    for (var key in params) {
-      if (params.hasOwnProperty(key)) {
-        var param = params[key];
-        var type = param.toString();
-        var value;
-
-        if (data.length) {
-          data += '&';
-        }
-
-        switch (type) {
-          case '[object Array]':
-            value = (param[0].toString() === '[object Object]') ? JSON.stringify(param) : param.join(',');
-            break;
-          case '[object Object]':
-            value = JSON.stringify(param);
-            break;
-          case '[object Date]':
-            value = param.valueOf();
-            break;
-          default:
-            value = param;
-            break;
-        }
-
-        data += encodeURIComponent(key) + '=' + encodeURIComponent(value);
-      }
-    }
-
-    return data;
-  },
-
   search: function (input) {
     // Prevent lack of input from sending a malformed query to Pelias
     if (!input) return;
 
-    var url = this.options.url + '/search';
-    var params = {
-      text: input
-    };
+    var url = this.options.url + encodeURIComponent(input) + ".json";
+    var params = {};
+    // var url = this.options.url + '/search';
+    // var params = {
+    //   text: input
+    // };
 
     this.callPelias(url, params, 'search');
   },
@@ -433,11 +402,17 @@ var Geocoder = L.Control.extend({
     // Prevent lack of input from sending a malformed query to Pelias
     if (!input) return;
 
-    var url = this.options.url + '/autocomplete';
-    var params = {
-      text: input
-    };
+    // var url = this.options.url + '/autocomplete';
+    var url = this.options.url + encodeURIComponent(input) + ".json";
+    // var params = {
+    //   text: input
+    // };
 
+    var params = {
+      autocomplete: true
+    }
+
+    console.log("CALLING IT FROM AUTOCOMPLETE")
     this.callPelias(url, params, 'autocomplete');
   }, API_RATE_LIMIT),
 
@@ -469,7 +444,53 @@ var Geocoder = L.Control.extend({
     // Track when the request began
     var reqStartedAt = new Date().getTime();
 
-    var paramString = this.serialize(params);
+    function serialize (params) {
+      var data = '';
+      var focus_lat = '';
+      var focus_lng = '';
+
+      for (var key in params) {
+        if (params.hasOwnProperty(key)) {
+          var param = params[key];
+          var type = param.toString();
+          var value;
+
+          if (data.length && key != 'focus.point.lat' && key != 'focus.point.lon') {
+            data += '&';
+          }
+
+          switch (type) {
+            case '[object Array]':
+              value = (param[0].toString() === '[object Object]') ? JSON.stringify(param) : param.join(',');
+              break;
+            case '[object Object]':
+              value = JSON.stringify(param);
+              break;
+            case '[object Date]':
+              value = param.valueOf();
+              break;
+            default:
+              value = param;
+              break;
+          }
+          if (key != 'focus.point.lat' && key != 'focus.point.lon') {
+            data += encodeURIComponent(key) + '=' + encodeURIComponent(value);
+          } else if (key == 'focus.point.lat') {
+            focus_lat = value;
+          } else {
+            focus_lng = value;
+          }
+        }
+      }
+
+      if (focus_lat != '' && focus_lng != '') {
+        data += '&proximity' + '=' + encodeURIComponent(focus_lng + "," + focus_lat);
+      }
+
+      return data;
+    }
+
+    var paramString = serialize(params);
     var url = endpoint + '?' + paramString;
     var self = this; // IE8 cannot .bind(this) without a polyfill.
     function handleResponse (err, response) {
@@ -579,8 +600,7 @@ var Geocoder = L.Control.extend({
   },
 
   highlight: function (text, focus) {
-    var r = RegExp('(' + escapeRegExp(focus) + ')', 'gi');
-    return text.replace(r, '<strong>$1</strong>');
+    return text;
   },
 
   getIconType: function (layer) {
@@ -635,38 +655,36 @@ var Geocoder = L.Control.extend({
     resultsContainer.style.maxHeight = (this._map.getSize().y - resultsContainer.offsetTop - this._container.offsetTop - RESULTS_HEIGHT_MARGIN) + 'px';
 
     var list = L.DomUtil.create('ul', 'leaflet-pelias-list', resultsContainer);
-
-    for (var i = 0, j = features.length; i < j; i++) {
-      var feature = features[i];
+    features.forEach(feature => {
       var resultItem = L.DomUtil.create('li', 'leaflet-pelias-result', list);
 
       resultItem.feature = feature;
-      resultItem.layer = feature.properties.layer;
+      // resultItem.layer = feature.properties.place_type[0];
 
       // Deprecated
       // Use L.GeoJSON.coordsToLatLng(resultItem.feature.geometry.coordinates) instead
       // This returns a L.LatLng object that can be used throughout Leaflet
       resultItem.coords = feature.geometry.coordinates;
 
-      var icon = this.getIconType(feature.properties.layer);
-      if (icon) {
-        // Point or polygon icon
-        // May be a class or an image path
-        var layerIconContainer = L.DomUtil.create('span', 'leaflet-pelias-layer-icon-container', resultItem);
-        var layerIcon;
+      // var icon = this.getIconType(feature.properties.layer);
+      // if (icon) {
+      //   // Point or polygon icon
+      //   // May be a class or an image path
+      //   var layerIconContainer = L.DomUtil.create('span', 'leaflet-pelias-layer-icon-container', resultItem);
+      //   var layerIcon;
 
-        if (icon.type === 'class') {
-          layerIcon = L.DomUtil.create('div', 'leaflet-pelias-layer-icon ' + icon.value, layerIconContainer);
-        } else {
-          layerIcon = L.DomUtil.create('img', 'leaflet-pelias-layer-icon', layerIconContainer);
-          layerIcon.src = icon.value;
-        }
+      //   if (icon.type === 'class') {
+      //     layerIcon = L.DomUtil.create('div', 'leaflet-pelias-layer-icon ' + icon.value, layerIconContainer);
+      //   } else {
+      //     layerIcon = L.DomUtil.create('img', 'leaflet-pelias-layer-icon', layerIconContainer);
+      //     layerIcon.src = icon.value;
+      //   }
 
-        layerIcon.title = 'layer: ' + feature.properties.layer;
-      }
+      //   layerIcon.title = 'layer: ' + feature.properties.layer;
+      // }
 
-      resultItem.innerHTML += this.highlight(feature.properties.label, input);
-    }
+      resultItem.innerHTML += this.highlight(feature.place_name, input);
+    })
   },
 
   showMessage: function (text) {
@@ -823,7 +841,7 @@ var Geocoder = L.Control.extend({
 
   // Set full width of expanded input, if enabled
   setFullWidth: function () {
-    if (this.options.fullWidth) {
+    if (this.options.fullWidth && this._map) {
       // If fullWidth setting is a number, only expand if map container
       // is smaller than that breakpoint. Otherwise, clear width
       // Always ask map to invalidate and recalculate size first
@@ -1160,15 +1178,13 @@ var Geocoder = L.Control.extend({
   _enableMapScrollWheelZoom: function (event) {
     // Re-enable scroll wheel zoom (if previously enabled) after
     // leaving the results box
-    if (this._scrollWheelZoomEnabled) {
+    if (this._scrollWheelZoomEnabled && this._map) {
       this._map.scrollWheelZoom.enable();
     }
   },
 
   onRemove: function (map) {
-    if (map.attributionControl) {
-      map.attributionControl.removeAttribution(this.options.attribution);
-    }
+    map.attributionControl.removeAttribution(this.options.attribution);
   }
 });
 
