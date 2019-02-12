@@ -137,7 +137,7 @@ function startDemo() {
 		steps = [{
 				element: ".placeholder-step1",
 				intro:
-					'<p>Location Guard was successfully installed.</p><p>To see it in action, try this <a href="http://html5demos.com/geo" target="_blank">online demo</a>.</p>' +
+					'<p>Location Guard was successfully installed.</p><p>To see it in action, try this <a href="https://browserleaks.com/geo" target="_blank">online demo</a>.</p>' +
 					'<p style="font-size:small">Note: the current page used to be a demo of Location Guard, but it was disabled in Firefox 41 due to a browser bug. ' +
 					'It will be available again in Firefox 42.<br><br>Location Guard, however, <i>is still enabled</i> on all pages!</p>',
 				position: "floating",

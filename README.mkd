@@ -38,7 +38,7 @@ give permission, then Location Guard obtains your location and adds "random
 noise" to it, creating a fake location. Only the fake location is then given to
 the website.
 
-To see Location Guard in action use [this demo](http://html5demos.com/geo), a
+To see Location Guard in action use [this demo](https://browserleaks.com/geo), a
 [geolocalized weather forecast](http://forecast.io/), or go to [Google
 Maps](http://maps.google.com) and press the ![](src/common/images/gmaps_dot.png)
 button. When the website asks for your location you will see the the
