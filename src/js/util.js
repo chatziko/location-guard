@@ -94,8 +94,7 @@ var Util = {
 };
 
 
-// PostRPC provides RPC functionality through message passing. Both postMessage
-// and Firefox's port object are supported
+// PostRPC provides RPC functionality through message passing (postMessage)
 //
 // sendObj: object for sending messages (window or port)
 // receiveObj: object for receiving messages
@@ -105,25 +104,16 @@ var Util = {
 //
 function _PostRPC() {		// include all code here to inject easily
 
-	PostRPC = function(name, sendObj, receiveObj) {
+	PostRPC = function(name, sendObj, receiveObj, targetOrigin) {
 		this._id = Math.floor(Math.random()*1000000);
 		this._ns = '__PostRPC_' + name;
 		this._sendObj = sendObj;
 		this._calls = {};
 		this._methods = {};
+		this._targetOrigin = targetOrigin;
 
-		if(!receiveObj) return;		// send-only RPC
-
-		if(receiveObj.emit) {
-			receiveObj.on(this._ns, this._receiveMessage.bind(this));
-		} else {
-			var _this = this;
-			receiveObj.addEventListener("message", function(event) {
-				var data = event.data && event.data[_this._ns];		// everything is inside ns, to minimize conflicts with other message
-				if(data)
-					_this._receiveMessage(data);
-			}, false);
-		}
+		if(receiveObj)
+			receiveObj.addEventListener("message", this._receiveMessage.bind(this), false);
 	};
 
 	// public methods
@@ -143,17 +133,16 @@ function _PostRPC() {		// include all code here to inject easily
 
 	// private methods for sending/receiving messages
 	PostRPC.prototype._sendMessage = function(message) {
-		if(this._sendObj.emit)
-			this._sendObj.emit(this._ns, message);
-		else {
-			// everything is inside ns, to minimize conflicts with other messages
-			var temp = {};
-			temp[this._ns] = message;
-			this._sendObj.postMessage(temp, "*");
-		}
+		// everything is inside ns, to minimize conflicts with other messages
+		var temp = {};
+		temp[this._ns] = message;
+		this._sendObj.postMessage(temp, this._targetOrigin);
 	}
 
-	PostRPC.prototype._receiveMessage = function(data) {
+	PostRPC.prototype._receiveMessage = function(event) {
+		var data = event.data && event.data[this._ns];		// everything is inside ns, to minimize conflicts with other message
+		if(!data) return;
+
 		if(data.method) {
 			// message call
 			if(data.from == this._id) return;						// we made this call, the other side should reply

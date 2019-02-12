@@ -9,23 +9,10 @@
 // separate js environment anyway), apart from a few things marked as DEMO below.
 //
 //
-// PostRPC is being used it in 2 ways:
-//
-// 1. For communication between the content script and the code injected in the
-//    page (they both share the same window object).
-//    NOTE: this communication is not secure and could be intercepted by the page.
-//          so only a noisy location should be transmitted over PostRPC
-//
-// 2. For communication between the content script of an iframe and the content
-//    script of the top-most frame (through window.top)
-//
-// FF compatibility:
-// In Firefox < 31 window.postMessage does not work _from_ the content script
-// _to_ the page (although it works from the page to the content script), hence
-// we use document.defaultView.postMessage which is equivalent and always works.
-//
-// Thankfully, window.top.postMessage (used for iframe -> top frame communication)
-// works in all FF versions.
+// PostRPC is being used for communication between the content script and the code
+// injected in the page (they both share the same window object).
+// NOTE: this communication is not secure and could be intercepted by the page.
+//       so only a noisy location should be transmitted over PostRPC
 
 
 // this will be injected to the page
@@ -43,7 +30,7 @@ function injectedCode() {
 		// create a PostRPC object only when getCurrentPosition is called. This
 		// avoids having our own postMessage handler on every page
 		if(!prpc)
-			prpc = new PostRPC('page-content', document.defaultView, window);
+			prpc = new PostRPC('page-content', window, window, window.origin);
 
 		// call getNoisyPosition on the content-script
 		prpc.call('getNoisyPosition', [options], function(success, res) {
@@ -106,27 +93,42 @@ if(inDemo) {
 var inFrame = (window != window.top);	// are we in a frame?
 var apiCalls = 0;						// how many times the API has been called here or in an iframe
 var myUrl = inDemo ? 'http://demo-page/' : window.location.href;	// DEMO: user-friendly url
-var callUrl = myUrl;					// the url from which the last call was made, it could be us or a nested frame
+var callUrl = myUrl;					// the url from which the last call is _shown_ to be made (it could be a nested frame if the last call was made there and Browser.capabilities.iframeGeoFromOwnDomain() is true)
 
 // methods called by the page
 //
-var rpc = new PostRPC('page-content', document.defaultView, window);			// window.postMessage does not work in FF < 31, use document.defaultView.postMessage
+var rpc = new PostRPC('page-content', window, window, window.origin);
 rpc.register('getNoisyPosition', function(options, replyHandler) {
 	if(inFrame) {
-		// we're in a frame, we just notify the top window
-		new PostRPC('frames', window.top).call('apiCalledInFrame', [myUrl]);	// window.top.postMessage always works!
+		// we're in a frame, we need to notify the top window, and get back the *url used in the permission dialog*
+		// (which might be either the iframe url, or the top window url, depending on how the browser handles permissions).
+		// To avoid cross-origin issues, we call apiCalledInFrame in the main script, which echoes the
+		// call back to this tab to be answered by the top window
+		Browser.rpc.call(null, 'apiCalledInFrame', [myUrl], function(topUrl) {
+			callUrl = Browser.capabilities.iframeGeoFromOwnDomain() ? myUrl : topUrl;
+			getNoisyPosition(options, replyHandler);
+		});
+
 	} else {
 		// refresh icon before fetching the location
 		apiCalls++;
-		callUrl = myUrl;
+		callUrl = myUrl;	// last call happened here
 		Browser.gui.refreshIcon('self');
+		getNoisyPosition(options, replyHandler);
 	}
 
+	return true;	// will reply later
+});
+
+// gets the options passed to the fake navigator.geolocation.getCurrentPosition.
+// Either returns fixed pos directly, or calls the real one, then calls addNoise.
+//
+function getNoisyPosition(options, replyHandler) {
 	Browser.storage.get(function(st) {
 		// if level == 'fixed' and fixedPosNoAPI == true, then we return the
 		// fixed position without calling the geolocation API at all.
 		//
-		var domain = Util.extractDomain(myUrl);
+		var domain = Util.extractDomain(callUrl);
 		var level = st.domainLevel[domain] || st.defaultLevel;
 
 		if(!st.paused && level == 'fixed' && st.fixedPosNoAPI) {
@@ -163,14 +165,13 @@ rpc.register('getNoisyPosition', function(options, replyHandler) {
 			options
 		]);
 	});
-	return true;	// will reply later
-});
+}
 
-// gets position, returs noisy version based on the options
+// gets position, returs noisy version based on the privacy options
 //
 function addNoise(position, handler) {
 	Browser.storage.get(function(st) {
-		var domain = Util.extractDomain(myUrl);
+		var domain = Util.extractDomain(callUrl);
 		var level = st.domainLevel[domain] || st.defaultLevel;
 
 		if(st.paused || level == 'real') {
@@ -238,7 +239,6 @@ if(Browser.capabilities.permanentIcon() && !inFrame) {
 }
 
 // only the top frame handles getState and apiCalledInFrame requests
-var frames_rpc;
 if(!inFrame) {
 	Browser.rpc.register('getState', function(tabId, replyHandler) {
 		replyHandler({
@@ -247,11 +247,13 @@ if(!inFrame) {
 		});
 	});
 
-	frames_rpc = new PostRPC("frames", window, window);
-	frames_rpc.register('apiCalledInFrame', function(url) {
+	Browser.rpc.register('apiCalledInFrame', function(iframeUrl, tabId, replyHandler) {
 		apiCalls++;
-		callUrl = url;
+		if(Browser.capabilities.iframeGeoFromOwnDomain())
+			callUrl = iframeUrl;
 		Browser.gui.refreshIcon('self');
+
+		replyHandler(myUrl);
 	});
 }
 

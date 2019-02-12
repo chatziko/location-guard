@@ -12,6 +12,16 @@ Util.events.addListener('browser.install', function() {
 
 Browser.init('main');
 
+// this is used from the content-script of an iframe, to communicate with the content-script
+// of the top-window. We just echo the call back to the tab.
+//
+Browser.rpc.register('apiCalledInFrame', function(url, tabId, replyHandler) {
+	Browser.rpc.call(tabId, 'apiCalledInFrame', [url], function(res) {
+		replyHandler(res);
+	});
+	return true; // reply later
+});
+
 if(Browser.testing) {
 	// test for nested calls, and for correct passing of tabId
 	//

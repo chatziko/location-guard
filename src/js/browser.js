@@ -307,6 +307,13 @@ Browser.capabilities.logInBackgroundPage = function() {
 	return this._build == 'chrome';
 }
 
+// True: a geolocation call in an iframe appears (eg in the permission dialog) to come from the iframe's domain
+// False: a geolocation call in an iframe appears to come from the top page's domain
+//
+Browser.capabilities.iframeGeoFromOwnDomain = function() {
+	return this._build == 'firefox';
+}
+
 Browser.capabilities.permanentIcon = function() {
 	// we use browserAction in browsers where pageAction is not properly supported (eg Chrome)
 	return !!browser.runtime.getManifest().browser_action;
