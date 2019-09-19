@@ -136,14 +136,14 @@
 
 /* icons for demo/faq */
 .lg-icon-browseraction {
-	background: url(images/pin_badge.png) no-repeat center;
+	background: url(../images/pin_badge.png) no-repeat center;
 	width: 22px;
 	height: 22px;
 	vertical-align: middle;
 	display: inline-block;
 }
 .lg-icon-pageaction {
-	background: url(images/pin_16.png) no-repeat center;
+	background: url(../images/pin_16.png) no-repeat center;
 	width: 16px;
 	height: 16px;
 	display: inline-block;

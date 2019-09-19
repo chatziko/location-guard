@@ -4,7 +4,7 @@
 if(typeof(browser) === 'undefined')
 	window.browser = chrome;
 
-var Browser = {
+const Browser = {
 	debugging: null,				// null: auto set to true if running locally
 	testing: false,					// set to true to run tests on load
 
@@ -185,9 +185,5 @@ var Browser = {
 		console.log(text, value);
 	}
 };
-
-// for quick logging
-function blog() {
-	Browser.log.apply(Browser, arguments);
-}
+module.exports = Browser;
 

@@ -1,4 +1,6 @@
-blog("faq loading");
+const Browser = require('./browser');
+
+Browser.log("faq loading");
 
 // send an empty reply to getState (see options.js)
 Browser.init('options');

@@ -3,6 +3,8 @@
 // good practice we keep all API-specific code here.
 // For documentation of the various methods, see browser_base.js
 //
+const Browser = require('./browser_base');
+const Util = require('./util').Util;
 
 Browser.init = function(script) {
 	Browser._script = script;
@@ -88,7 +90,7 @@ Browser.rpc.register = function(name, handler) {
 // { method: ..., args: ... }
 //
 Browser.rpc._listener = function(message, sender, replyHandler) {
-	blog("RPC: got message", [message, sender, replyHandler]);
+	Browser.log("RPC: got message", [message, sender, replyHandler]);
 
 	var handler = Browser.rpc._methods[message.method];
 	if(!handler) return;
@@ -136,7 +138,7 @@ Browser.storage.get = function(cb) {
 };
 
 Browser.storage.set = function(st, handler) {
-	blog('saving st', st);
+	Browser.log('saving st', st);
 	var items = {};
 	items[Browser.storage._key] = st;
 	browser.storage.local.set(items, handler);
@@ -347,3 +349,4 @@ Browser.log = function() {
 	}
 }
 
+module.exports = Browser;

@@ -29,7 +29,7 @@
 #if !is_firefox
 		"persistent": false,
 #endif
-		"scripts": ["js/util.js", "js/browser_base.js", "js/browser.js", "js/main.js"]
+		"scripts": ["js/common.js", "js/main.js"]
 	},
 
 #if is_edge
@@ -64,7 +64,7 @@
 	},
 
 	"content_scripts": [{
-		"js": ["js/util.js", "js/browser_base.js", "js/browser.js", "js/laplace.js", "js/content.js"],
+		"js": ["js/common.js", "js/content.js"],
 		"matches": ["\u003Call_urls\u003E"],
 		"run_at": "document_start",
 		"all_frames": true

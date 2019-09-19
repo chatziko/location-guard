@@ -143,3 +143,4 @@ PlannarLaplace.prototype.addNoise = function(epsilon, pos) {
 	return this.addPolarNoise(epsilon, pos);
 }
 
+module.exports = PlannarLaplace;

@@ -3,6 +3,9 @@
 // Browser-specific functionality for the main script, if needed, is added by browser/*.js
 //
 
+const Browser = require('./browser');
+const Util = require('./util').Util;
+
 Browser.log('starting');
 
 Util.events.addListener('browser.install', function() {
@@ -26,10 +29,10 @@ if(Browser.testing) {
 	// test for nested calls, and for correct passing of tabId
 	//
 	Browser.rpc.register('nestedTestMain', function(tabId, replyHandler) {
-		blog("in nestedTestMain, call from ", tabId, "calling back nestedTestTab");
+		Browser.log("in nestedTestMain, call from ", tabId, "calling back nestedTestTab");
 
 		Browser.rpc.call(tabId, 'nestedTestTab', [], function(res) {
-			blog("got from nestedTestTab", res, "adding '_foo' and sending back");
+			Browser.log("got from nestedTestTab", res, "adding '_foo' and sending back");
 			replyHandler(res + '_foo');
 		});
 

@@ -1,0 +1,27 @@
+{
+  "name": "location-guard",
+  "description": "Hide your geographic location from websites.",
+  "scripts": {
+    "test": "make test-chrome"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/chatziko/location-guard.git"
+  },
+  "author": "Kostas Chatzikokolakis",
+  "license": "MIT/X11",
+  "bugs": {
+    "url": "https://github.com/chatziko/location-guard/issues"
+  },
+  "homepage": "https://github.com/chatziko/location-guard#readme",
+  "dependencies": {
+    "browserify": "^16.5.0",
+    "intro.js": "^2.9.3",
+    "jquery": "^3.4.1",
+    "jquery-migrate": "^3.1.0",
+    "leaflet": "^1.5.1",
+    "leaflet.locatecontrol": "^0.67.0",
+    "pelias-leaflet-plugin": "^1.12.0",
+    "sglide": "^2.1.1"
+  }
+}

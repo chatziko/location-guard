@@ -1,4 +1,18 @@
-const mapboxToken = 'pk.eyJ1IjoiY2hhdHppa28iLCJhIjoiY2pkM2VrNzB5MHVjOTJ5cXF3cGk0aHNkNiJ9.zao3VqPFza1WprPiCzGIBQ';
+
+const $ = require('jquery');
+require('sglide');
+
+// Requiring the plugins extends Leaflet automatically
+const L = require('leaflet');
+require('pelias-leaflet-plugin');
+require('leaflet.locatecontrol');
+
+const Browser = require('./browser');
+const PlannarLaplace = require('./laplace');
+
+const geocoderKey = '5b3ce3597851110001cf6248c6adb7e28d3b47f5b3d4ab3e43e1f87f';
+const geocoderUrl = 'https://api.openrouteservice.org/geocode';
+
 var levelMap, fixedPosMap;
 var epsilon;
 var activeLevel = "medium";
@@ -181,7 +195,8 @@ function initLevelMap() {
 
 	// geocoder control
 	if(!Browser.capabilities.isAndroid()) // not enough space on smartphones, better have a cleaner interface
-		L.control.geocoder(mapboxToken, {
+		L.control.geocoder(geocoderKey, {
+        	url: geocoderUrl,
 			markers: false,
 			autocomplete: false
 		}).on('highlight', handleChangePosEvent)
@@ -246,7 +261,8 @@ function initFixedPosMap() {
 
 		// geocoder control
 		if(!Browser.capabilities.isAndroid()) // not enough space on smartphones, better have a cleaner interface
-			L.control.geocoder(mapboxToken, {
+			L.control.geocoder(geocoderKey, {
+				url: geocoderUrl,
 				markers: false,
 				autocomplete: false
 			}).on('results', function(e) {
@@ -270,7 +286,7 @@ function saveFixedPos(latlng) {
 
 		fixedPosMap.marker.setLatLng(latlng);
 
-		blog('saving st', st);
+		Browser.log('saving st', st);
 		Browser.storage.set(st);
 	});
 }
@@ -437,7 +453,7 @@ function showCurrentPosition() {
 			showLevelInfo();		// moves circles and also centers map
 		},
 		function(err) {
-			blog("cannot get location", err);
+			Browser.log("cannot get location", err);
 		}
 	);
 }
@@ -499,12 +515,12 @@ if(Browser.testing) {
 	// test for nested calls, and for correct passing of tabId
 	//
 	Browser.rpc.register('nestedTestTab', function(tabId, replyHandler) {
-		blog("in nestedTestTab, returning 'options'");
+		Browser.log("in nestedTestTab, returning 'options'");
 		replyHandler("options");
 	});
 
-	blog("calling nestedTestMain");
+	Browser.log("calling nestedTestMain");
 	Browser.rpc.call(null, 'nestedTestMain', [], function(res) {
-		blog('got from nestedTestMain', res);
+		Browser.log('got from nestedTestMain', res);
 	});
 }

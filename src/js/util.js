@@ -44,16 +44,19 @@ var Util = {
 	getIconInfo: function(about, handler) {
 		if(typeof(about) == 'object')						// null or state object
 			Util._getStateIconInfo(about, handler);
-		else												// tabId
+		else {												// tabId
+			const Browser = require('./browser');
 			Browser.rpc.call(about, 'getState', [], function(state) {
 				Util._getStateIconInfo(state, handler);
 			});
+		}
 	},
 
 	_getStateIconInfo: function(state, handler) {
 		// return info for the default icon if state is null
 		state = state || { callUrl: '', apiCalls: 0 };
 
+		const Browser = require('./browser');
 		Browser.storage.get(function(st) {
 			var domain = Util.extractDomain(state.callUrl);
 			var level = st.domainLevel[domain] || st.defaultLevel;
@@ -102,6 +105,7 @@ var Util = {
 // The case when sendObj == receiveObj == window is supported. In this
 // case sent messages will be also received by us, and ignored.
 //
+var PostRPC;
 function _PostRPC() {		// include all code here to inject easily
 
 	PostRPC = function(name, sendObj, receiveObj, targetOrigin) {
@@ -147,6 +151,7 @@ function _PostRPC() {		// include all code here to inject easily
 			// message call
 			if(data.from == this._id) return;						// we made this call, the other side should reply
 			if(!this._methods[data.method]) {						// not registered
+				const Browser = require('./browser');
 				Browser.log('PostRPC: no handler for '+data.method);
 				return;
 			}
@@ -178,3 +183,9 @@ function _PostRPC() {		// include all code here to inject easily
 	}
 }
 _PostRPC();
+
+module.exports = {
+	Util: Util,
+	PostRPC: PostRPC,
+	_PostRPC: _PostRPC
+};

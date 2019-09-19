@@ -1,6 +1,14 @@
-var inDemo = true;		// used in content.js
-var demoMap;
+
+const $ = require('jquery');
+const introJs = require('intro.js');
+const L = require('leaflet');
+require('leaflet.locatecontrol');
+
+const Browser = require('./browser');
+
+Browser.inDemo = true;		// used in content.js
 var intro;
+var demoMap;
 var showPressed, geoDone;
 
 $.mobile.ajaxEnabled = false;

@@ -33,12 +33,32 @@ build-opera: build/opera/
 build-firefox: build/firefox/
 build-edge: build/edge/
 
+COMMON_MODULES = -x ./src/js/browser_base.js -x ./src/js/browser.js -x ./src/js/util.js -x ./src/js/laplace.js -x leaflet -x pelias-leaflet-plugin -x leaflet.locatecontrol -x intro.js -x jquery -x jquery-migrate -x sglide
 build/%/: $(call find, src, *)
 	rm -rf $@
 	mkdir -p $@
 	cp -r src/* $@
+	rm $@js/*
+
+	# bundles with common modules
+	npx browserify -r ./src/js/browser_base.js -r ./src/js/browser.js -r ./src/js/util.js -r ./src/js/laplace.js                                          > $@js/common.js
+	npx browserify -r leaflet -r pelias-leaflet-plugin -r leaflet.locatecontrol -r intro.js -r jquery -r jquery-migrate -r sglide ./src/js/load-jquery.js > $@js/common-gui.js
+
+	# entry points
+	npx browserify $(COMMON_MODULES) ./src/js/main.js    > $@js/main.js
+	npx browserify $(COMMON_MODULES) ./src/js/content.js > $@js/content.js
+	npx browserify $(COMMON_MODULES) ./src/js/options.js > $@js/options.js
+	npx browserify $(COMMON_MODULES) ./src/js/demo.js    > $@js/demo.js
+	npx browserify $(COMMON_MODULES) ./src/js/popup.js   > $@js/popup.js
+	npx browserify $(COMMON_MODULES) ./src/js/faq.js     > $@js/faq.js
+
+	# copy module css/images
+	cp -r node_modules/leaflet/dist/images               node_modules/leaflet/dist/leaflet.css                               $@css/
+	cp -r node_modules/pelias-leaflet-plugin/dist/images node_modules/pelias-leaflet-plugin/dist/leaflet-geocoder-mapzen.css $@css/
+	cp node_modules/intro.js/minified/introjs.min.css                                                                        $@css/
+
 	cpp -P -Dis_$* src/manifest.json > $@manifest.json
-	sed -i 's/%BUILD%/$*/' $@js/browser_base.js
+	sed -i 's/%BUILD%/$*/' $@js/common.js
 
 
 # package #############################################################

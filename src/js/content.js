@@ -14,6 +14,8 @@
 // NOTE: this communication is not secure and could be intercepted by the page.
 //       so only a noisy location should be transmitted over PostRPC
 
+const Browser = require('./browser');
+const Util = require('./util').Util;
 
 // this will be injected to the page
 //
@@ -30,7 +32,7 @@ function injectedCode() {
 		// create a PostRPC object only when getCurrentPosition is called. This
 		// avoids having our own postMessage handler on every page
 		if(!prpc)
-			prpc = new PostRPC('page-content', window, window, window.origin);
+			prpc = new PostRPC('page-content', window, window, window.origin);	// This PostRPC is created by the injected code!
 
 		// call getNoisyPosition on the content-script
 		prpc.call('getNoisyPosition', [options], function(success, res) {
@@ -61,8 +63,7 @@ function injectedCode() {
 // DEMO: save the getCurrentPosition function, cause in the demo page it gets replaced (no separate js environment)
 var getCurrentPosition = navigator.geolocation.getCurrentPosition;
 
-var inDemo;				// DEMO: this is set in demo.js
-if(inDemo) {
+if(Browser.inDemo) {	// DEMO: this is set in demo.js
 	// DEMO: we are inside the page, just run injectedCode()
 	injectedCode();
 
@@ -70,7 +71,7 @@ if(inDemo) {
 	// we inject PostRPC/injectedCode, and call injectedCode, all protected by an anonymous function
 	//
 	var inject = "(function(){"
-		+ _PostRPC + injectedCode +
+		+ require('./util')._PostRPC + injectedCode +
 		"_PostRPC(); injectedCode();" +
 	"})()";
 
@@ -92,11 +93,12 @@ if(inDemo) {
 
 var inFrame = (window != window.top);	// are we in a frame?
 var apiCalls = 0;						// how many times the API has been called here or in an iframe
-var myUrl = inDemo ? 'http://demo-page/' : window.location.href;	// DEMO: user-friendly url
+var myUrl = Browser.inDemo ? 'http://demo-page/' : window.location.href;	// DEMO: user-friendly url
 var callUrl = myUrl;					// the url from which the last call is _shown_ to be made (it could be a nested frame if the last call was made there and Browser.capabilities.iframeGeoFromOwnDomain() is true)
 
 // methods called by the page
 //
+const PostRPC = require('./util').PostRPC;
 var rpc = new PostRPC('page-content', window, window, window.origin);
 rpc.register('getNoisyPosition', function(options, replyHandler) {
 	if(inFrame) {
@@ -145,7 +147,7 @@ function getNoisyPosition(options, replyHandler) {
 				timestamp: new Date().getTime()
 			};
 			replyHandler(true, noisy);
-			blog("returning fixed", noisy);
+			Browser.log("returning fixed", noisy);
 			return;
 		}
 
@@ -190,12 +192,13 @@ function addNoise(position, handler) {
 
 		} else if(st.cachedPos[level] && ((new Date).getTime() - st.cachedPos[level].epoch)/60000 < st.levels[level].cacheTime) {
 			position = st.cachedPos[level].position;
-			blog('using cached', position);
+			Browser.log('using cached', position);
 
 		} else {
 			// add noise
 			var epsilon = st.epsilon / st.levels[level].radius;
 
+			const PlannarLaplace = require('./laplace');
 			var pl = new PlannarLaplace();
 			var noisy = pl.addNoise(epsilon, position.coords);
 
@@ -216,7 +219,7 @@ function addNoise(position, handler) {
 			st.cachedPos[level] = { epoch: (new Date).getTime(), position: position };
 			Browser.storage.set(st);
 
-			blog('noisy coords', position.coords);
+			Browser.log('noisy coords', position.coords);
 		}
 
 		// return noisy position
@@ -261,12 +264,12 @@ if(Browser.testing) {
 	// test for nested calls, and for correct passing of tabId
 	//
 	Browser.rpc.register('nestedTestTab', function(tabId, replyHandler) {
-		blog("in nestedTestTab, returning 'content'");
+		Browser.log("in nestedTestTab, returning 'content'");
 		replyHandler("content");
 	});
 
-	blog("calling nestedTestMain");
+	Browser.log("calling nestedTestMain");
 	Browser.rpc.call(null, 'nestedTestMain', [], function(res) {
-		blog('got from nestedTestMain', res);
+		Browser.log('got from nestedTestMain', res);
 	});
 }

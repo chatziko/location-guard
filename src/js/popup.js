@@ -1,4 +1,7 @@
-blog("popup loading");
+const Browser = require('./browser');
+const Util = require('./util').Util;
+
+Browser.log("popup loading");
 
 Browser.init('popup');
 
@@ -77,7 +80,7 @@ function drawUI() {
 	// we need storage and url
 	Browser.gui.getCallUrl(tabId, function(callUrl) {
 	Browser.storage.get(function(st) {
-		blog("popup: callUrl", callUrl, "settings", st);
+		Browser.log("popup: callUrl", callUrl, "settings", st);
 
 		// we don't have a url if we are in chrome (browser action, visible in
 		// all tabs), and the active tab has no content-script running (eg. new
@@ -142,12 +145,12 @@ if(Browser.testing) {
 	// test for nested calls, and for correct passing of tabId
 	//
 	Browser.rpc.register('nestedTestTab', function(tabId, replyHandler) {
-		blog("in nestedTestTab, returning 'popup'");
+		Browser.log("in nestedTestTab, returning 'popup'");
 		replyHandler("popup");
 	});
 
-	blog("calling nestedTestMain");
+	Browser.log("calling nestedTestMain");
 	Browser.rpc.call(null, 'nestedTestMain', [], function(res) {
-		blog('got from nestedTestMain', res);
+		Browser.log('got from nestedTestMain', res);
 	});
 }
