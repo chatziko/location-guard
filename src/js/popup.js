@@ -5,6 +5,7 @@ Browser.log("popup loading");
 
 Browser.init('popup');
 
+const $ = require('jquery');
 $.mobile.hashListeningEnabled = false;		// disabling state changing is needed in firefox,
 $.mobile.pushStateEnabled = false;			// it breaks when executed in the popup cause there's no history
 $.mobile.ajaxEnabled = false;				// doesn't hurt but not needed

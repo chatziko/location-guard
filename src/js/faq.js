@@ -8,6 +8,7 @@ Browser.rpc.register('getState', function(tabId, replyHandler) {
 	replyHandler();
 });
 
+const $ = require('jquery');
 $.mobile.ajaxEnabled = false;
 $.mobile.linkBindingEnabled = false;
 

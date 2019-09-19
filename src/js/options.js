@@ -1,6 +1,6 @@
 
 const $ = require('jquery');
-require('sglide');
+require('sglide');		// extends jquery
 
 // Requiring the plugins extends Leaflet automatically
 const L = require('leaflet');

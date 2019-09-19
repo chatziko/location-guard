@@ -16,12 +16,28 @@
   "homepage": "https://github.com/chatziko/location-guard#readme",
   "dependencies": {
     "browserify": "^16.5.0",
+    "browserify-shim": "^3.8.14",
     "intro.js": "^2.9.3",
     "jquery": "^3.4.1",
     "jquery-migrate": "^3.1.0",
+    "jquery-mobile-babel-safe": "^1.4.5-1",
     "leaflet": "^1.5.1",
     "leaflet.locatecontrol": "^0.67.0",
     "pelias-leaflet-plugin": "^1.12.0",
     "sglide": "^2.1.1"
+  },
+  "//": "A hack to use jquery-mobile, which has no proper npm package. See src/js/load-jquery.js",
+  "browser": {
+    "jquery-mobile": "./node_modules/jquery-mobile-babel-safe/js/jquery.mobile-1.4.5.js"
+  },
+  "browserify-shim": {
+    "jquery-mobile": {
+      "exports": "jQuery.mobile"
+    }
+  },
+  "browserify": {
+    "transform": [
+      "browserify-shim"
+    ]
   }
 }
