@@ -224,9 +224,15 @@
 	left: auto !important;
 	right: 15px !important;
 }
-/* on firefox and under small screen, lower the tooltip, so that it appears below the permission dialog */
+/* on firefox and under small screen */
 @media (max-width: 50em) {
 @-moz-document url-prefix() {		/* hack to select only firefox */
+	/* intro.js changes position to "floating" cause there's no much space, fix this */
+	.tooltip-step2 {
+		top: 60px !important;
+		margin: 0px !important;
+	}
+	/* lower the tooltip, so that it appears below the permission dialog */
 	.tooltip-step3 {
 		top: 175px;
 		bottom: auto !important;
