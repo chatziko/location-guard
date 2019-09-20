@@ -284,6 +284,10 @@ Browser.gui.closePopup = function() {
 		window.close();
 }
 
+Browser.gui.getURL = function(url) {
+	return browser.runtime.getURL(url);
+}
+
 
 //////////////////// capabilities ///////////////////////////
 //

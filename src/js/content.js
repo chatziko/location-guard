@@ -13,74 +13,22 @@
 // injected in the page (they both share the same window object).
 // NOTE: this communication is not secure and could be intercepted by the page.
 //       so only a noisy location should be transmitted over PostRPC
+//
+// The following run in the content script
 
 const Browser = require('./browser');
 const Util = require('./util').Util;
+const PostRPC = require('./util').PostRPC;
+const injectedCode = require('./injected');
 
-// this will be injected to the page
-//
-function injectedCode() {
-	if(!navigator.geolocation) return;		/* no geolocation API */
-
-	var prpc;
-
-	// we replace geolocation methods with our own
-	// the real methods will be called by the content script (not by the page)
-	// so we dont need to keep them at all.
-
-	navigator.geolocation.getCurrentPosition = function(cb1, cb2, options) {
-		// create a PostRPC object only when getCurrentPosition is called. This
-		// avoids having our own postMessage handler on every page
-		if(!prpc)
-			prpc = new PostRPC('page-content', window, window, window.origin);	// This PostRPC is created by the injected code!
-
-		// call getNoisyPosition on the content-script
-		prpc.call('getNoisyPosition', [options], function(success, res) {
-			// call cb1 on success, cb2 on failure
-			var f = success ? cb1 : cb2;
-			if(f) f(res);
-		});
-	};
-
-	navigator.geolocation.watchPosition = function(cb1, cb2, options) {
-		// we don't install a real watch, just return the position once
-		// TODO: implement something closer to a watch
-		this.getCurrentPosition(cb1, cb2, options);
-		return Math.floor(Math.random()*10000);		// return random id, it's not really used
-	};
-
-	navigator.geolocation.clearWatch = function () {
-		// nothing to do
-	};
-
-	// remove script
-	var s = document.getElementById('__lg_script');
-	if(s) s.remove();	// DEMO: in demo injectCode is run directly so there's no script
-}
-
-// the remaining runs in the content script
-//
-// DEMO: save the getCurrentPosition function, cause in the demo page it gets replaced (no separate js environment)
-var getCurrentPosition = navigator.geolocation.getCurrentPosition;
-
-if(Browser.inDemo) {	// DEMO: this is set in demo.js
-	// DEMO: we are inside the page, just run injectedCode()
-	injectedCode();
-
-} else if(document.documentElement.tagName.toLowerCase() == 'html') { // only for html
-	// we inject PostRPC/injectedCode, and call injectedCode, all protected by an anonymous function
-	//
-	var inject = "(function(){"
-		+ require('./util')._PostRPC + injectedCode +
-		"_PostRPC(); injectedCode();" +
-	"})()";
-
-	// Note: the code _must_ be inserted _inline_, i.e. <script>...code...</script>
-	// instead of <script src="...">, otherwise it might not run immediately
-	//
+// insert a script in the html, inline (<script>...</script>) or external (<script src='...'>)
+function insertScript(inline, data) {
 	var script = document.createElement('script');
 	script.setAttribute('id', '__lg_script');
-	script.appendChild(document.createTextNode(inject));
+	if(inline)
+		script.appendChild(document.createTextNode(data));
+	else
+		script.setAttribute('src', data);
 
 	// FF: there is another variables in the scope named parent, this causes a very hard to catch bug
 	var _parent = document.head || document.body || document.documentElement;
@@ -91,6 +39,33 @@ if(Browser.inDemo) {	// DEMO: this is set in demo.js
 		_parent.appendChild(script);
 }
 
+// DEMO: save the getCurrentPosition function, cause in the demo page it gets replaced (no separate js environment)
+var getCurrentPosition = navigator.geolocation.getCurrentPosition;
+
+if(Browser.inDemo) {	// DEMO: this is set in demo.js
+	// DEMO: we are inside the page, just run injectedCode()
+	injectedCode(PostRPC);
+
+} else if(document.documentElement.tagName.toLowerCase() == 'html') { // only for html
+	// We first try to inject the code in an inline <script>. This is the only way to force it to run immediately.
+	// We inject PostRPC/injectedCode, and call injectedCode, all protected by an anonymous function.
+	//
+	var code = "(function(){" +
+		"var PostRPC; " + require('./util')._PostRPC + injectedCode +
+		"_PostRPC(); injectedCode(PostRPC);" +
+	"})()";
+	insertScript(true, code);
+
+	// BUT: in Firefox this fails if the page has a CSP that prevents inline scripts (chrome ignores the CSP for scripts injected by extensions).
+	// If the inline script did not execute, we insert an external one (this might be executed too late, but it's all we can do).
+	//
+	var s = document.getElementById('__lg_script');
+	if(s) { // the injected code deletes the script, if it's still there it means that the code failed
+		s.remove();
+		insertScript(false, Browser.gui.getURL("js/inject.js"));
+	}
+}
+
 var inFrame = (window != window.top);	// are we in a frame?
 var apiCalls = 0;						// how many times the API has been called here or in an iframe
 var myUrl = Browser.inDemo ? 'http://demo-page/' : window.location.href;	// DEMO: user-friendly url
@@ -98,7 +73,6 @@ var callUrl = myUrl;					// the url from which the last call is _shown_ to be ma
 
 // methods called by the page
 //
-const PostRPC = require('./util').PostRPC;
 var rpc = new PostRPC('page-content', window, window, window.origin);
 rpc.register('getNoisyPosition', function(options, replyHandler) {
 	if(inFrame) {

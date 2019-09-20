@@ -162,6 +162,12 @@ const Browser = {
 		// Closes the popup.
 		//
 		closePopup: function() {},
+
+		// Browser.gui.getURL()
+		//
+		// Coverts a relative URL to a fully-qualified one.
+		//
+		getURL: function() {},
 	},
 
 	// Browser.capabilities

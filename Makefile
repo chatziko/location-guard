@@ -51,6 +51,8 @@ build/%/: $(call find, src, *)
 	npx browserify $(COMMON_MODULES) ./src/js/popup.js   > $@js/popup.js
 	npx browserify $(COMMON_MODULES) ./src/js/faq.js     > $@js/faq.js
 
+	npx browserify ./src/js/inject.js                    > $@js/inject.js
+
 	# copy module css/images
 	cp -r node_modules/jquery-mobile-babel-safe/css/images node_modules/jquery-mobile-babel-safe/css/jquery.mobile-1.4.5.min.css $@css/
 	cp -r node_modules/leaflet/dist/images                 node_modules/leaflet/dist/leaflet.css                                 $@css/
