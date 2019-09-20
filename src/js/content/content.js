@@ -16,9 +16,9 @@
 //
 // The following run in the content script
 
-const Browser = require('./browser');
-const Util = require('./util').Util;
-const PostRPC = require('./util').PostRPC;
+const Browser = require('../common/browser');
+const Util = require('../common/util').Util;
+const PostRPC = require('../common/util').PostRPC;
 const injectedCode = require('./injected');
 
 // insert a script in the html, inline (<script>...</script>) or external (<script src='...'>)
@@ -51,7 +51,7 @@ if(Browser.inDemo) {	// DEMO: this is set in demo.js
 	// We inject PostRPC/injectedCode, and call injectedCode, all protected by an anonymous function.
 	//
 	var code = "(function(){" +
-		"var PostRPC; " + require('./util')._PostRPC + injectedCode +
+		"var PostRPC; " + require('../common/util')._PostRPC + injectedCode +
 		"_PostRPC(); injectedCode(PostRPC);" +
 	"})()";
 	insertScript(true, code);
@@ -62,7 +62,7 @@ if(Browser.inDemo) {	// DEMO: this is set in demo.js
 	var s = document.getElementById('__lg_script');
 	if(s) { // the injected code deletes the script, if it's still there it means that the code failed
 		s.remove();
-		insertScript(false, Browser.gui.getURL("js/inject.js"));
+		insertScript(false, Browser.gui.getURL("js/content/inject.js"));
 	}
 }
 
@@ -172,7 +172,7 @@ function addNoise(position, handler) {
 			// add noise
 			var epsilon = st.epsilon / st.levels[level].radius;
 
-			const PlanarLaplace = require('./laplace');
+			const PlanarLaplace = require('../common/laplace');
 			var pl = new PlanarLaplace();
 			var noisy = pl.addNoise(epsilon, position.coords);
 

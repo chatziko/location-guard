@@ -7,8 +7,8 @@ const L = require('leaflet');
 require('pelias-leaflet-plugin');
 require('leaflet.locatecontrol');
 
-const Browser = require('./browser');
-const PlanarLaplace = require('./laplace');
+const Browser = require('../common/browser');
+const PlanarLaplace = require('../common/laplace');
 
 const geocoderKey = '5b3ce3597851110001cf6248c6adb7e28d3b47f5b3d4ab3e43e1f87f';
 const geocoderUrl = 'https://api.openrouteservice.org/geocode';

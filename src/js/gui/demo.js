@@ -4,7 +4,7 @@ const introJs = require('intro.js');
 const L = require('leaflet');
 require('leaflet.locatecontrol');
 
-const Browser = require('./browser');
+const Browser = require('../common/browser');
 
 Browser.inDemo = true;		// used in content.js
 var intro;

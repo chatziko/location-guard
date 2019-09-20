@@ -37,21 +37,21 @@ build/%/: $(call find, src, *)
 	rm -rf $@
 	mkdir -p $@
 	cp -r src/* $@
-	rm $@js/*
+	rm $@**/*.js
 
 	# bundles with common modules
-	npx browserify -r ./src/js/browser_base.js -r ./src/js/browser.js -r ./src/js/util.js -r ./src/js/laplace.js                        > $@js/common.js
-	npx browserify -r leaflet -r pelias-leaflet-plugin -r leaflet.locatecontrol -r intro.js -r jquery -r sglide ./src/js/load-jquery.js > $@js/common-gui.js
+	npx browserify -r ./src/js/common/browser_base.js -r ./src/js/common/browser.js -r ./src/js/common/util.js -r ./src/js/common/laplace.js  > $@js/common.js
+	npx browserify -r leaflet -r pelias-leaflet-plugin -r leaflet.locatecontrol -r intro.js -r jquery -r sglide ./src/js/gui/load-jquery.js   > $@js/common-gui.js
 
 	# entry points
-	npx browserify $(COMMON_MODULES) ./src/js/main.js    > $@js/main.js
-	npx browserify $(COMMON_MODULES) ./src/js/content.js > $@js/content.js
-	npx browserify $(COMMON_MODULES) ./src/js/options.js > $@js/options.js
-	npx browserify $(COMMON_MODULES) ./src/js/demo.js    > $@js/demo.js
-	npx browserify $(COMMON_MODULES) ./src/js/popup.js   > $@js/popup.js
-	npx browserify $(COMMON_MODULES) ./src/js/faq.js     > $@js/faq.js
+	npx browserify $(COMMON_MODULES) ./src/js/main.js            > $@js/main.js
+	npx browserify $(COMMON_MODULES) ./src/js/content/content.js > $@js/content/content.js
+	npx browserify $(COMMON_MODULES) ./src/js/gui/options.js     > $@js/gui/options.js
+	npx browserify $(COMMON_MODULES) ./src/js/gui/demo.js        > $@js/gui/demo.js
+	npx browserify $(COMMON_MODULES) ./src/js/gui/popup.js       > $@js/gui/popup.js
+	npx browserify $(COMMON_MODULES) ./src/js/gui/faq.js         > $@js/gui/faq.js
 
-	npx browserify ./src/js/inject.js                    > $@js/inject.js
+	npx browserify ./src/js/content/inject.js                    > $@js/content/inject.js
 
 	# copy module css/images
 	cp -r node_modules/jquery-mobile-babel-safe/css/images node_modules/jquery-mobile-babel-safe/css/jquery.mobile-1.4.5.min.css $@css/

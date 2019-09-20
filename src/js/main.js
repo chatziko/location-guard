@@ -3,8 +3,8 @@
 // Browser-specific functionality for the main script, if needed, is added by browser/*.js
 //
 
-const Browser = require('./browser');
-const Util = require('./util').Util;
+const Browser = require('./common/browser');
+const Util = require('./common/util').Util;
 
 Browser.log('starting');
 

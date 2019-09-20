@@ -64,7 +64,7 @@
 	},
 
 	"content_scripts": [{
-		"js": ["js/common.js", "js/content.js"],
+		"js": ["js/common.js", "js/content/content.js"],
 		"matches": ["\u003Call_urls\u003E"],
 		"run_at": "document_start",
 		"all_frames": true

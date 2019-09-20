@@ -1,4 +1,4 @@
-const Browser = require('./browser');
+const Browser = require('../common/browser');
 
 Browser.log("faq loading");
 

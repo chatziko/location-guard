@@ -1,5 +1,5 @@
-const Browser = require('./browser');
-const Util = require('./util').Util;
+const Browser = require('../common/browser');
+const Util = require('../common/util').Util;
 
 Browser.log("popup loading");
 
