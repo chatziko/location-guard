@@ -198,8 +198,8 @@ function addNoise(position, handler) {
 			// add noise
 			var epsilon = st.epsilon / st.levels[level].radius;
 
-			const PlannarLaplace = require('./laplace');
-			var pl = new PlannarLaplace();
+			const PlanarLaplace = require('./laplace');
+			var pl = new PlanarLaplace();
 			var noisy = pl.addNoise(epsilon, position.coords);
 
 			position.coords.latitude = noisy.latitude;

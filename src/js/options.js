@@ -8,7 +8,7 @@ require('pelias-leaflet-plugin');
 require('leaflet.locatecontrol');
 
 const Browser = require('./browser');
-const PlannarLaplace = require('./laplace');
+const PlanarLaplace = require('./laplace');
 
 const geocoderKey = '5b3ce3597851110001cf6248c6adb7e28d3b47f5b3d4ab3e43e1f87f';
 const geocoderUrl = 'https://api.openrouteservice.org/geocode';
@@ -75,7 +75,7 @@ function saveOptions() {
 			// update accuracy of cached positions to reflect the change
 			for(var level in st.cachedPos) {
 				var epsilon = st.epsilon / st.levels[level].radius;
-				var pl = new PlannarLaplace();
+				var pl = new PlanarLaplace();
 
 				st.cachedPos[level].position.coords.accuracy +=									// add/remove the .9 accuracy
 					(updateAccuracy ? 1 : -1) * Math.round(pl.alphaDeltaAccuracy(epsilon, .9));
@@ -350,7 +350,7 @@ function showPopup(map) {
 
 function updateRadius(radius, fit) {
 	// update radius text and map
-	var acc = Math.round((new PlannarLaplace).alphaDeltaAccuracy(epsilon/radius, .95));
+	var acc = Math.round((new PlanarLaplace).alphaDeltaAccuracy(epsilon/radius, .95));
 
 	moveCircles();
 

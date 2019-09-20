@@ -1,4 +1,4 @@
-// Plannar Laplace mechanism, based on Marco's demo
+// Planar Laplace mechanism, based on Marco's demo
 //
 // This class just implements the mechanism, does no budget management or
 // selection of epsilon
@@ -6,15 +6,15 @@
 
 
 // constructor
-function PlannarLaplace() {
+function PlanarLaplace() {
 }
 
 
-PlannarLaplace.earth_radius = 6378137; //const, in meters
+PlanarLaplace.earth_radius = 6378137; //const, in meters
 
 // convert an angle in radians to degrees and viceversa
-PlannarLaplace.prototype.rad_of_deg = function(ang){return ang * Math.PI / 180};;
-PlannarLaplace.prototype.deg_of_rad = function(ang){return ang * 180 / Math.PI};;
+PlanarLaplace.prototype.rad_of_deg = function(ang){return ang * Math.PI / 180};;
+PlanarLaplace.prototype.deg_of_rad = function(ang){return ang * 180 / Math.PI};;
 
 // Mercator projection 
 // https://wiki.openstreetmap.org/wiki/Mercator
@@ -22,9 +22,9 @@ PlannarLaplace.prototype.deg_of_rad = function(ang){return ang * 180 / Math.PI};
 
 //getLatLon and getCartesianPosition are inverse functions
 //They are used to transfer { x: ..., y: ... } and { latitude: ..., longitude: ... } into one another
-PlannarLaplace.prototype.getLatLon = function(cart) {
-	var rLon = cart.x / PlannarLaplace.earth_radius;
-	var rLat = 2 * (Math.atan(Math.exp(cart.y / PlannarLaplace.earth_radius))) - Math.PI/2;
+PlanarLaplace.prototype.getLatLon = function(cart) {
+	var rLon = cart.x / PlanarLaplace.earth_radius;
+	var rLat = 2 * (Math.atan(Math.exp(cart.y / PlanarLaplace.earth_radius))) - Math.PI/2;
 	//convert to degrees
 	return {
 		latitude: this.deg_of_rad(rLat),
@@ -32,17 +32,17 @@ PlannarLaplace.prototype.getLatLon = function(cart) {
 	};
 }
 
-PlannarLaplace.prototype.getCartesian = function(ll){
+PlanarLaplace.prototype.getCartesian = function(ll){
 	// latitude and longitude are converted in radiants
 	return {
-		x: PlannarLaplace.earth_radius * this.rad_of_deg(ll.longitude),
-		y: PlannarLaplace.earth_radius * Math.log( Math.tan(Math.PI / 4 + this.rad_of_deg(ll.latitude) / 2))
+		x: PlanarLaplace.earth_radius * this.rad_of_deg(ll.longitude),
+		y: PlanarLaplace.earth_radius * Math.log( Math.tan(Math.PI / 4 + this.rad_of_deg(ll.latitude) / 2))
 	};
 }
 
 
 // LamberW function on branch -1 (http://en.wikipedia.org/wiki/Lambert_W_function)
-PlannarLaplace.prototype.LambertW = function(x){
+PlanarLaplace.prototype.LambertW = function(x){
 	//min_diff decides when the while loop should stop
 	var min_diff = 1e-10;
 	if (x == -1/Math.E){
@@ -67,7 +67,7 @@ PlannarLaplace.prototype.LambertW = function(x){
 }
 
 // This is the inverse cumulative polar laplacian distribution function. 
-PlannarLaplace.prototype.inverseCumulativeGamma = function(epsilon, z){
+PlanarLaplace.prototype.inverseCumulativeGamma = function(epsilon, z){
 	var x = (z-1) / Math.E;
 	return - (this.LambertW(x) + 1) / epsilon;
 }
@@ -76,18 +76,18 @@ PlannarLaplace.prototype.inverseCumulativeGamma = function(epsilon, z){
 // probability at least delta
 // (comes directly from the inverse cumulative of the gamma distribution)
 //
-PlannarLaplace.prototype.alphaDeltaAccuracy = function(epsilon, delta) {
+PlanarLaplace.prototype.alphaDeltaAccuracy = function(epsilon, delta) {
 	return this.inverseCumulativeGamma(epsilon, delta);
 }
 
 // returns the average distance between the real and the noisy pos
 //
-PlannarLaplace.prototype.expectedError = function(epsilon) {
+PlanarLaplace.prototype.expectedError = function(epsilon) {
 	return 2 / epsilon;
 }
 
 
-PlannarLaplace.prototype.addPolarNoise = function(epsilon, pos) {
+PlanarLaplace.prototype.addPolarNoise = function(epsilon, pos) {
 	//random number in [0, 2*PI)
 	var theta = Math.random() * Math.PI * 2;
 	//random variable in [0,1)
@@ -97,7 +97,7 @@ PlannarLaplace.prototype.addPolarNoise = function(epsilon, pos) {
 	return this.addVectorToPos(pos, r, theta);
 }
 
-PlannarLaplace.prototype.addPolarNoiseCartesian = function(epsilon, pos) {
+PlanarLaplace.prototype.addPolarNoiseCartesian = function(epsilon, pos) {
 	if('latitude' in pos)
 		pos = this.getCartesian(pos);
 
@@ -114,8 +114,8 @@ PlannarLaplace.prototype.addPolarNoiseCartesian = function(epsilon, pos) {
 }
 
 // http://www.movable-type.co.uk/scripts/latlong.html
-PlannarLaplace.prototype.addVectorToPos = function(pos, distance, angle) {
-	var ang_distance = distance / PlannarLaplace.earth_radius;
+PlanarLaplace.prototype.addVectorToPos = function(pos, distance, angle) {
+	var ang_distance = distance / PlanarLaplace.earth_radius;
 	var lat1 = this.rad_of_deg(pos.latitude);
 	var lon1 = this.rad_of_deg(pos.longitude);
 
@@ -138,9 +138,9 @@ PlannarLaplace.prototype.addVectorToPos = function(pos, distance, angle) {
 
 //This function generates the position of a point with Laplacian noise
 //
-PlannarLaplace.prototype.addNoise = function(epsilon, pos) {
+PlanarLaplace.prototype.addNoise = function(epsilon, pos) {
 	// TODO: use latlon.js
 	return this.addPolarNoise(epsilon, pos);
 }
 
-module.exports = PlannarLaplace;
+module.exports = PlanarLaplace;
