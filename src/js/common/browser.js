@@ -4,7 +4,7 @@
 // For documentation of the various methods, see browser_base.js
 //
 const Browser = require('./browser_base');
-const Util = require('./util').Util;
+const Util = require('./util');
 
 Browser.init = function(script) {
 	Browser._script = script;

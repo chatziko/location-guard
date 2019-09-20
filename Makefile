@@ -31,16 +31,16 @@ build-opera: build/opera/
 build-firefox: build/firefox/
 build-edge: build/edge/
 
-COMMON_MODULES = -x ./src/js/browser_base.js -x ./src/js/browser.js -x ./src/js/util.js -x ./src/js/laplace.js -x leaflet -x pelias-leaflet-plugin -x leaflet.locatecontrol -x intro.js -x jquery -x sglide
+COMMON_MODULES = -x ./src/js/common/browser_base.js -x ./src/js/common/browser.js -x ./src/js/common/util.js -x ./src/js/common/post-rpc.js -x ./src/js/common/laplace.js -x leaflet -x pelias-leaflet-plugin -x leaflet.locatecontrol -x intro.js -x jquery -x sglide
 
 build/%/: $(call find, src, *)
 	rm -rf $@
 	mkdir -p $@
 	cp -r src/* $@
-	rm $@**/*.js
+	rm $@js/*.js $@js/**/*.js
 
 	# bundles with common modules
-	npx browserify -r ./src/js/common/browser_base.js -r ./src/js/common/browser.js -r ./src/js/common/util.js -r ./src/js/common/laplace.js  > $@js/common.js
+	npx browserify -r ./src/js/common/browser_base.js -r ./src/js/common/browser.js -r ./src/js/common/util.js -r ./src/js/common/post-rpc.js -r ./src/js/common/laplace.js  > $@js/common.js
 	npx browserify -r leaflet -r pelias-leaflet-plugin -r leaflet.locatecontrol -r intro.js -r jquery -r sglide ./src/js/gui/load-jquery.js   > $@js/common-gui.js
 
 	# entry points

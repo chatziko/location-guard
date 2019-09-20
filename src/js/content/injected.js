@@ -1,7 +1,7 @@
 // This will be injected to the page by content.js. Either inline, by copying the code of the injectedCode function
 // in a <script>...</script>, or by inserting inject.js as an external script.
 //
-function injectedCode(PostRPC) {
+module.exports = function(PostRPC) {
 	if(navigator.geolocation) {		// the geolocation API exists
 		var prpc;
 
@@ -38,6 +38,4 @@ function injectedCode(PostRPC) {
 	// remove script
 	var s = document.getElementById('__lg_script');
 	if(s) s.remove();	// DEMO: in demo injectCode is run directly so there's no script
-}
-
-module.exports = injectedCode;
+};

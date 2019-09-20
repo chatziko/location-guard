@@ -17,8 +17,8 @@
 // The following run in the content script
 
 const Browser = require('../common/browser');
-const Util = require('../common/util').Util;
-const PostRPC = require('../common/util').PostRPC;
+const Util = require('../common/util');
+const PostRPC = require('../common/post-rpc');
 const injectedCode = require('./injected');
 
 // insert a script in the html, inline (<script>...</script>) or external (<script src='...'>)
@@ -48,12 +48,12 @@ if(Browser.inDemo) {	// DEMO: this is set in demo.js
 
 } else if(document.documentElement.tagName.toLowerCase() == 'html') { // only for html
 	// We first try to inject the code in an inline <script>. This is the only way to force it to run immediately.
-	// We inject PostRPC/injectedCode, and call injectedCode, all protected by an anonymous function.
+	// We run the PostRPC code (which creates PostRPC) and pass the result to the injectedCode.
 	//
-	var code = "(function(){" +
-		"var PostRPC; " + require('../common/util')._PostRPC + injectedCode +
-		"_PostRPC(); injectedCode(PostRPC);" +
-	"})()";
+	var code =
+		"(" + injectedCode + ")(" +
+			"(" + PostRPC._code + ")()" +
+		");"
 	insertScript(true, code);
 
 	// BUT: in Firefox this fails if the page has a CSP that prevents inline scripts (chrome ignores the CSP for scripts injected by extensions).
