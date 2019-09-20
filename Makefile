@@ -1,8 +1,6 @@
 
 find = $(foreach dir,$(1),$(foreach d,$(wildcard $(dir)/*),$(call find,$(d),$(2))) $(wildcard $(dir)/$(strip $(2))))
 
-export PATH := ./node_modules/.bin:$(PATH)	# in case web-ext is locally installed
-
 FIREFOX ?= $(shell which firefox)
 CHROME  ?= $(shell which google-chrome)
 OPERA   ?= $(shell which opera)
@@ -89,7 +87,7 @@ test-opera: build/opera/
 	$(OPERA) --load-extension=build/opera/ --user-data-dir=/tmp/lg-opera-profile --no-first-run --no-default-browser-check
 
 test-firefox: build/firefox/
-	web-ext --source-dir build/firefox -f $(FIREFOX) run --browser-console
+	npx web-ext --source-dir build/firefox -f $(FIREFOX) run --browser-console
 
 test-firefox-android: build/location-guard-firefox-$(VER).xpi
 	adb push build/location-guard-firefox-$(VER).xpi /mnt/sdcard/
