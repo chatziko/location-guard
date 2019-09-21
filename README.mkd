@@ -40,9 +40,9 @@ the website.
 
 To see Location Guard in action use [this demo](https://browserleaks.com/geo), a
 [geolocalized weather forecast](http://forecast.io/), or go to [Google
-Maps](http://maps.google.com) and press the ![](src/common/images/gmaps_dot.png)
+Maps](http://maps.google.com) and press the ![](src/images/gmaps_dot.png)
 button. When the website asks for your location you will see the the
-![](src/common/images/pin_19.png) icon in the address bar (which also provides
+![](src/images/pin_19.png) icon in the address bar (which also provides
 configuration options).
 
 ### What kind of privacy does Location Guard provide?
@@ -69,7 +69,7 @@ service provided by the website less useful.
 
 By default all websites use the "medium" level (this can be changed from the
 extension's options). You can select a different level for a specific website
-using the ![](src/common/images/pin_19.png) icon. For instance, you could select
+using the ![](src/images/pin_19.png) icon. For instance, you could select
 a lower privacy level for websites that need an accurate location (eg. maps),
 and a higher one for websites that only need approximate information (eg.
 weather forecast).
