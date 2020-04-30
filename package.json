@@ -18,7 +18,7 @@
     "browserify": "^16.5.0",
     "browserify-shim": "^3.8.14",
     "intro.js": "^2.9.3",
-    "jquery": "^3.4.1",
+    "jquery": "^3.5.0",
     "jquery-migrate": "^3.1.0",
     "jquery-mobile-babel-safe": "^1.4.5-1",
     "leaflet": "^1.5.1",
