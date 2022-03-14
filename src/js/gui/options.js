@@ -125,7 +125,7 @@ function initLevelMap() {
 	// map
 	levelMap = L.map('levelMap')
 		.addLayer(new L.TileLayer(
-			'http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+			'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
 			{ attribution: 'Map data © OpenStreetMap contributors' }
 		))
 		.setView(latlng, 13)
@@ -210,7 +210,7 @@ function initFixedPosMap() {
 
 		fixedPosMap = new L.map('fixedPosMap')
 			.addLayer(new L.TileLayer(
-				'http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+				'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
 				{ attribution: 'Map data © OpenStreetMap contributors' }
 			))
 			.setView(latlng, 14)
