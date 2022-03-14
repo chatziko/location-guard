@@ -18,9 +18,8 @@ or the [CeCILL-B](http://www.cecill.info/licences.fr.html) license.
 
 To install Location Guard:
 
-* Chrome / Chromium: install it [from here](https://chrome.google.com/webstore/detail/location-guard/cfohepagpmnodfdmjliccbbigdkfcgia)
+* Chrome / Chromium / Opera: install it [from here](https://chrome.google.com/webstore/detail/location-guard/cfohepagpmnodfdmjliccbbigdkfcgia)
 * Firefox / Firefox for Android: install it [from here](https://addons.mozilla.org/en-US/firefox/addon/location-guard/)
-* Opera: download the `location-guard-opera-X.Y.Z.zip` file [from here](https://github.com/chatziko/location-guard/releases/latest), then drag-and-drop it to the extensions page (Ctrl-Shift-E)
 
 ## Frequently Asked Questions
 
