@@ -11,7 +11,7 @@ It supports the followng browsers:
 * Mobile
   * Mozilla Firefox for Android
 
-Location Guard is available under either the [MIT/X11](http://opensource.org/licenses/mit-license.php)
+Location Guard is available under either the [MIT/X11](https://opensource.org/licenses/mit-license.php)
 or the [CeCILL-B](http://www.cecill.info/licences.fr.html) license.
 
 ## Installation
@@ -19,7 +19,7 @@ or the [CeCILL-B](http://www.cecill.info/licences.fr.html) license.
 To install Location Guard:
 
 * Chrome / Chromium / Opera: install it [from here](https://chrome.google.com/webstore/detail/location-guard/cfohepagpmnodfdmjliccbbigdkfcgia)
-* Firefox / Firefox for Android: install it [from here](https://addons.mozilla.org/en-US/firefox/addon/location-guard/)
+* Firefox / Firefox for Android: install it [from here](https://addons.mozilla.org/firefox/addon/location-guard/)
 
 ## Frequently Asked Questions
 
@@ -38,8 +38,8 @@ noise" to it, creating a fake location. Only the fake location is then given to
 the website.
 
 To see Location Guard in action use [this demo](https://browserleaks.com/geo), a
-[geolocalized weather forecast](http://forecast.io/), or go to [Google
-Maps](http://maps.google.com) and press the ![](src/images/gmaps_dot.png)
+[geolocalized weather forecast](https://darksky.net/), or go to [Google
+Maps](https://www.google.com/maps) and press the ![](src/images/gmaps_dot.png)
 button. When the website asks for your location you will see the the
 ![](src/images/pin_19.png) icon in the address bar (which also provides
 configuration options).
@@ -100,17 +100,17 @@ acceptable when the fixed location is dummy, but it can be modified if you wish.
 ### Why some websites detect my location although I use Location Guard?
 
 Some websites detect your location based on your [IP
-address](http://en.wikipedia.org/wiki/IP_address) (a numerical label associated
+address](https://en.wikipedia.org/wiki/IP_address) (a numerical label associated
 with every device on the Internet), which is visible to all websites you visit.
 However, most of the time this type of geolocation is _not accurate_ and is
 limited to the city or postal/zip code level. Examples of such websites are
-[iplocation.net](http://www.iplocation.net/) and
-[tracemyip.org](http://www.tracemyip.org/).
+[iplocation.net](https://www.iplocation.net/) and
+[tracemyip.org](https://www.tracemyip.org/).
 
 Location Guard does not protect your IP address; it hides the location revealed
 by the browser through the JavaScript API, which is usually _very accurate_.
 More information about how the browser obtains your location can be found
-[here](https://www.mozilla.org/en-US/firefox/geolocation/).
+[here](https://www.mozilla.org/firefox/geolocation/).
 
 To hide your IP address you need to use some anonymous communication system such
 as [Tor](https://www.torproject.org/). Note, however, that even if your IP
@@ -143,11 +143,11 @@ CNRS and Inria. It is based on work by [Miguel Andrés](http://www.lix.polytechn
 [Catuscia Palamidessi](http://www.lix.polytechnique.fr/~catuscia/) and
 [Marco Stronati](http://www.lix.polytechnique.fr/~stronati/).
 
-Location Guard implements a [location obfuscation](http://en.wikipedia.org/wiki/Location_obfuscation)
+Location Guard implements a [location obfuscation](https://en.wikipedia.org/wiki/Location_obfuscation)
 technique based on adding noise from a 2-dimensional
-[Laplace distribution](http://en.wikipedia.org/wiki/Laplace_distribution).
+[Laplace distribution](https://en.wikipedia.org/wiki/Laplace_distribution).
 This method can be formally shown to provide a privacy guarantee which is a variant
-of [Differential Privacy](http://en.wikipedia.org/wiki/Differential_privacy).
+of [Differential Privacy](https://en.wikipedia.org/wiki/Differential_privacy).
 More details can be found in the [CCS'13 paper](http://arxiv.org/abs/1212.1984),
 or in the [PhD thesis](https://pastel.archives-ouvertes.fr/tel-01098088/document)
 of Nicolas Bordenabe.
