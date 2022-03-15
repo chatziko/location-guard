@@ -7,3 +7,4 @@ window.jQuery = require('jquery');
 
 // jquery-mobile does not support jquery 3, so we need the migration package
 require('jquery-migrate');
+window.jQuery.migrateMute = true;	// but no need for the warnings
