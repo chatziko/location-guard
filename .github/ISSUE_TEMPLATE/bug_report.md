@@ -7,25 +7,32 @@ assignees: ''
 
 ---
 
-**Describe the bug**
-A clear and concise description of what the bug is.
+### Please read the FAQ before opening an issue
 
-**To Reproduce**
-Please include concrete steps to reproduce the behavior, this is the __most important__ information for fixing the problem:
-1. Go to '...'
-2. Click on '....'
-3. Scroll down to '....'
-4. See error
+https://github.com/chatziko/location-guard#why-some-websites-detect-my-location-although-i-use-location-guard
 
-If applicable, add __screenshots__ to help explain your problem.
+In particular, note that Location Guard protects against JavaScript-based and not IP-based geolocation.
 
-**Behaviour on browserleaks.com**
+### Test Location Guard on browserleaks.com
 
-If you experience a problem with Location Guard on some website, please report whether the same problem appears on https://browserleaks.com/geo or not.
+Please report whether your issue appears on
+https://browserleaks.com/geo
 
-If not, please check that the website you're interested in uses javascript-based and not IP-based geolocation. Please read [the corresponding entry in the FAQ](https://github.com/chatziko/location-guard#why-some-websites-detect-my-location-although-i-use-location-guard).
+If the issue does not appear on browserleaks.com, but appears on some other website, that website is likely using IP-based or some other form of geolocation. Location Guard is not supposed to protect against other types of geolocation.
 
-**Please complete the following information:**
+
+### Include concrete steps to reproduce the issue
+
+This is the __most important__ information for fixing the problem:
+
+1. Go to ...
+2. Click on ...
+3. Scroll down to ...
+4. See error ...
+
+
+### Please complete the following information
+
  - OS: [e.g. Windows]
  - Browser [e.g. Chrome, Firefox]
  - Version [e.g. 77]
