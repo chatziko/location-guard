@@ -43,6 +43,9 @@ build/%/: $(call find, src, *)
 	npx browserify -r ./src/js/common/browser_base.js -r ./src/js/common/browser.js -r ./src/js/common/util.js -r ./src/js/common/post-rpc.js -r ./src/js/common/laplace.js  > $@js/common.js
 	npx browserify -r leaflet -r pelias-leaflet-plugin -r leaflet.locatecontrol -r intro.js -r jquery -r sglide ./src/js/gui/load-jquery.js   > $@js/common-gui.js
 
+	# jquery has no proper npm package, we just append the code (from jquery-mobile-babel-safe) into commin-gui.js. Seel also load-jquery.js.
+	cat ./node_modules/jquery-mobile-babel-safe/js/jquery.mobile-1.4.5.js >> $@js/common-gui.js
+
 	# entry points
 	npx browserify $(COMMON_MODULES) ./src/js/main.js            > $@js/main.js
 	npx browserify $(COMMON_MODULES) ./src/js/content/content.js > $@js/content/content.js
