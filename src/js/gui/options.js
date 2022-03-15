@@ -10,7 +10,7 @@ require('leaflet.locatecontrol');
 const Browser = require('../common/browser');
 const PlanarLaplace = require('../common/laplace');
 
-const geocoderKey = '5b3ce3597851110001cf6248c6adb7e28d3b47f5b3d4ab3e43e1f87f';
+const geocoderKey = '5b3ce3597851110001cf6248dc55f0492abe4923aa33f4ca1722acb8';
 const geocoderUrl = 'https://api.openrouteservice.org/geocode';
 
 var levelMap, fixedPosMap;
