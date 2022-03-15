@@ -32,19 +32,13 @@
 		"scripts": ["js/common.js", "js/main.js"]
 	},
 
-#if is_edge
-	"options_page": "options.html",
-#else
 	"options_ui": {
 		"page": "options.html",
 		"open_in_tab": true
 	},
-#endif
 
-// page_action is preferred wherever is properly supported. However:
-// - chrome recently shows page actions as disabled toolbar buttons, bad experience
-// - edge does not seem to show page actions in internal pages (eg the demo)
-//
+// page_action has better user experience in Firefox
+// browser_action has better experience in Chrome/Edge
 #if is_chrome || is_edge
 	"browser_action": {
 #else

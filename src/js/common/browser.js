@@ -326,20 +326,14 @@ Browser.capabilities.permanentIcon = function() {
 }
 
 Browser.capabilities.supportedIconSizes = function() {
-	// edge complains if we use unsupported icon sizes
-	return this._build == 'edge'
-		? [19, 20, 38, 40]
-		: [16, 19, 20, 32, 38, 40, 64];
+	return [16, 19, 20, 32, 38, 40, 64];
 }
 
 
 Browser.log = function() {
 	if(!Browser.capabilities.isDebugging()) return;
 
-	if(console.log.apply)			// edge doesn't like console.log.apply!
-		console.log.apply(console, arguments);
-	else
-		console.log(arguments[0], arguments[1], arguments[2], arguments[3]);
+	console.log.apply(console, arguments);
 
 	// in chrome, apart from the current console, we also log to the background page, if possible and loaded
 	//

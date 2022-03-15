@@ -3,6 +3,7 @@ find = $(foreach dir,$(1),$(foreach d,$(wildcard $(dir)/*),$(call find,$(d),$(2)
 
 FIREFOX ?= $(shell which firefox)
 CHROME  ?= $(shell which google-chrome)
+EDGE    ?= $(shell which microsoft-edge)
 OPERA   ?= $(shell which opera)
 VER      = $(shell grep -Po '(?<="version": ")[^"]*' src/manifest.json)
 
@@ -98,3 +99,6 @@ test-firefox-android: build/location-guard-firefox-$(VER).xpi
 	adb push build/location-guard-firefox-$(VER).xpi /mnt/sdcard/
 	adb shell am start -a android.intent.action.VIEW -n org.mozilla.firefox/.App -d 'file:///mnt/sdcard/location-guard-firefox-$(VER).xpi'
 
+test-edge: build/edge/
+	@rm -rf /tmp/lg-edge-profile
+	$(EDGE) --load-extension=build/edge/ --user-data-dir=/tmp/lg-edge-profile --no-first-run --no-default-browser-check
