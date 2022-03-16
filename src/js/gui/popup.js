@@ -138,9 +138,9 @@ function drawUI() {
 if(Browser.testing) {
 	// test for nested calls, and for correct passing of tabId
 	//
-	Browser.rpc.register('nestedTestTab', function(tabId, replyHandler) {
+	Browser.rpc.register('nestedTestTab', function(tabId) {
 		Browser.log("in nestedTestTab, returning 'popup'");
-		replyHandler("popup");
+		return "popup";
 	});
 
 	Browser.log("calling nestedTestMain");

@@ -35,10 +35,11 @@ Browser._main_script = function() {
 	// some operations cannot be done by other scripts, so we set
 	// handlers to do them in the main script
 	//
-	Browser.rpc.register('refreshIcon', function(tabId, callerTabId, replyHandler) {
-		// 'self' tabId in the content script means refresh its own tab
-		Browser.gui.refreshIcon(tabId == 'self' ?  callerTabId : tabId, replyHandler);
-		return true;	// will reply later
+	Browser.rpc.register('refreshIcon', async function(tabId, callerTabId) {
+		return new Promise(resolve => {
+			// 'self' tabId in the content script means refresh its own tab
+			Browser.gui.refreshIcon(tabId == 'self' ?  callerTabId : tabId, resolve);
+		});
 	});
 
 	Browser.rpc.register('closeTab', function(tabId) {
@@ -98,9 +99,18 @@ Browser.rpc._listener = function(message, sender, replyHandler) {
 	// add tabId and replyHandler to the arguments
 	var args = message.args || [];
 	var tabId = sender.tab ? sender.tab.id : null;
-	args.push(tabId, replyHandler);
+	args.push(tabId);
 
-	return handler.apply(null, args);
+	const res = handler.apply(null, args);
+	if(res instanceof Promise) {
+		// handler returned a Promise. We return true here, to indicate that the response will come later.
+		res.then(replyHandler);
+		return true;
+	} else {
+		// We have a response right now
+		replyHandler(res);
+		return false;
+	}
 };
 
 Browser.rpc.call = async function(tabId, name, args) {

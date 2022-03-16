@@ -30,15 +30,11 @@ const Browser = {
 		//
 		// Registers a method to be callable from other scripts.
 		// handler should be a function
-		//    function(...args..., tabId, replyHandler)
+		//    async function(...args..., tabId)
 		//
 		// The function receives any arguments passed during the call (see Browser.rpc.call)
-		// Moreover, two extra arguments are automatically added:
+		// Moreover, one extra arguments are automatically added:
 		//   tabId:         the tabId of the caller, or null if the call is made from the main script
-		//   replyHandler:  function for asynchronously returning a result by calling replyHandler(result)
-		//
-		// IMPORTANT: If handler does not immediately return a result but stores replyHandler to do it asynchronously later,
-		// it should return a true value to keep replyHandler open.
 		//
 		register: function(name, handler) {},
 

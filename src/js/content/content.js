@@ -216,29 +216,29 @@ if(Browser.capabilities.permanentIcon() && !inFrame) {
 
 // only the top frame handles getState and apiCalledInFrame requests
 if(!inFrame) {
-	Browser.rpc.register('getState', function(tabId, replyHandler) {
-		replyHandler({
+	Browser.rpc.register('getState', function(tabId) {
+		return {
 			callUrl: callUrl,
 			apiCalls: apiCalls
-		});
+		};
 	});
 
-	Browser.rpc.register('apiCalledInFrame', function(iframeUrl, tabId, replyHandler) {
+	Browser.rpc.register('apiCalledInFrame', function(iframeUrl, tabId) {
 		apiCalls++;
 		if(Browser.capabilities.iframeGeoFromOwnDomain())
 			callUrl = iframeUrl;
 		Browser.gui.refreshIcon('self');
 
-		replyHandler(myUrl);
+		return myUrl;
 	});
 }
 
 if(Browser.testing) {
 	// test for nested calls, and for correct passing of tabId
 	//
-	Browser.rpc.register('nestedTestTab', function(tabId, replyHandler) {
+	Browser.rpc.register('nestedTestTab', function(tabId) {
 		Browser.log("in nestedTestTab, returning 'content'");
-		replyHandler("content");
+		return "content";
 	});
 
 	Browser.log("calling nestedTestMain");

@@ -499,9 +499,9 @@ $(document).ready(function() {
 if(Browser.testing) {
 	// test for nested calls, and for correct passing of tabId
 	//
-	Browser.rpc.register('nestedTestTab', function(tabId, replyHandler) {
+	Browser.rpc.register('nestedTestTab', function(tabId) {
 		Browser.log("in nestedTestTab, returning 'options'");
-		replyHandler("options");
+		return "options";
 	});
 
 	Browser.log("calling nestedTestMain");
