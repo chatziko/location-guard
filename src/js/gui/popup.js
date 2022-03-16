@@ -16,7 +16,7 @@ $(document).ready(drawUI);
 
 var url;
 
-function doAction() {
+async function doAction() {
 	var action = $(this).attr("id");
 
 	switch(action) {
@@ -34,21 +34,17 @@ function doAction() {
 			break;
 
 		case 'hideIcon':
-			Browser.storage.get().then(st => {
-				st.hideIcon = true;
-				Browser.storage.set(st).then(() => {
-					Browser.gui.refreshAllIcons(Browser.gui.closePopup);
-				});
-			});
+			var st = await Browser.storage.get();
+			st.hideIcon = true;
+			await Browser.storage.set(st);
+			Browser.gui.refreshAllIcons(Browser.gui.closePopup);
 			break;
 
 		case 'pause':
-			Browser.storage.get().then(st => {
-				st.paused = !st.paused;
-				Browser.storage.set(st).then(() => {
-					Browser.gui.refreshAllIcons(Browser.gui.closePopup);
-				});
-			});
+			var st = await Browser.storage.get();
+			st.paused = !st.paused;
+			await Browser.storage.set(st);
+			Browser.gui.refreshAllIcons(Browser.gui.closePopup);
 			break;
 
 		case 'setLevel':
@@ -58,18 +54,16 @@ function doAction() {
 		default:	// set level
 			if(!url) throw "no url";				// just to be sure
 
-			Browser.storage.get().then(st => {
-				var domain = Util.extractDomain(url);
-				var level = action;
-				if(level == st.defaultLevel)
-					delete st.domainLevel[domain];
-				else
-					st.domainLevel[domain] = level;
+			var st = await Browser.storage.get();
+			var domain = Util.extractDomain(url);
+			var level = action;
+			if(level == st.defaultLevel)
+				delete st.domainLevel[domain];
+			else
+				st.domainLevel[domain] = level;
 
-				Browser.storage.set(st).then(() => {
-					Browser.gui.refreshAllIcons(Browser.gui.closePopup);
-				});
-			});
+			await Browser.storage.set(st);
+			Browser.gui.refreshAllIcons(Browser.gui.closePopup);
 			break;
 	}
 }
@@ -79,8 +73,8 @@ function drawUI() {
 	var tabId = res ? parseInt(res[1]) : null;
 
 	// we need storage and url
-	Browser.gui.getCallUrl(tabId, function(callUrl) {
-	Browser.storage.get().then(st => {
+	Browser.gui.getCallUrl(tabId, async function(callUrl) {
+		const st = await Browser.storage.get();
 		Browser.log("popup: callUrl", callUrl, "settings", st);
 
 		// we don't have a url if we are in chrome (browser action, visible in
@@ -137,7 +131,6 @@ function drawUI() {
 				height: height,
 			});
 		}
-	});
 	});
 }
 

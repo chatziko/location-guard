@@ -16,10 +16,11 @@ module.exports = function(PostRPC) {
 				prpc = new PostRPC('page-content', window, window, window.origin);	// This PostRPC is created by the injected code!
 
 			// call getNoisyPosition on the content-script
-			prpc.call('getNoisyPosition', [options], function(success, res) {
+			prpc.call('getNoisyPosition', [options], function(res) {
 				// call cb1 on success, cb2 on failure
-				var f = success ? cb1 : cb2;
-				if(f) f(res);
+				var f = res.success ? cb1 : cb2;
+				if(f)
+					f(res.position);
 			});
 		};
 

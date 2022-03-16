@@ -43,38 +43,37 @@ var Util = {
 	//
 	getIconInfo: function(about, handler) {
 		if(typeof(about) == 'object')						// null or state object
-			Util._getStateIconInfo(about, handler);
+			Util._getStateIconInfo(about).then(handler);
 		else {												// tabId
 			const Browser = require('./browser');
 			Browser.rpc.call(about, 'getState', [], function(state) {
-				Util._getStateIconInfo(state, handler);
+				Util._getStateIconInfo(state).then(handler);
 			});
 		}
 	},
 
-	_getStateIconInfo: function(state, handler) {
+	_getStateIconInfo: async function(state) {
 		// return info for the default icon if state is null
 		state = state || { callUrl: '', apiCalls: 0 };
 
 		const Browser = require('./browser');
-		Browser.storage.get().then(st => {
-			var domain = Util.extractDomain(state.callUrl);
-			var level = st.domainLevel[domain] || st.defaultLevel;
+		const st = await Browser.storage.get();
+		var domain = Util.extractDomain(state.callUrl);
+		var level = st.domainLevel[domain] || st.defaultLevel;
 
-			var info = {
-				hidden:  st.hideIcon,
-				private: !st.paused && level != 'real',
-				defaultPrivate: !st.paused && st.defaultLevel != 'real',
-				apiCalls: state.apiCalls,
-				title:
-					"Location Guard\n" +
-					(st.paused		? "Paused" :
-					level == 'real'	? "Using your real location" :
-					level == 'fixed'? "Using a fixed location" :
-					"Privacy level: " + level)
-			};
-			handler(info);
-		});
+		var info = {
+			hidden:  st.hideIcon,
+			private: !st.paused && level != 'real',
+			defaultPrivate: !st.paused && st.defaultLevel != 'real',
+			apiCalls: state.apiCalls,
+			title:
+				"Location Guard\n" +
+				(st.paused		? "Paused" :
+				level == 'real'	? "Using your real location" :
+				level == 'fixed'? "Using a fixed location" :
+				"Privacy level: " + level)
+		};
+		return info;
 	},
 
 	events: {

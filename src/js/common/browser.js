@@ -139,7 +139,7 @@ Browser.storage.get = async function() {
 	});
 };
 
-Browser.storage.set = function(st) {
+Browser.storage.set = async function(st) {
 	return new Promise(resolve => {
 		Browser.log('saving st', st);
 		var items = {};

@@ -26,9 +26,9 @@ var currentPos = {
 };
 
 Browser.init('options');
-Browser.storage.get().then(st => {
-	epsilon = st.epsilon;
-});
+(async function() {
+	epsilon = (await Browser.storage.get()).epsilon;
+}());
 
 
 // slider wrapper class, cause sGlide interface sucks
@@ -58,59 +58,55 @@ function Slider(opt) {
 	}
 }
 
-function saveOptions() {
-	Browser.storage.get().then(st => {
-		st.defaultLevel = $('#defaultLevel').val();
-		st.paused = $("#paused").prop('checked');
-		st.hideIcon = $("#hideIcon").prop('checked');
+async function saveOptions() {
+	const st = await Browser.storage.get();
+	st.defaultLevel = $('#defaultLevel').val();
+	st.paused = $("#paused").prop('checked');
+	st.hideIcon = $("#hideIcon").prop('checked');
 
-		var updateAccuracy = $("#updateAccuracy").prop('checked');
-		if(st.updateAccuracy != updateAccuracy) {
-			// update accuracy of cached positions to reflect the change
-			for(var level in st.cachedPos) {
-				var epsilon = st.epsilon / st.levels[level].radius;
-				var pl = new PlanarLaplace();
+	var updateAccuracy = $("#updateAccuracy").prop('checked');
+	if(st.updateAccuracy != updateAccuracy) {
+		// update accuracy of cached positions to reflect the change
+		for(var level in st.cachedPos) {
+			var epsilon = st.epsilon / st.levels[level].radius;
+			var pl = new PlanarLaplace();
 
-				st.cachedPos[level].position.coords.accuracy +=									// add/remove the .9 accuracy
-					(updateAccuracy ? 1 : -1) * Math.round(pl.alphaDeltaAccuracy(epsilon, .9));
-			}
-
-			st.updateAccuracy = updateAccuracy;
+			st.cachedPos[level].position.coords.accuracy +=									// add/remove the .9 accuracy
+				(updateAccuracy ? 1 : -1) * Math.round(pl.alphaDeltaAccuracy(epsilon, .9));
 		}
 
-		Browser.storage.set(st).then(() => {
-			Browser.gui.refreshAllIcons();
-		});
-	});
+		st.updateAccuracy = updateAccuracy;
+	}
+
+	await Browser.storage.set(st);
+	Browser.gui.refreshAllIcons();
 }
 
-function saveFixedPosNoAPI() {
-	Browser.storage.get().then(st => {
-		st.fixedPosNoAPI = $("#fixedPosNoAPI").prop('checked');
+async function saveFixedPosNoAPI() {
+	const st = await Browser.storage.get();
+	st.fixedPosNoAPI = $("#fixedPosNoAPI").prop('checked');
 
-		Browser.storage.set(st);
-	});
+	await Browser.storage.set(st);
 }
 
-function saveLevel() {
-	Browser.storage.get().then(st => {
-		var radius = sliderRadius.value;
-		var ct = sliderCacheTime.value;
-		var cacheTime = ct <= 59 ? ct : 60 * (ct-59);
+async function saveLevel() {
+	const st = await Browser.storage.get();
+	var radius = sliderRadius.value;
+	var ct = sliderCacheTime.value;
+	var cacheTime = ct <= 59 ? ct : 60 * (ct-59);
 
-		updateRadius(radius, true);
+	updateRadius(radius, true);
 
-		// delete cache for that level if radius changes
-		if(st.levels[activeLevel].radius != radius)
-			delete st.cachedPos[activeLevel];
+	// delete cache for that level if radius changes
+	if(st.levels[activeLevel].radius != radius)
+		delete st.cachedPos[activeLevel];
 
-		st.levels[activeLevel] = {
-			radius: radius,
-			cacheTime: cacheTime
-		};
+	st.levels[activeLevel] = {
+		radius: radius,
+		cacheTime: cacheTime
+	};
 
-		Browser.storage.set(st);
-	});
+	await Browser.storage.set(st);
 }
 
 function initLevelMap() {
@@ -198,108 +194,105 @@ function initLevelMap() {
 		  .addTo(levelMap);
 }
 
-function initFixedPosMap() {
-	Browser.storage.get().then(st => {
-		var latlng = [st.fixedPos.latitude, st.fixedPos.longitude];
+async function initFixedPosMap() {
+	const st = await Browser.storage.get();
+	var latlng = [st.fixedPos.latitude, st.fixedPos.longitude];
 
-		fixedPosMap = new L.map('fixedPosMap')
-			.addLayer(new L.TileLayer(
-				'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-				{ attribution: 'Map data © OpenStreetMap contributors' }
-			))
-			.setView(latlng, 14)
-			.on('dragstart', function() {
+	fixedPosMap = new L.map('fixedPosMap')
+		.addLayer(new L.TileLayer(
+			'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+			{ attribution: 'Map data © OpenStreetMap contributors' }
+		))
+		.setView(latlng, 14)
+		.on('dragstart', function() {
+			fixedPosMap.closePopup();
+		})
+		.on('click', function(e) {
+			if(fixedPosMap.popup._isOpen) {	// if popup is open, close it
 				fixedPosMap.closePopup();
-			})
-			.on('click', function(e) {
-				if(fixedPosMap.popup._isOpen) {	// if popup is open, close it
-					fixedPosMap.closePopup();
-					return;
-				}
-				saveFixedPos(e.latlng);
-			});
+				return;
+			}
+			saveFixedPos(e.latlng);
+		});
 
-		// marker
-		fixedPosMap.marker = new L.marker(latlng, { draggable: true })
-			.addTo(fixedPosMap)
-			.on('click', function() {
-				showPopup(fixedPosMap);
-			})
-			.on('dragend', function(e) {
-				saveFixedPos(e.target._latlng);
-			});
+	// marker
+	fixedPosMap.marker = new L.marker(latlng, { draggable: true })
+		.addTo(fixedPosMap)
+		.on('click', function() {
+			showPopup(fixedPosMap);
+		})
+		.on('dragend', function(e) {
+			saveFixedPos(e.target._latlng);
+		});
 
-		// popup
-		var popupHtml =
-			'<div class="map-popup">' +
-				'<p>This is the location reported when the privacy level is set to <b>"Use fixed location"</b>.</p>' +
-				'<p>Click on the map or drag the marker to set a new fixed location.</p>' +
-			'</div>';
+	// popup
+	var popupHtml =
+		'<div class="map-popup">' +
+			'<p>This is the location reported when the privacy level is set to <b>"Use fixed location"</b>.</p>' +
+			'<p>Click on the map or drag the marker to set a new fixed location.</p>' +
+		'</div>';
 
-		fixedPosMap.popup = L.popup({
-				autoPan: false,
-				closeOnClick: false,		// we'll close it ourselves
-				maxWidth: Math.min($("#fixedPosMap").width() - 50, 300),
-			})
-			.setContent(popupHtml);
+	fixedPosMap.popup = L.popup({
+			autoPan: false,
+			closeOnClick: false,		// we'll close it ourselves
+			maxWidth: Math.min($("#fixedPosMap").width() - 50, 300),
+		})
+		.setContent(popupHtml);
 
-		showPopup(fixedPosMap);
+	showPopup(fixedPosMap);
 
-		// locate control
-		L.control.locate({
-			drawCircle: false,
-			follow: false,
-			icon: 'icon-trans ui-btn-icon-notext ui-icon-location',				// use jqm's icons to avoid loading
-			iconLoading: 'icon-trans ui-btn-icon-notext ui-icon-location',		// font awesome
+	// locate control
+	L.control.locate({
+		drawCircle: false,
+		follow: false,
+		icon: 'icon-trans ui-btn-icon-notext ui-icon-location',				// use jqm's icons to avoid loading
+		iconLoading: 'icon-trans ui-btn-icon-notext ui-icon-location',		// font awesome
+	}).addTo(fixedPosMap);
+
+	// geocoder control
+	if(!Browser.capabilities.isAndroid()) // not enough space on smartphones, better have a cleaner interface
+		L.control.geocoder(geocoderKey, {
+			url: geocoderUrl,
+			markers: false,
+			autocomplete: false
+		}).on('results', function(e) {
+			// directly set position if the text is a latlon
+			var res = e.params.text.match(/^([-+]?[0-9]+\.[0-9]+)\s*,?\s*([-+]?[0-9]+\.[0-9]+)$/);
+			if(!res) return;
+
+			var latlng = L.latLng(parseFloat(res[1]), parseFloat(res[2]));
+			saveFixedPos(latlng);
+			fixedPosMap.setView(latlng, 14)
+			this.collapse();		// close the geocoder search
+
 		}).addTo(fixedPosMap);
-
-		// geocoder control
-		if(!Browser.capabilities.isAndroid()) // not enough space on smartphones, better have a cleaner interface
-			L.control.geocoder(geocoderKey, {
-				url: geocoderUrl,
-				markers: false,
-				autocomplete: false
-			}).on('results', function(e) {
-				// directly set position if the text is a latlon
-				var res = e.params.text.match(/^([-+]?[0-9]+\.[0-9]+)\s*,?\s*([-+]?[0-9]+\.[0-9]+)$/);
-				if(!res) return;
-
-				var latlng = L.latLng(parseFloat(res[1]), parseFloat(res[2]));
-				saveFixedPos(latlng);
-				fixedPosMap.setView(latlng, 14)
-				this.collapse();		// close the geocoder search
-
-			}).addTo(fixedPosMap);
-	});
 }
 
-function saveFixedPos(latlng) {
-	Browser.storage.get().then(st => {
-		var wrapped = latlng.wrap();			// force within normal range
-		st.fixedPos = { latitude: wrapped.lat, longitude: wrapped.lng };
+async function saveFixedPos(latlng) {
+	const st = await Browser.storage.get();
+	var wrapped = latlng.wrap();			// force within normal range
+	st.fixedPos = { latitude: wrapped.lat, longitude: wrapped.lng };
 
-		fixedPosMap.marker.setLatLng(latlng);
+	fixedPosMap.marker.setLatLng(latlng);
 
-		Browser.log('saving st', st);
-		Browser.storage.set(st);
-	});
+	Browser.log('saving st', st);
+	await Browser.storage.set(st);
 }
 
-function showLevelInfo() {
-	Browser.storage.get().then(st => {
-		// set sliders' value
-		var radius = st.levels[activeLevel].radius;
-		var cacheTime = st.levels[activeLevel].cacheTime;
-		var ct = cacheTime <= 59				// 0-59 are mins, 60 and higher are hours
-			? cacheTime
-			: 59 + Math.floor(cacheTime/59);
+async function showLevelInfo() {
+	const st = await Browser.storage.get();
+	// set sliders' value
+	var radius = st.levels[activeLevel].radius;
+	var cacheTime = st.levels[activeLevel].cacheTime;
+	var ct = cacheTime <= 59				// 0-59 are mins, 60 and higher are hours
+		? cacheTime
+		: 59 + Math.floor(cacheTime/59);
 
-		sliderRadius.set(radius);
-		sliderCacheTime.set(ct);
+	sliderRadius.set(radius);
+	sliderCacheTime.set(ct);
 
-		updateRadius(radius, true);
-		updateCache(ct);
-	});
+	updateRadius(radius, true);
+	updateCache(ct);
 }
 
 // change current pos as a reaction to a Leaflet event
@@ -384,7 +377,7 @@ function initPages() {
 		$('#hideIcon').parent().toggle(!Browser.capabilities.permanentIcon());	// hiding the icon only works with page action (not browser action)
 	});
 
-	$(document).on("pagecontainershow", function(e, ui) {
+	$(document).on("pagecontainershow", async function(e, ui) {
 		var page = ui.toPage[0].id;
 
 		if(inited[page]) {
@@ -398,12 +391,11 @@ function initPages() {
 		// page initialization
 		//
 		if(page == "options") {
-			Browser.storage.get().then(st => {
-				$('#defaultLevel').val(st.defaultLevel).selectmenu("refresh");
-				$('#paused').prop('checked', st.paused).checkboxradio("refresh");
-				$('#hideIcon').prop('checked', st.hideIcon).checkboxradio("refresh");
-				$('#updateAccuracy').prop('checked', st.updateAccuracy).checkboxradio("refresh");
-			});
+			const st = await Browser.storage.get();
+			$('#defaultLevel').val(st.defaultLevel).selectmenu("refresh");
+			$('#paused').prop('checked', st.paused).checkboxradio("refresh");
+			$('#hideIcon').prop('checked', st.hideIcon).checkboxradio("refresh");
+			$('#updateAccuracy').prop('checked', st.updateAccuracy).checkboxradio("refresh");
 
 		} else if (page == "levels") {
 			sliderRadius = new Slider({
@@ -430,11 +422,10 @@ function initPages() {
 			showLevelInfo();
 
 		} else if (page == "fixedPos") {
-			Browser.storage.get().then(st => {
-				$('#fixedPosNoAPI').prop('checked', st.fixedPosNoAPI).checkboxradio("refresh");
+			const st = await Browser.storage.get();
+			$('#fixedPosNoAPI').prop('checked', st.fixedPosNoAPI).checkboxradio("refresh");
 
-				initFixedPosMap();
-			});
+			initFixedPosMap();
 		}
 	});
 }
@@ -462,13 +453,11 @@ function restoreDefaults() {
 	}
 }
 
-function deleteCache() {
-	Browser.storage.get().then(st => {
-		st.cachedPos = {};
-		Browser.storage.set(st).then(() => {
-			window.alert('Location cache was deleted');
-		});
-	});
+async function deleteCache() {
+	const st = await Browser.storage.get();
+	st.cachedPos = {};
+	await Browser.storage.set(st);
+	window.alert('Location cache was deleted');
 }
 
 // set page events before "ready"
@@ -484,7 +473,7 @@ $(document).ready(function() {
 			$("#left-panel").panel("open");
 	});
 
-	$("#options input, #options select, #fixedPos input").change(saveOptions);
+	$("#options input, #options select").change(saveOptions);
 	$("#fixedPosNoAPI").change(saveFixedPosNoAPI);
 
 	$("#restoreDefaults").click(restoreDefaults);
