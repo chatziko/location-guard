@@ -446,9 +446,8 @@ function showCurrentPosition() {
 async function restoreDefaults() {
 	if(window.confirm('Are you sure you want to restore the default options?')) {
 		await Browser.storage.clear();
-		Browser.gui.refreshAllIcons(function() {
-			location.reload();
-		});
+		await Browser.gui.refreshAllIcons();
+		location.reload();
 	}
 }
 

@@ -36,10 +36,8 @@ Browser._main_script = function() {
 	// handlers to do them in the main script
 	//
 	Browser.rpc.register('refreshIcon', async function(tabId, callerTabId) {
-		return new Promise(resolve => {
-			// 'self' tabId in the content script means refresh its own tab
-			Browser.gui.refreshIcon(tabId == 'self' ?  callerTabId : tabId, resolve);
-		});
+		// 'self' tabId in the content script means refresh its own tab
+		await Browser.gui.refreshIcon(tabId == 'self' ?  callerTabId : tabId);
 	});
 
 	Browser.rpc.register('closeTab', function(tabId) {
@@ -168,7 +166,7 @@ Browser.storage.clear = async function() {
 //////////////////// gui ///////////////////////////
 //
 //
-Browser.gui.refreshIcon = function(tabId, cb) {
+Browser.gui.refreshIcon = async function(tabId) {
 	// delegate the call to the 'main' script if:
 	// - we're in 'content': browser.pageAction/browserAction is not available there
 	// - we use the FF pageAction workaround: we need to update Browser.gui.iconShown in 'main'
@@ -176,16 +174,15 @@ Browser.gui.refreshIcon = function(tabId, cb) {
 	if(Browser._script == 'content' ||
 	   (Browser._script != 'main' && Browser.capabilities.needsPAManualHide())
 	) {
-		Browser.rpc.call(null, 'refreshIcon', [tabId]).then(cb);
+		await Browser.rpc.call(null, 'refreshIcon', [tabId]);
 		return;
 	}
 
-	Util.getIconInfo(tabId).then(info => {
-		if(Browser.capabilities.permanentIcon())
-			Browser.gui._refreshBrowserAction(tabId, info, cb);
-		else
-			Browser.gui._refreshPageAction(tabId, info, cb);
-	});
+	const info = await Util.getIconInfo(tabId);
+	if(Browser.capabilities.permanentIcon())
+		await Browser.gui._refreshBrowserAction(tabId, info);
+	else
+		await Browser.gui._refreshPageAction(tabId, info);
 };
 
 Browser.gui._icons = function(private) {
@@ -196,24 +193,22 @@ Browser.gui._icons = function(private) {
 	return ret;
 }
 
-Browser.gui._refreshPageAction = function(tabId, info, cb) {
+Browser.gui._refreshPageAction = function(tabId, info) {
 	if(info.hidden || info.apiCalls == 0) {
 		browser.pageAction.hide(tabId);
-		if(cb) cb();
 		return;
 	}
 
-	if(Browser.gui.iconShown)
-		Browser.gui.iconShown[tabId] = 1;
+	return new Promise(resolve => {
+		if(Browser.gui.iconShown)
+			Browser.gui.iconShown[tabId] = 1;
 
-	browser.pageAction.setPopup({
-		tabId: tabId,
-		popup: "popup.html?tabId=" + tabId		// pass tabId in the url
-	});
-	browser.pageAction.show(tabId);
+		browser.pageAction.setPopup({
+			tabId: tabId,
+			popup: "popup.html?tabId=" + tabId		// pass tabId in the url
+		});
+		browser.pageAction.show(tabId);
 
-	// Firefox on Android (version 56) doesn't support pageAction.setIcon/setTitle so we try/catch
-	try {
 		browser.pageAction.setTitle({
 			tabId: tabId,
 			title: info.title
@@ -221,47 +216,47 @@ Browser.gui._refreshPageAction = function(tabId, info, cb) {
 		browser.pageAction.setIcon({
 			tabId: tabId,
 			path: Browser.gui._icons(info.private)
-		}, cb);		// setIcon is the only pageAction.set* method with a callback
-	} catch(e) {
-		if(cb) cb();
-	}
+		}, resolve);		// setIcon is the only pageAction.set* method with a callback
+	});
 }
 
-Browser.gui._refreshBrowserAction = function(tabId, info, cb) {
-	browser.browserAction.setTitle({
-		tabId: tabId,
-		title: info.title
+Browser.gui._refreshBrowserAction = function(tabId, info) {
+	return new Promise(resolve => {
+		browser.browserAction.setTitle({
+			tabId: tabId,
+			title: info.title
+		});
+		browser.browserAction.setBadgeText({
+			tabId: tabId,
+			text: (info.apiCalls || "").toString()
+		});
+		browser.browserAction.setBadgeBackgroundColor({
+			tabId: tabId,
+			color: "#b12222"
+		});
+		browser.browserAction.setPopup({
+			tabId: tabId,
+			popup: "popup.html" + (tabId ? "?tabId="+tabId : "")	// pass tabId in the url
+		});
+		browser.browserAction.setIcon({
+			tabId: tabId,
+			path: Browser.gui._icons(info.private)
+		}, resolve);		// setIcon is the only browserAction.set* method with a callback
 	});
-	browser.browserAction.setBadgeText({
-		tabId: tabId,
-		text: (info.apiCalls || "").toString()
-	});
-	browser.browserAction.setBadgeBackgroundColor({
-		tabId: tabId,
-		color: "#b12222"
-	});
-	browser.browserAction.setPopup({
-		tabId: tabId,
-		popup: "popup.html" + (tabId ? "?tabId="+tabId : "")	// pass tabId in the url
-	});
-	browser.browserAction.setIcon({
-		tabId: tabId,
-		path: Browser.gui._icons(info.private)
-	}, cb);		// setIcon is the only browserAction.set* method with a callback
 }
 
-Browser.gui.refreshAllIcons = function(cb) {
-	browser.tabs.query({}, function(tabs) {
-		// for browser action, also refresh default state (null tabId)
-		if(Browser.capabilities.permanentIcon())
-			tabs.push({ id: null });
+Browser.gui.refreshAllIcons = async function() {
+	return new Promise(resolve => {
+		browser.tabs.query({}, async function(tabs) {
+			// for browser action, also refresh default state (null tabId)
+			if(Browser.capabilities.permanentIcon())
+				tabs.push({ id: null });
 
-		var done = 0;
-		for(var i = 0; i < tabs.length; i++)
-			Browser.gui.refreshIcon(tabs[i].id, function() {
-				if(++done == tabs.length && cb)
-					cb();
-			});
+			for(var i = 0; i < tabs.length; i++)
+				await Browser.gui.refreshIcon(tabs[i].id);
+
+			resolve();
+		});
 	});
 };
 

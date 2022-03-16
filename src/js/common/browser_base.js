@@ -130,14 +130,14 @@ const Browser = {
 		// If called from a content script and tabId = 'self' it refreshes the icon of the content script's tab.
 		// getIconInfo should be called to get the icon's info
 		//
-		refreshIcon: function(tabId) {},
+		refreshIcon: async function(tabId) {},
 
 		// Browser.gui.refreshAllIcons()
 		//
 		// Refreshes the icons of all tabs.
 		// getIconInfo should be called to get the icon's info
 		//
-		refreshAllIcons: function() {},
+		refreshAllIcons: async function() {},
 
 		// Browser.gui.showPage(name)
 		//
