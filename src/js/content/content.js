@@ -100,7 +100,7 @@ rpc.register('getNoisyPosition', function(options, replyHandler) {
 // Either returns fixed pos directly, or calls the real one, then calls addNoise.
 //
 function getNoisyPosition(options, replyHandler) {
-	Browser.storage.get(function(st) {
+	Browser.storage.get().then(st => {
 		// if level == 'fixed' and fixedPosNoAPI == true, then we return the
 		// fixed position without calling the geolocation API at all.
 		//
@@ -146,7 +146,7 @@ function getNoisyPosition(options, replyHandler) {
 // gets position, returs noisy version based on the privacy options
 //
 function addNoise(position, handler) {
-	Browser.storage.get(function(st) {
+	Browser.storage.get().then(st => {
 		var domain = Util.extractDomain(callUrl);
 		var level = st.domainLevel[domain] || st.defaultLevel;
 

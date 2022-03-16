@@ -26,7 +26,7 @@ var currentPos = {
 };
 
 Browser.init('options');
-Browser.storage.get(function(st) {
+Browser.storage.get().then(st => {
 	epsilon = st.epsilon;
 });
 
@@ -59,7 +59,7 @@ function Slider(opt) {
 }
 
 function saveOptions() {
-	Browser.storage.get(function(st) {
+	Browser.storage.get().then(st => {
 		st.defaultLevel = $('#defaultLevel').val();
 		st.paused = $("#paused").prop('checked');
 		st.hideIcon = $("#hideIcon").prop('checked');
@@ -78,14 +78,14 @@ function saveOptions() {
 			st.updateAccuracy = updateAccuracy;
 		}
 
-		Browser.storage.set(st, function() {
+		Browser.storage.set(st).then(() => {
 			Browser.gui.refreshAllIcons();
 		});
 	});
 }
 
 function saveFixedPosNoAPI() {
-	Browser.storage.get(function(st) {
+	Browser.storage.get().then(st => {
 		st.fixedPosNoAPI = $("#fixedPosNoAPI").prop('checked');
 
 		Browser.storage.set(st);
@@ -93,7 +93,7 @@ function saveFixedPosNoAPI() {
 }
 
 function saveLevel() {
-	Browser.storage.get(function(st) {
+	Browser.storage.get().then(st => {
 		var radius = sliderRadius.value;
 		var ct = sliderCacheTime.value;
 		var cacheTime = ct <= 59 ? ct : 60 * (ct-59);
@@ -199,7 +199,7 @@ function initLevelMap() {
 }
 
 function initFixedPosMap() {
-	Browser.storage.get(function(st) {
+	Browser.storage.get().then(st => {
 		var latlng = [st.fixedPos.latitude, st.fixedPos.longitude];
 
 		fixedPosMap = new L.map('fixedPosMap')
@@ -274,7 +274,7 @@ function initFixedPosMap() {
 }
 
 function saveFixedPos(latlng) {
-	Browser.storage.get(function(st) {
+	Browser.storage.get().then(st => {
 		var wrapped = latlng.wrap();			// force within normal range
 		st.fixedPos = { latitude: wrapped.lat, longitude: wrapped.lng };
 
@@ -286,7 +286,7 @@ function saveFixedPos(latlng) {
 }
 
 function showLevelInfo() {
-	Browser.storage.get(function(st) {
+	Browser.storage.get().then(st => {
 		// set sliders' value
 		var radius = st.levels[activeLevel].radius;
 		var cacheTime = st.levels[activeLevel].cacheTime;
@@ -398,7 +398,7 @@ function initPages() {
 		// page initialization
 		//
 		if(page == "options") {
-			Browser.storage.get(function(st) {
+			Browser.storage.get().then(st => {
 				$('#defaultLevel').val(st.defaultLevel).selectmenu("refresh");
 				$('#paused').prop('checked', st.paused).checkboxradio("refresh");
 				$('#hideIcon').prop('checked', st.hideIcon).checkboxradio("refresh");
@@ -430,7 +430,7 @@ function initPages() {
 			showLevelInfo();
 
 		} else if (page == "fixedPos") {
-			Browser.storage.get(function(st) {
+			Browser.storage.get().then(st => {
 				$('#fixedPosNoAPI').prop('checked', st.fixedPosNoAPI).checkboxradio("refresh");
 
 				initFixedPosMap();
@@ -463,9 +463,9 @@ function restoreDefaults() {
 }
 
 function deleteCache() {
-	Browser.storage.get(function(st) {
+	Browser.storage.get().then(st => {
 		st.cachedPos = {};
-		Browser.storage.set(st, function() {
+		Browser.storage.set(st).then(() => {
 			window.alert('Location cache was deleted');
 		});
 	});

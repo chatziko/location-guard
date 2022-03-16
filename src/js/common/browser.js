@@ -124,24 +124,28 @@ Browser.rpc.call = function(tabId, name, args, cb) {
 //
 Browser.storage._key = "global";	// store everything under this key
 
-Browser.storage.get = function(cb) {
-	browser.storage.local.get(Browser.storage._key, function(items) {
-		var st = items[Browser.storage._key];
+Browser.storage.get = async function() {
+	return new Promise(resolve => {
+		browser.storage.local.get(Browser.storage._key, function(items) {
+			var st = items[Browser.storage._key];
 
-		// default values
-		if(!st) {
-			st = Browser.storage._default;
-			Browser.storage.set(st);
-		}
-		cb(st);
+			// default values
+			if(!st) {
+				st = Browser.storage._default;
+				Browser.storage.set(st);
+			}
+			resolve(st);
+		});
 	});
 };
 
-Browser.storage.set = function(st, handler) {
-	Browser.log('saving st', st);
-	var items = {};
-	items[Browser.storage._key] = st;
-	browser.storage.local.set(items, handler);
+Browser.storage.set = function(st) {
+	return new Promise(resolve => {
+		Browser.log('saving st', st);
+		var items = {};
+		items[Browser.storage._key] = st;
+		browser.storage.local.set(items, resolve);
+	});
 };
 
 Browser.storage.clear = function(handler) {

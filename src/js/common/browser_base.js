@@ -62,18 +62,18 @@ const Browser = {
 	// else that needs to be stored. It is fetched and stored as a whole.
 	//
 	storage: {
-		// browser.storage.get(handler)
+		// browser.storage.get()
 		//
-		// fetches the storage object and passes it to the handler.
+		// fetches the storage object.
 		// The default object is returned if the storage is empty.
 		//
-		get: function(handler) {},
+		get: async function() {},
 
-		// browser.storage.set(st, handler)
+		// browser.storage.set(st)
 		//
-		// Stores the give storage object. Calls the handler when finished.
+		// Stores the give storage object.
 		//
-		set: function(st, handler) {},
+		set: async function(st) {},
 
 		// browser.storage.clear(handler)
 		//

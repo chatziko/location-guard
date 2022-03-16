@@ -57,7 +57,7 @@ var Util = {
 		state = state || { callUrl: '', apiCalls: 0 };
 
 		const Browser = require('./browser');
-		Browser.storage.get(function(st) {
+		Browser.storage.get().then(st => {
 			var domain = Util.extractDomain(state.callUrl);
 			var level = st.domainLevel[domain] || st.defaultLevel;
 

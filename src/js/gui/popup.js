@@ -34,18 +34,18 @@ function doAction() {
 			break;
 
 		case 'hideIcon':
-			Browser.storage.get(function(st) {
+			Browser.storage.get().then(st => {
 				st.hideIcon = true;
-				Browser.storage.set(st, function() {
+				Browser.storage.set(st).then(() => {
 					Browser.gui.refreshAllIcons(Browser.gui.closePopup);
 				});
 			});
 			break;
 
 		case 'pause':
-			Browser.storage.get(function(st) {
+			Browser.storage.get().then(st => {
 				st.paused = !st.paused;
-				Browser.storage.set(st, function() {
+				Browser.storage.set(st).then(() => {
 					Browser.gui.refreshAllIcons(Browser.gui.closePopup);
 				});
 			});
@@ -58,7 +58,7 @@ function doAction() {
 		default:	// set level
 			if(!url) throw "no url";				// just to be sure
 
-			Browser.storage.get(function(st) {
+			Browser.storage.get().then(st => {
 				var domain = Util.extractDomain(url);
 				var level = action;
 				if(level == st.defaultLevel)
@@ -66,7 +66,7 @@ function doAction() {
 				else
 					st.domainLevel[domain] = level;
 
-				Browser.storage.set(st, function() {
+				Browser.storage.set(st).then(() => {
 					Browser.gui.refreshAllIcons(Browser.gui.closePopup);
 				});
 			});
@@ -80,7 +80,7 @@ function drawUI() {
 
 	// we need storage and url
 	Browser.gui.getCallUrl(tabId, function(callUrl) {
-	Browser.storage.get(function(st) {
+	Browser.storage.get().then(st => {
 		Browser.log("popup: callUrl", callUrl, "settings", st);
 
 		// we don't have a url if we are in chrome (browser action, visible in
