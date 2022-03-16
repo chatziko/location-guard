@@ -205,7 +205,7 @@ Browser.init('content');
 // we only call it if the icon is different than the default icon!
 //
 if(Browser.capabilities.permanentIcon() && !inFrame) {
-	Util.getIconInfo({ callUrl: myUrl, apiCalls: 0 }, function(info) {
+	Util.getIconInfo({ callUrl: myUrl, apiCalls: 0 }).then(info => {
 		if(info.private != info.defaultPrivate) // the icon for myUrl is different than the default
 			Browser.gui.refreshIcon('self');
 	})

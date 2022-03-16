@@ -180,7 +180,7 @@ Browser.gui.refreshIcon = function(tabId, cb) {
 		return;
 	}
 
-	Util.getIconInfo(tabId, function(info) {
+	Util.getIconInfo(tabId).then(info => {
 		if(Browser.capabilities.permanentIcon())
 			Browser.gui._refreshBrowserAction(tabId, info, cb);
 		else
