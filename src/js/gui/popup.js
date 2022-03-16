@@ -133,8 +133,9 @@ async function drawUI() {
 	}
 }
 
+(async function() {
+	if(!Browser.testing) return;
 
-if(Browser.testing) {
 	// test for nested calls, and for correct passing of tabId
 	//
 	Browser.rpc.register('nestedTestTab', function(tabId) {
@@ -143,7 +144,6 @@ if(Browser.testing) {
 	});
 
 	Browser.log("calling nestedTestMain");
-	Browser.rpc.call(null, 'nestedTestMain', []).then(res => {
-		Browser.log('got from nestedTestMain', res);
-	});
-}
+	const res = await Browser.rpc.call(null, 'nestedTestMain', []);
+	Browser.log('got from nestedTestMain', res);
+}());

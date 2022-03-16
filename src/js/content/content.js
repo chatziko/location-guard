@@ -197,49 +197,49 @@ async function addNoise(position) {
 	return position;
 }
 
-Browser.init('content');
+(async function() {
+	Browser.init('content');
 
-// if a browser action (always visible button) is used, we need to refresh the
-// icon immediately (before the API is called). HOWEVER: Browser.gui.refreshIcon
-// causes the background script to be awaken. To avoid doing this on every page,
-// we only call it if the icon is different than the default icon!
-//
-if(Browser.capabilities.permanentIcon() && !inFrame) {
-	Util.getIconInfo({ callUrl: myUrl, apiCalls: 0 }).then(info => {
+	// if a browser action (always visible button) is used, we need to refresh the
+	// icon immediately (before the API is called). HOWEVER: Browser.gui.refreshIcon
+	// causes the background script to be awaken. To avoid doing this on every page,
+	// we only call it if the icon is different than the default icon!
+	//
+	if(Browser.capabilities.permanentIcon() && !inFrame) {
+		const info = await Util.getIconInfo({ callUrl: myUrl, apiCalls: 0 });
 		if(info.private != info.defaultPrivate) // the icon for myUrl is different than the default
 			Browser.gui.refreshIcon('self');
-	})
-}
+	}
 
-// only the top frame handles getState and apiCalledInFrame requests
-if(!inFrame) {
-	Browser.rpc.register('getState', function(tabId) {
-		return {
-			callUrl: callUrl,
-			apiCalls: apiCalls
-		};
-	});
+	// only the top frame handles getState and apiCalledInFrame requests
+	if(!inFrame) {
+		Browser.rpc.register('getState', function(tabId) {
+			return {
+				callUrl: callUrl,
+				apiCalls: apiCalls
+			};
+		});
 
-	Browser.rpc.register('apiCalledInFrame', function(iframeUrl, tabId) {
-		apiCalls++;
-		if(Browser.capabilities.iframeGeoFromOwnDomain())
-			callUrl = iframeUrl;
-		Browser.gui.refreshIcon('self');
+		Browser.rpc.register('apiCalledInFrame', function(iframeUrl, tabId) {
+			apiCalls++;
+			if(Browser.capabilities.iframeGeoFromOwnDomain())
+				callUrl = iframeUrl;
+			Browser.gui.refreshIcon('self');
 
-		return myUrl;
-	});
-}
+			return myUrl;
+		});
+	}
 
-if(Browser.testing) {
-	// test for nested calls, and for correct passing of tabId
-	//
-	Browser.rpc.register('nestedTestTab', function(tabId) {
-		Browser.log("in nestedTestTab, returning 'content'");
-		return "content";
-	});
+	if(Browser.testing) {
+		// test for nested calls, and for correct passing of tabId
+		//
+		Browser.rpc.register('nestedTestTab', function(tabId) {
+			Browser.log("in nestedTestTab, returning 'content'");
+			return "content";
+		});
 
-	Browser.log("calling nestedTestMain");
-	Browser.rpc.call(null, 'nestedTestMain', []).then(res => {
+		Browser.log("calling nestedTestMain");
+		const res = await Browser.rpc.call(null, 'nestedTestMain', []);
 		Browser.log('got from nestedTestMain', res);
-	});
-}
+	}
+}())
