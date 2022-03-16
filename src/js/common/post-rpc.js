@@ -24,15 +24,14 @@ function _code() {		// include all code here to inject easily
 	PostRPC.prototype.register = function(name, fun) {
 		this._methods[name] = fun;
 	};
-	PostRPC.prototype.call = function(method, args, handler) {
-		var callId;
-		if(handler) {
-			callId = Math.floor(Math.random()*1000000);
-			this._calls[callId] = handler;
-		}
-		if(!args) args = [];
+	PostRPC.prototype.call = function(method, args) {
+	 	return new Promise(resolve => {
+			var callId = Math.floor(Math.random()*1000000);
+			this._calls[callId] = resolve;
+			if(!args) args = [];
 
-		this._sendMessage({ method: method, args: args, callId: callId, from: this._id });
+			this._sendMessage({ method: method, args: args, callId: callId, from: this._id });
+		});
 	};
 
 	// private methods for sending/receiving messages
@@ -43,7 +42,7 @@ function _code() {		// include all code here to inject easily
 		this._sendObj.postMessage(temp, this._targetOrigin);
 	}
 
-	PostRPC.prototype._receiveMessage = function(event) {
+	PostRPC.prototype._receiveMessage = async function(event) {
 		var data = event.data && event.data[this._ns];		// everything is inside ns, to minimize conflicts with other message
 		if(!data) return;
 
@@ -56,22 +55,9 @@ function _code() {		// include all code here to inject easily
 				return;
 			}
 
-			// pass returnHandler, used to send back the result
-			var replyHandler;
-			if(data.callId) {
-				var _this = this;
-				replyHandler = function() {
-					var args = Array.prototype.slice.call(arguments);	// arguments in real array
-					_this._sendMessage({ callId: data.callId, value: args });
-				};
-			} else {
-				replyHandler = function() {};		// no result expected, use dummy handler
-			}
-
-			var dataArgs = Array.prototype.slice.call(data.args);	// cannot modify data.args in Firefox 32, clone as workaround
-			dataArgs.push(replyHandler);
-
-			this._methods[data.method].apply(null, dataArgs);
+			// call the handler, send back the result
+			const res = await this._methods[data.method].apply(null, data.args);
+			this._sendMessage({ callId: data.callId, value: [res] });
 
 		} else {
 			// return value

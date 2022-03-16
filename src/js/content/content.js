@@ -74,26 +74,23 @@ var callUrl = myUrl;					// the url from which the last call is _shown_ to be ma
 // methods called by the page
 //
 var rpc = new PostRPC('page-content', window, window, window.origin);
-rpc.register('getNoisyPosition', function(options, replyHandler) {
+rpc.register('getNoisyPosition', async function(options) {
 	if(inFrame) {
 		// we're in a frame, we need to notify the top window, and get back the *url used in the permission dialog*
 		// (which might be either the iframe url, or the top window url, depending on how the browser handles permissions).
 		// To avoid cross-origin issues, we call apiCalledInFrame in the main script, which echoes the
 		// call back to this tab to be answered by the top window
-		Browser.rpc.call(null, 'apiCalledInFrame', [myUrl]).then(topUrl => {
-			callUrl = Browser.capabilities.iframeGeoFromOwnDomain() ? myUrl : topUrl;
-			getNoisyPosition(options).then(replyHandler);
-		});
+		const topUrl = await Browser.rpc.call(null, 'apiCalledInFrame', [myUrl]);
+		callUrl = Browser.capabilities.iframeGeoFromOwnDomain() ? myUrl : topUrl;
+		return await getNoisyPosition(options);
 
 	} else {
 		// refresh icon before fetching the location
 		apiCalls++;
 		callUrl = myUrl;	// last call happened here
 		Browser.gui.refreshIcon('self');
-		getNoisyPosition(options).then(replyHandler);
+		return await getNoisyPosition(options);
 	}
-
-	return true;	// will reply later
 });
 
 // gets the options passed to the fake navigator.geolocation.getCurrentPosition.
