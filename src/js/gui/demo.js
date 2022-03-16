@@ -140,18 +140,6 @@ function startDemo() {
 			tooltipClass: 'tooltip-step4',
 	} ];
 
-	// demo not working on Desktop Firefox 41
-	if(~navigator.userAgent.indexOf('Firefox/41') && !~navigator.userAgent.indexOf('Android'))
-		steps = [{
-				element: ".placeholder-step1",
-				intro:
-					'<p>Location Guard was successfully installed.</p><p>To see it in action, try this <a href="https://browserleaks.com/geo" target="_blank">online demo</a>.</p>' +
-					'<p style="font-size:small">Note: the current page used to be a demo of Location Guard, but it was disabled in Firefox 41 due to a browser bug. ' +
-					'It will be available again in Firefox 42.<br><br>Location Guard, however, <i>is still enabled</i> on all pages!</p>',
-				position: "floating",
-				tooltipClass: 'tooltip-step1',
-		}];
-
 	intro = introJs();
 	intro
 	.setOptions({
