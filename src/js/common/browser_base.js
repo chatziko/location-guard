@@ -146,11 +146,11 @@ const Browser = {
 		//
 		showPage: function(name) {},
 
-		// Browser.gui.getCallUrl(tabId, handler)
+		// Browser.gui.getCallUrl(tabId)
 		//
-		// Gets the callUrl of given tab and passes it to 'handler'
+		// Gets the callUrl of given tab.
 		//
-		getActiveCallUrl: function(tabId, handler) {},
+		getCallUrl: async function(tabId) {},
 
 		// Browser.gui.closePopup()
 		//

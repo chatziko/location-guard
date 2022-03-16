@@ -269,23 +269,24 @@ Browser.gui.showPage = function(name) {
 	browser.tabs.create({ url: browser.extension.getURL(name) });
 };
 
-Browser.gui.getCallUrl = function(tabId, handler) {
-	async function fetch(tabId) {
-		// we call getState from the content script
-		//
-		const state = await Browser.rpc.call(tabId, 'getState', []);
-		handler(state && state.callUrl);		// state might be null if no content script runs in the tab
+Browser.gui.getCallUrl = async function(tabId) {
+	async function getActiveTabId() {
+		return new Promise(resolve => {
+			browser.tabs.query({
+				active: true,               // Select active tabs
+				lastFocusedWindow: true     // In the current window
+			}, async function(tabs) {
+				resolve(tabs[0].id);
+			});
+		})
 	}
 
-	if(tabId)
-		fetch(tabId);
-	else
-		browser.tabs.query({
-			active: true,               // Select active tabs
-			lastFocusedWindow: true     // In the current window
-		}, function(tabs) {
-			fetch(tabs[0].id)
-		});
+	if(!tabId)
+		tabId = await getActiveTabId();
+
+	// we call getState from the content script
+	const state = await Browser.rpc.call(tabId, 'getState', []);
+	return state && state.callUrl;		// state might be null if no content script runs in the tab
 };
 
 Browser.gui.closePopup = function() {
