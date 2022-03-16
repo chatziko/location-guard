@@ -443,12 +443,11 @@ function showCurrentPosition() {
 	);
 }
 
-function restoreDefaults() {
+async function restoreDefaults() {
 	if(window.confirm('Are you sure you want to restore the default options?')) {
-		Browser.storage.clear(function() {
-			Browser.gui.refreshAllIcons(function() {
-				location.reload();
-			});
+		await Browser.storage.clear();
+		Browser.gui.refreshAllIcons(function() {
+			location.reload();
 		});
 	}
 }

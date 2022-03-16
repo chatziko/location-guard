@@ -148,8 +148,10 @@ Browser.storage.set = async function(st) {
 	});
 };
 
-Browser.storage.clear = function(handler) {
-	browser.storage.local.clear(handler);
+Browser.storage.clear = async function() {
+	return new Promise(resolve => {
+		browser.storage.local.clear(resolve);
+	});
 };
 
 

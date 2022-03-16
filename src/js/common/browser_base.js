@@ -75,11 +75,11 @@ const Browser = {
 		//
 		set: async function(st) {},
 
-		// browser.storage.clear(handler)
+		// browser.storage.clear()
 		//
-		// Clears the storage. Calls the handler when finished.
+		// Clears the storage.
 		//
-		clear: function(handler) {},
+		clear: async function() {},
 
 		// default storage object
 		//
