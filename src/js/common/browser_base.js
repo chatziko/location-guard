@@ -42,17 +42,16 @@ const Browser = {
 		//
 		register: function(name, handler) {},
 
-		// Browser.rpc.call(tabId, name, args, handler)
+		// Browser.rpc.call(tabId, name, args)
 		//
 		// Calls a remote method.
 		//   tabId:    tab id of the script to call, or null to call the main script
 		//   name:     method name
 		//   args:     array of arguments to pass
-		//   handler:  function(res), will be called when the result is received
 		//
-		// If the call cannot be made to the specific tabId, handler will be called with no arguments.
+		// If the call cannot be made to the specific tabId, null is returned.
 		//
-		call: function(tabId, name, args, handler) {}
+		call: async function(tabId, name, args) {}
 	},
 
 	// Browser.storage

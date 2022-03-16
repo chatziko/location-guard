@@ -80,7 +80,7 @@ rpc.register('getNoisyPosition', function(options, replyHandler) {
 		// (which might be either the iframe url, or the top window url, depending on how the browser handles permissions).
 		// To avoid cross-origin issues, we call apiCalledInFrame in the main script, which echoes the
 		// call back to this tab to be answered by the top window
-		Browser.rpc.call(null, 'apiCalledInFrame', [myUrl], function(topUrl) {
+		Browser.rpc.call(null, 'apiCalledInFrame', [myUrl]).then(topUrl => {
 			callUrl = Browser.capabilities.iframeGeoFromOwnDomain() ? myUrl : topUrl;
 			getNoisyPosition(options).then(replyHandler);
 		});
@@ -242,7 +242,7 @@ if(Browser.testing) {
 	});
 
 	Browser.log("calling nestedTestMain");
-	Browser.rpc.call(null, 'nestedTestMain', [], function(res) {
+	Browser.rpc.call(null, 'nestedTestMain', []).then(res => {
 		Browser.log('got from nestedTestMain', res);
 	});
 }

@@ -103,14 +103,14 @@ Browser.rpc._listener = function(message, sender, replyHandler) {
 	return handler.apply(null, args);
 };
 
-Browser.rpc.call = function(tabId, name, args, cb) {
-	var message = { method: name, args: args };
-	if(!cb) cb = function() {};							// we get error of not cb is passed
-
-	if(tabId)
-		browser.tabs.sendMessage(tabId, message, cb);
-	else
-		browser.runtime.sendMessage(null, message, cb);
+Browser.rpc.call = async function(tabId, name, args) {
+	return new Promise(resolve => {
+		var message = { method: name, args: args };
+		if(tabId)
+			browser.tabs.sendMessage(tabId, message, resolve);
+		else
+			browser.runtime.sendMessage(null, message, resolve);
+	});
 }
 
 
@@ -166,7 +166,7 @@ Browser.gui.refreshIcon = function(tabId, cb) {
 	if(Browser._script == 'content' ||
 	   (Browser._script != 'main' && Browser.capabilities.needsPAManualHide())
 	) {
-		Browser.rpc.call(null, 'refreshIcon', [tabId], cb);
+		Browser.rpc.call(null, 'refreshIcon', [tabId]).then(cb);
 		return;
 	}
 
@@ -260,12 +260,11 @@ Browser.gui.showPage = function(name) {
 };
 
 Browser.gui.getCallUrl = function(tabId, handler) {
-	function fetch(tabId) {
+	async function fetch(tabId) {
 		// we call getState from the content script
 		//
-		Browser.rpc.call(tabId, 'getState', [], function(state) {
-			handler(state && state.callUrl);		// state might be null if no content script runs in the tab
-		});
+		const state = await Browser.rpc.call(tabId, 'getState', []);
+		handler(state && state.callUrl);		// state might be null if no content script runs in the tab
 	}
 
 	if(tabId)

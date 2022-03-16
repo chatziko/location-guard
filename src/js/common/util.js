@@ -41,15 +41,14 @@ var Util = {
 	//     title:           icon's title }
 	//
 	//
-	getIconInfo: function(about, handler) {
-		if(typeof(about) == 'object')						// null or state object
-			Util._getStateIconInfo(about).then(handler);
-		else {												// tabId
+	getIconInfo: async function(about, handler) {
+		if(typeof(about) != 'object') {	// tabId
 			const Browser = require('./browser');
-			Browser.rpc.call(about, 'getState', [], function(state) {
-				Util._getStateIconInfo(state).then(handler);
-			});
+			about = await Browser.rpc.call(about, 'getState', []);
 		}
+
+		const info = await Util._getStateIconInfo(about);
+		handler(info);
 	},
 
 	_getStateIconInfo: async function(state) {

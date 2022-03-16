@@ -505,7 +505,7 @@ if(Browser.testing) {
 	});
 
 	Browser.log("calling nestedTestMain");
-	Browser.rpc.call(null, 'nestedTestMain', [], function(res) {
+	Browser.rpc.call(null, 'nestedTestMain', []).then(res => {
 		Browser.log('got from nestedTestMain', res);
 	});
 }

@@ -19,9 +19,7 @@ Browser.init('main');
 // of the top-window. We just echo the call back to the tab.
 //
 Browser.rpc.register('apiCalledInFrame', function(url, tabId, replyHandler) {
-	Browser.rpc.call(tabId, 'apiCalledInFrame', [url], function(res) {
-		replyHandler(res);
-	});
+	Browser.rpc.call(tabId, 'apiCalledInFrame', [url]).then(replyHandler);
 	return true; // reply later
 });
 
@@ -31,7 +29,7 @@ if(Browser.testing) {
 	Browser.rpc.register('nestedTestMain', function(tabId, replyHandler) {
 		Browser.log("in nestedTestMain, call from ", tabId, "calling back nestedTestTab");
 
-		Browser.rpc.call(tabId, 'nestedTestTab', [], function(res) {
+		Browser.rpc.call(tabId, 'nestedTestTab', []).then(res => {
 			Browser.log("got from nestedTestTab", res, "adding '_foo' and sending back");
 			replyHandler(res + '_foo');
 		});
