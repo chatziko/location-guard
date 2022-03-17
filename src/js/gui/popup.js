@@ -37,14 +37,16 @@ async function doAction() {
 			var st = await Browser.storage.get();
 			st.hideIcon = true;
 			await Browser.storage.set(st);
-			Browser.gui.refreshAllIcons(Browser.gui.closePopup);
+			await Browser.gui.refreshAllIcons();
+			Browser.gui.closePopup();
 			break;
 
 		case 'pause':
 			var st = await Browser.storage.get();
 			st.paused = !st.paused;
 			await Browser.storage.set(st);
-			Browser.gui.refreshAllIcons(Browser.gui.closePopup);
+			await Browser.gui.refreshAllIcons();
+			Browser.gui.closePopup();
 			break;
 
 		case 'setLevel':
@@ -63,7 +65,8 @@ async function doAction() {
 				st.domainLevel[domain] = level;
 
 			await Browser.storage.set(st);
-			Browser.gui.refreshAllIcons(Browser.gui.closePopup);
+			await Browser.gui.refreshAllIcons();
+			Browser.gui.closePopup();
 			break;
 	}
 }
