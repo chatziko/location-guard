@@ -7,7 +7,7 @@ require('leaflet.locatecontrol');
 const Browser = require('../common/browser');
 
 Browser.inDemo = true;		// used in content.js
-var intro;
+var intro, steps;
 var demoMap;
 var showPressed, geoDone;
 
@@ -76,7 +76,7 @@ function showCurrentPosition() {
 		intro.goToStep(3);
 }
 
-function drawPosition(pos) {
+async function drawPosition(pos) {
 	var latlng = [pos.coords.latitude, pos.coords.longitude];
 	var acc = pos.coords.accuracy;
 
@@ -101,13 +101,25 @@ function drawPosition(pos) {
 	demoMap.fitBounds(demoMap.accuracy.getBounds());
 
 	geoDone = true;
-	if(intro._currentStep + 1 <= 3)
+	if(intro._currentStep + 1 <= 3) {
+		const st = await Browser.storage.get();
+		var level = st.paused ? 'real' : (st.domainLevel['demo-page'] || st.defaultLevel);
+
+		var s =
+			level == 'fixed' ? 'Location Guard replaced it with your configured fixed location.' :
+			level == 'real'  ? 'Location Guard did not modify it.' :
+			'Location Guard added "noise" to it so that it\'s not very accurate.';
+
+		// hacky way to modify the step's message
+		intro._introItems[3].intro = steps[3].intro.replace("%s", s);
+
 		intro.goToStep(4);
+	}
 }
 
 function startDemo() {
 	var iconClass = Browser.capabilities.permanentIcon() ? 'lg-icon-browseraction' : 'lg-icon-pageaction';
-	var steps = [ {
+	steps = [ {
 			element: ".placeholder-step1",
 			intro: '<p>Location Guard was successfully installed.</p><p>This demo illustrates its use.</p>',
 			position: "floating",
@@ -133,8 +145,8 @@ function startDemo() {
 		}, {
 			element: ".placeholder-step4",
 			intro:
-				'<p>This is the location disclosed by your browser. Location Guard added "noise" to it so that it\'s not ' +
-				'very accurate.</p><p>Click on the <span class="' + iconClass + '"></span> icon to try more options.</p>',
+				'<p>This is the location disclosed by your browser. %s</p><p>Click on the <span class="' +
+				iconClass + '"></span> icon to try more options.</p>',
 			position: "bottom-middle-aligned",
 			highlightClass: 'highlight-step4',
 			tooltipClass: 'tooltip-step4',
