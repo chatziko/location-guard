@@ -91,6 +91,12 @@ rpc.register('getNoisyPosition', async function(options) {
 
 	return await getNoisyPosition(options);
 });
+rpc.register('isActive', async function() {
+	// Returns true if privacy-protection is active (not paused, not level == 'real')
+	const st = await Browser.storage.get();
+	var domain = Util.extractDomain(callUrl);
+	return !st.paused && (st.domainLevel[domain] || st.defaultLevel) != 'real';
+});
 
 // gets the options passed to the fake navigator.geolocation.getCurrentPosition.
 // Either returns fixed pos directly, or calls the real one, then calls addNoise.
