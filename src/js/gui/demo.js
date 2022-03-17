@@ -26,8 +26,8 @@ $(document).ready(function() {
 	// setup map
 	demoMap = new L.map('demoMap')
 		.addLayer(new L.TileLayer(
-			'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-			{ attribution: 'Map data © OpenStreetMap contributors' }
+			Browser.gui.mapTiles().url,
+			Browser.gui.mapTiles().info,
 		))
 		.on('click', function(e){
 			intro.exit();

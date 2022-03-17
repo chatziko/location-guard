@@ -178,7 +178,8 @@ const Browser = {
 		isDebugging: function() { return Browser.debugging },
 		popupAsTab: function() { return false },
 		permanentIcon: function() { return false },
-		isAndroid: function() { return navigator.userAgent.toLowerCase().indexOf('android') > -1 }
+		isAndroid: function() { return navigator.userAgent.toLowerCase().indexOf('android') > -1 },
+		isBrave: function() { return 'brave' in navigator }
 	},
 
 	// Browser.log(text, value)
