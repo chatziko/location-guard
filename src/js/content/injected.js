@@ -11,6 +11,10 @@ module.exports = function(PostRPC) {
 				prpc = new PostRPC('page-content', window, window, window.origin);	// This PostRPC is created by the injected code!
 			return prpc;
 		}
+		async function callCb(cb, pos, checkAllowed) {
+			if(cb && (!checkAllowed || await getPostRPC().call('watchAllowed', [false])))
+				cb(pos);
+		}
 
 		// We replace geolocation methods with our own.
 		// getCurrentPosition will be called by the content script (not by the page)
@@ -20,9 +24,7 @@ module.exports = function(PostRPC) {
 			// call getNoisyPosition on the content-script
 			// call cb1 on success, cb2 on failure
 			const res = await getPostRPC().call('getNoisyPosition', [options]);
-			var f = res.success ? cb1 : cb2;
-			if(f)
-				f(res.position);
+			callCb(res.success ? cb1 : cb2, res.position, false);
 		};
 
 		const watchPosition = navigator.geolocation.watchPosition;
@@ -33,17 +35,16 @@ module.exports = function(PostRPC) {
 			const handler = Math.floor(Math.random()*10000);
 
 			(async () => {
-				if(await getPostRPC().call('isActive')) {
-					// Protection is active, we don't install a real watch, just return the position once
-					this.getCurrentPosition(cb1, cb2, options);
-				} else {
-					// Protection inactive, call the real watchPosition (and associate the real handler)
+				if(await getPostRPC().call('watchAllowed', [true]))
+					// We're allowed to call the real watchPosition (note: remember the handler)
 					handlers[handler] = watchPosition.apply(navigator.geolocation, [
-						async position => await prpc.call('isActive') || cb1(position),		// ignore the call if privacy protection
-						async error    => await prpc.call('isActive') || cb2(error),		// becomes active later!
+						position => callCb(cb1, position, true),	// ignore the call if privacy protection
+						error    => callCb(cb2, error, true),		// becomes active later!
 						options
 					]);
-				}
+				else
+					// Not allowed, we don't install a real watch, just return the position once
+					this.getCurrentPosition(cb1, cb2, options);
 			})();
 			return handler;
 		};

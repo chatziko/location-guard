@@ -91,11 +91,18 @@ rpc.register('getNoisyPosition', async function(options) {
 
 	return await getNoisyPosition(options);
 });
-rpc.register('isActive', async function() {
-	// Returns true if privacy-protection is active (not paused, not level == 'real')
+rpc.register('watchAllowed', async function(firstCall) {
+	// Returns true if using the real watch is allowed. Only if paused or level == 'real'.
+	// Also don't allow in iframes (to simplify the code).
 	const st = await Browser.storage.get();
-	var domain = Util.extractDomain(callUrl);
-	return !st.paused && (st.domainLevel[domain] || st.defaultLevel) != 'real';
+	var level = st.domainLevel[Util.extractDomain(myUrl)] || st.defaultLevel;
+	var allowed = !inFrame && (st.paused || level == 'real');
+
+	if(allowed && !firstCall) {
+		apiCalls++;
+		Browser.gui.refreshIcon('self');
+	}
+	return allowed;
 });
 
 // gets the options passed to the fake navigator.geolocation.getCurrentPosition.
