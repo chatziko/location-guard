@@ -4,8 +4,8 @@ Browser.log("faq loading");
 
 // send an empty reply to getState (see options.js)
 Browser.init('options');
-Browser.rpc.register('getState', function(tabId, replyHandler) {
-	replyHandler();
+Browser.rpc.register('getState', function(tabId) {
+	return null;
 });
 
 const $ = require('jquery');

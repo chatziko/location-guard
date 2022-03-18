@@ -30,29 +30,24 @@ const Browser = {
 		//
 		// Registers a method to be callable from other scripts.
 		// handler should be a function
-		//    function(...args..., tabId, replyHandler)
+		//    async function(...args..., tabId)
 		//
 		// The function receives any arguments passed during the call (see Browser.rpc.call)
-		// Moreover, two extra arguments are automatically added:
+		// Moreover, one extra arguments are automatically added:
 		//   tabId:         the tabId of the caller, or null if the call is made from the main script
-		//   replyHandler:  function for asynchronously returning a result by calling replyHandler(result)
-		//
-		// IMPORTANT: If handler does not immediately return a result but stores replyHandler to do it asynchronously later,
-		// it should return a true value to keep replyHandler open.
 		//
 		register: function(name, handler) {},
 
-		// Browser.rpc.call(tabId, name, args, handler)
+		// Browser.rpc.call(tabId, name, args)
 		//
 		// Calls a remote method.
 		//   tabId:    tab id of the script to call, or null to call the main script
 		//   name:     method name
 		//   args:     array of arguments to pass
-		//   handler:  function(res), will be called when the result is received
 		//
-		// If the call cannot be made to the specific tabId, handler will be called with no arguments.
+		// If the call cannot be made to the specific tabId, null is returned.
 		//
-		call: function(tabId, name, args, handler) {}
+		call: async function(tabId, name, args) {}
 	},
 
 	// Browser.storage
@@ -62,24 +57,24 @@ const Browser = {
 	// else that needs to be stored. It is fetched and stored as a whole.
 	//
 	storage: {
-		// browser.storage.get(handler)
+		// browser.storage.get()
 		//
-		// fetches the storage object and passes it to the handler.
+		// fetches the storage object.
 		// The default object is returned if the storage is empty.
 		//
-		get: function(handler) {},
+		get: async function() {},
 
-		// browser.storage.set(st, handler)
+		// browser.storage.set(st)
 		//
-		// Stores the give storage object. Calls the handler when finished.
+		// Stores the give storage object.
 		//
-		set: function(st, handler) {},
+		set: async function(st) {},
 
-		// browser.storage.clear(handler)
+		// browser.storage.clear()
 		//
-		// Clears the storage. Calls the handler when finished.
+		// Clears the storage.
 		//
-		clear: function(handler) {},
+		clear: async function() {},
 
 		// default storage object
 		//
@@ -135,14 +130,14 @@ const Browser = {
 		// If called from a content script and tabId = 'self' it refreshes the icon of the content script's tab.
 		// getIconInfo should be called to get the icon's info
 		//
-		refreshIcon: function(tabId) {},
+		refreshIcon: async function(tabId) {},
 
 		// Browser.gui.refreshAllIcons()
 		//
 		// Refreshes the icons of all tabs.
 		// getIconInfo should be called to get the icon's info
 		//
-		refreshAllIcons: function() {},
+		refreshAllIcons: async function() {},
 
 		// Browser.gui.showPage(name)
 		//
@@ -151,11 +146,11 @@ const Browser = {
 		//
 		showPage: function(name) {},
 
-		// Browser.gui.getCallUrl(tabId, handler)
+		// Browser.gui.getCallUrl(tabId)
 		//
-		// Gets the callUrl of given tab and passes it to 'handler'
+		// Gets the callUrl of given tab.
 		//
-		getActiveCallUrl: function(tabId, handler) {},
+		getCallUrl: async function(tabId) {},
 
 		// Browser.gui.closePopup()
 		//

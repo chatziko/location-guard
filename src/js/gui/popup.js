@@ -16,7 +16,7 @@ $(document).ready(drawUI);
 
 var url;
 
-function doAction() {
+async function doAction() {
 	var action = $(this).attr("id");
 
 	switch(action) {
@@ -34,21 +34,19 @@ function doAction() {
 			break;
 
 		case 'hideIcon':
-			Browser.storage.get(function(st) {
-				st.hideIcon = true;
-				Browser.storage.set(st, function() {
-					Browser.gui.refreshAllIcons(Browser.gui.closePopup);
-				});
-			});
+			var st = await Browser.storage.get();
+			st.hideIcon = true;
+			await Browser.storage.set(st);
+			await Browser.gui.refreshAllIcons();
+			Browser.gui.closePopup();
 			break;
 
 		case 'pause':
-			Browser.storage.get(function(st) {
-				st.paused = !st.paused;
-				Browser.storage.set(st, function() {
-					Browser.gui.refreshAllIcons(Browser.gui.closePopup);
-				});
-			});
+			var st = await Browser.storage.get();
+			st.paused = !st.paused;
+			await Browser.storage.set(st);
+			await Browser.gui.refreshAllIcons();
+			Browser.gui.closePopup();
 			break;
 
 		case 'setLevel':
@@ -58,100 +56,97 @@ function doAction() {
 		default:	// set level
 			if(!url) throw "no url";				// just to be sure
 
-			Browser.storage.get(function(st) {
-				var domain = Util.extractDomain(url);
-				var level = action;
-				if(level == st.defaultLevel)
-					delete st.domainLevel[domain];
-				else
-					st.domainLevel[domain] = level;
+			var st = await Browser.storage.get();
+			var domain = Util.extractDomain(url);
+			var level = action;
+			if(level == st.defaultLevel)
+				delete st.domainLevel[domain];
+			else
+				st.domainLevel[domain] = level;
 
-				Browser.storage.set(st, function() {
-					Browser.gui.refreshAllIcons(Browser.gui.closePopup);
-				});
-			});
+			await Browser.storage.set(st);
+			await Browser.gui.refreshAllIcons();
+			Browser.gui.closePopup();
 			break;
 	}
 }
 
-function drawUI() {
+async function drawUI() {
 	var res = window.location.href.match(/tabId=(\d+)/);
 	var tabId = res ? parseInt(res[1]) : null;
 
 	// we need storage and url
-	Browser.gui.getCallUrl(tabId, function(callUrl) {
-	Browser.storage.get(function(st) {
-		Browser.log("popup: callUrl", callUrl, "settings", st);
+	const callUrl = await Browser.gui.getCallUrl(tabId);
+	const st = await Browser.storage.get();
+	Browser.log("popup: callUrl", callUrl, "settings", st);
 
-		// we don't have a url if we are in chrome (browser action, visible in
-		// all tabs), and the active tab has no content-script running (eg. new
-		// tab page)
-		//
-		if(callUrl) {
-			url = callUrl;
-			var domain = Util.extractDomain(url);
-			var level = st.domainLevel[domain] || st.defaultLevel;
+	// we don't have a url if we are in chrome (browser action, visible in
+	// all tabs), and the active tab has no content-script running (eg. new
+	// tab page)
+	//
+	if(callUrl) {
+		url = callUrl;
+		var domain = Util.extractDomain(url);
+		var level = st.domainLevel[domain] || st.defaultLevel;
 
-			$("#title").text(
-				st.paused		? "Location Guard is paused" :
-				level == 'real'	? "Using your real location" :
-				level == 'fixed'? "Using a fixed location" :
-				"Privacy level: " + level
-			);
-			$("#setLevel b").text(domain);
-			$("#"+level).attr("checked", true);
+		$("#title").text(
+			st.paused		? "Location Guard is paused" :
+			level == 'real'	? "Using your real location" :
+			level == 'fixed'? "Using a fixed location" :
+			"Privacy level: " + level
+		);
+		$("#setLevel b").text(domain);
+		$("#"+level).attr("checked", true);
 
-		} else {
-			$("#title").parent().hide();
-		}
+	} else {
+		$("#title").parent().hide();
+	}
 
-		$("#pause").text((st.paused ? "Resume" : "Pause") + " Location Guard");
-		$("#pause").parent().attr("data-icon", st.paused ? "play" : "pause");
+	$("#pause").text((st.paused ? "Resume" : "Pause") + " Location Guard");
+	$("#pause").parent().attr("data-icon", st.paused ? "play" : "pause");
 
-		$("#setLevel").toggle(callUrl && !st.paused);
-		$("#hideIcon").toggle(callUrl && !st.paused && !Browser.capabilities.permanentIcon());	// hiding the icon only works with page action (not browser action)
+	$("#setLevel").toggle(callUrl && !st.paused);
+	$("#hideIcon").toggle(callUrl && !st.paused && !Browser.capabilities.permanentIcon());	// hiding the icon only works with page action (not browser action)
 
-		$("a, input").on("click", doAction);
+	$("a, input").on("click", doAction);
 
-		// we're ready, init
-		$.mobile.initializePage();
+	// we're ready, init
+	$.mobile.initializePage();
 
-		if(Browser.capabilities.popupAsTab()) {
-			// the popup is displayed as a normal tab
-			// set 100% width/height
-			$("html, body, #container").css({
-				width:  "100%",
-				height: "100%"
-			});
-			// show the close button
-			$("#close").css({ display: "block" })
-					   .on("click", Browser.gui.closePopup);
+	if(Browser.capabilities.popupAsTab()) {
+		// the popup is displayed as a normal tab
+		// set 100% width/height
+		$("html, body, #container").css({
+			width:  "100%",
+			height: "100%"
+		});
+		// show the close button
+		$("#close").css({ display: "block" })
+					.on("click", Browser.gui.closePopup);
 
-		} else {
-			// normal popup, resize body to match #container
-			var width = $("#container").width();
-			var height = $("#container").height();
+	} else {
+		// normal popup, resize body to match #container
+		var width = $("#container").width();
+		var height = $("#container").height();
 
-			$("html, body").css({
-				width:  width,
-				height: height,
-			});
-		}
-	});
-	});
+		$("html, body").css({
+			width:  width,
+			height: height,
+		});
+	}
 }
 
+(async function() {
+	if(!Browser.testing) return;
 
-if(Browser.testing) {
 	// test for nested calls, and for correct passing of tabId
 	//
-	Browser.rpc.register('nestedTestTab', function(tabId, replyHandler) {
+	Browser.rpc.register('nestedTestTab', function(tabId) {
 		Browser.log("in nestedTestTab, returning 'popup'");
-		replyHandler("popup");
+		return "popup";
 	});
 
 	Browser.log("calling nestedTestMain");
-	Browser.rpc.call(null, 'nestedTestMain', [], function(res) {
-		Browser.log('got from nestedTestMain', res);
-	});
-}
+	const res = await Browser.rpc.call(null, 'nestedTestMain', []);
+	Browser.log('got from nestedTestMain', res);
+}());

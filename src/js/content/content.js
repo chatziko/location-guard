@@ -74,69 +74,78 @@ var callUrl = myUrl;					// the url from which the last call is _shown_ to be ma
 // methods called by the page
 //
 var rpc = new PostRPC('page-content', window, window, window.origin);
-rpc.register('getNoisyPosition', function(options, replyHandler) {
+rpc.register('getNoisyPosition', async function(options) {
+	callUrl = myUrl;	// last call happened here
 	if(inFrame) {
 		// we're in a frame, we need to notify the top window, and get back the *url used in the permission dialog*
 		// (which might be either the iframe url, or the top window url, depending on how the browser handles permissions).
 		// To avoid cross-origin issues, we call apiCalledInFrame in the main script, which echoes the
 		// call back to this tab to be answered by the top window
-		Browser.rpc.call(null, 'apiCalledInFrame', [myUrl], function(topUrl) {
-			callUrl = Browser.capabilities.iframeGeoFromOwnDomain() ? myUrl : topUrl;
-			getNoisyPosition(options, replyHandler);
-		});
-
+		if(!Browser.capabilities.iframeGeoFromOwnDomain())
+			callUrl = await Browser.rpc.call(null, 'apiCalledInFrame', [myUrl]);
 	} else {
 		// refresh icon before fetching the location
 		apiCalls++;
-		callUrl = myUrl;	// last call happened here
 		Browser.gui.refreshIcon('self');
-		getNoisyPosition(options, replyHandler);
 	}
 
-	return true;	// will reply later
+	return await getNoisyPosition(options);
+});
+rpc.register('watchAllowed', async function(firstCall) {
+	// Returns true if using the real watch is allowed. Only if paused or level == 'real'.
+	// Also don't allow in iframes (to simplify the code).
+	const st = await Browser.storage.get();
+	var level = st.domainLevel[Util.extractDomain(myUrl)] || st.defaultLevel;
+	var allowed = !inFrame && (st.paused || level == 'real');
+
+	if(allowed && !firstCall) {
+		apiCalls++;
+		Browser.gui.refreshIcon('self');
+	}
+	return allowed;
 });
 
 // gets the options passed to the fake navigator.geolocation.getCurrentPosition.
 // Either returns fixed pos directly, or calls the real one, then calls addNoise.
 //
-function getNoisyPosition(options, replyHandler) {
-	Browser.storage.get(function(st) {
-		// if level == 'fixed' and fixedPosNoAPI == true, then we return the
-		// fixed position without calling the geolocation API at all.
-		//
-		var domain = Util.extractDomain(callUrl);
-		var level = st.domainLevel[domain] || st.defaultLevel;
+async function getNoisyPosition(options) {
+	const st = await Browser.storage.get();
 
-		if(!st.paused && level == 'fixed' && st.fixedPosNoAPI) {
-			var noisy = {
-				coords: {
-					latitude: st.fixedPos.latitude,
-					longitude: st.fixedPos.longitude,
-					accuracy: 10,
-					altitude: null,
-					altitudeAccuracy: null,
-					heading: null,
-					speed: null
-				},
-				timestamp: new Date().getTime()
-			};
-			replyHandler(true, noisy);
-			Browser.log("returning fixed", noisy);
-			return;
-		}
+	// if level == 'fixed' and fixedPosNoAPI == true, then we return the
+	// fixed position without calling the geolocation API at all.
+	//
+	var domain = Util.extractDomain(callUrl);
+	var level = st.domainLevel[domain] || st.defaultLevel;
 
+	if(!st.paused && level == 'fixed' && st.fixedPosNoAPI) {
+		var noisy = {
+			coords: {
+				latitude: st.fixedPos.latitude,
+				longitude: st.fixedPos.longitude,
+				accuracy: 10,
+				altitude: null,
+				altitudeAccuracy: null,
+				heading: null,
+				speed: null
+			},
+			timestamp: new Date().getTime()
+		};
+		Browser.log("returning fixed", noisy);
+		return { success: true, position: noisy };
+	}
+
+	return new Promise(resolve => {
 		// we call getCurrentPosition here in the content script, instead of
 		// inside the page, because the content-script/page communication is not secure
 		//
 		getCurrentPosition.apply(navigator.geolocation, [
-			function(position) {
+			async function(position) {
 				// clone, modifying/sending the native object returns error
-				addNoise(Util.clone(position), function(noisy) {
-					replyHandler(true, noisy);
-				});
+				const noisy = await addNoise(Util.clone(position));
+				resolve({ success: true, position: noisy });
 			},
 			function(error) {
-				replyHandler(false, Util.clone(error));		// clone, sending the native object returns error
+				resolve({ success: false, position: Util.clone(error) });		// clone, sending the native object returns error
 			},
 			options
 		]);
@@ -145,105 +154,104 @@ function getNoisyPosition(options, replyHandler) {
 
 // gets position, returs noisy version based on the privacy options
 //
-function addNoise(position, handler) {
-	Browser.storage.get(function(st) {
-		var domain = Util.extractDomain(callUrl);
-		var level = st.domainLevel[domain] || st.defaultLevel;
+async function addNoise(position) {
+	const st = await Browser.storage.get();
+	var domain = Util.extractDomain(callUrl);
+	var level = st.domainLevel[domain] || st.defaultLevel;
 
-		if(st.paused || level == 'real') {
-			// do nothing, use real location
+	if(st.paused || level == 'real') {
+		// do nothing, use real location
 
-		} else if(level == 'fixed') {
-			position.coords = {
-				latitude: st.fixedPos.latitude,
-				longitude: st.fixedPos.longitude,
-				accuracy: 10,
-				altitude: null,
-				altitudeAccuracy: null,
-				heading: null,
-				speed: null
-			};
+	} else if(level == 'fixed') {
+		position.coords = {
+			latitude: st.fixedPos.latitude,
+			longitude: st.fixedPos.longitude,
+			accuracy: 10,
+			altitude: null,
+			altitudeAccuracy: null,
+			heading: null,
+			speed: null
+		};
 
-		} else if(st.cachedPos[level] && ((new Date).getTime() - st.cachedPos[level].epoch)/60000 < st.levels[level].cacheTime) {
-			position = st.cachedPos[level].position;
-			Browser.log('using cached', position);
+	} else if(st.cachedPos[level] && ((new Date).getTime() - st.cachedPos[level].epoch)/60000 < st.levels[level].cacheTime) {
+		position = st.cachedPos[level].position;
+		Browser.log('using cached', position);
 
-		} else {
-			// add noise
-			var epsilon = st.epsilon / st.levels[level].radius;
+	} else {
+		// add noise
+		var epsilon = st.epsilon / st.levels[level].radius;
 
-			const PlanarLaplace = require('../common/laplace');
-			var pl = new PlanarLaplace();
-			var noisy = pl.addNoise(epsilon, position.coords);
+		const PlanarLaplace = require('../common/laplace');
+		var pl = new PlanarLaplace();
+		var noisy = pl.addNoise(epsilon, position.coords);
 
-			position.coords.latitude = noisy.latitude;
-			position.coords.longitude = noisy.longitude;
+		position.coords.latitude = noisy.latitude;
+		position.coords.longitude = noisy.longitude;
 
-			// update accuracy
-			if(position.coords.accuracy && st.updateAccuracy)
-				position.coords.accuracy += Math.round(pl.alphaDeltaAccuracy(epsilon, .9));
+		// update accuracy
+		if(position.coords.accuracy && st.updateAccuracy)
+			position.coords.accuracy += Math.round(pl.alphaDeltaAccuracy(epsilon, .9));
 
-			// don't know how to add noise to those, so we set to null (they're most likely null anyway)
-			position.altitude = null;
-			position.altitudeAccuracy = null;
-			position.heading = null;
-			position.speed = null;
+		// don't know how to add noise to those, so we set to null (they're most likely null anyway)
+		position.altitude = null;
+		position.altitudeAccuracy = null;
+		position.heading = null;
+		position.speed = null;
 
-			// cache
-			st.cachedPos[level] = { epoch: (new Date).getTime(), position: position };
-			Browser.storage.set(st);
+		// cache
+		st.cachedPos[level] = { epoch: (new Date).getTime(), position: position };
+		await Browser.storage.set(st);
 
-			Browser.log('noisy coords', position.coords);
-		}
+		Browser.log('noisy coords', position.coords);
+	}
 
-		// return noisy position
-		handler(position);
-	});
+	// return noisy position
+	return position;
 }
 
-Browser.init('content');
+(async function() {
+	Browser.init('content');
 
-// if a browser action (always visible button) is used, we need to refresh the
-// icon immediately (before the API is called). HOWEVER: Browser.gui.refreshIcon
-// causes the background script to be awaken. To avoid doing this on every page,
-// we only call it if the icon is different than the default icon!
-//
-if(Browser.capabilities.permanentIcon() && !inFrame) {
-	Util.getIconInfo({ callUrl: myUrl, apiCalls: 0 }, function(info) {
+	// if a browser action (always visible button) is used, we need to refresh the
+	// icon immediately (before the API is called). HOWEVER: Browser.gui.refreshIcon
+	// causes the background script to be awaken. To avoid doing this on every page,
+	// we only call it if the icon is different than the default icon!
+	//
+	if(Browser.capabilities.permanentIcon() && !inFrame) {
+		const info = await Util.getIconInfo({ callUrl: myUrl, apiCalls: 0 });
 		if(info.private != info.defaultPrivate) // the icon for myUrl is different than the default
 			Browser.gui.refreshIcon('self');
-	})
-}
+	}
 
-// only the top frame handles getState and apiCalledInFrame requests
-if(!inFrame) {
-	Browser.rpc.register('getState', function(tabId, replyHandler) {
-		replyHandler({
-			callUrl: callUrl,
-			apiCalls: apiCalls
+	// only the top frame handles getState and apiCalledInFrame requests
+	if(!inFrame) {
+		Browser.rpc.register('getState', function(tabId) {
+			return {
+				callUrl: callUrl,
+				apiCalls: apiCalls
+			};
 		});
-	});
 
-	Browser.rpc.register('apiCalledInFrame', function(iframeUrl, tabId, replyHandler) {
-		apiCalls++;
-		if(Browser.capabilities.iframeGeoFromOwnDomain())
-			callUrl = iframeUrl;
-		Browser.gui.refreshIcon('self');
+		Browser.rpc.register('apiCalledInFrame', function(iframeUrl, tabId) {
+			apiCalls++;
+			if(Browser.capabilities.iframeGeoFromOwnDomain())
+				callUrl = iframeUrl;
+			Browser.gui.refreshIcon('self');
 
-		replyHandler(myUrl);
-	});
-}
+			return myUrl;
+		});
+	}
 
-if(Browser.testing) {
-	// test for nested calls, and for correct passing of tabId
-	//
-	Browser.rpc.register('nestedTestTab', function(tabId, replyHandler) {
-		Browser.log("in nestedTestTab, returning 'content'");
-		replyHandler("content");
-	});
+	if(Browser.testing) {
+		// test for nested calls, and for correct passing of tabId
+		//
+		Browser.rpc.register('nestedTestTab', function(tabId) {
+			Browser.log("in nestedTestTab, returning 'content'");
+			return "content";
+		});
 
-	Browser.log("calling nestedTestMain");
-	Browser.rpc.call(null, 'nestedTestMain', [], function(res) {
+		Browser.log("calling nestedTestMain");
+		const res = await Browser.rpc.call(null, 'nestedTestMain', []);
 		Browser.log('got from nestedTestMain', res);
-	});
-}
+	}
+}())
