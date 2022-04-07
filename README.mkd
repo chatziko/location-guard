@@ -4,21 +4,13 @@
 while using location-aware websites, by adding controlled noise to it.
 It supports the followng browsers:
 
-* Google Chrome / Chromium
-* Mozilla Firefox
-* Microsoft Edge
-* Opera
+* Google Chrome / Chromium ([install](https://chrome.google.com/webstore/detail/location-guard/cfohepagpmnodfdmjliccbbigdkfcgia))
+* Mozilla Firefox ([install](https://addons.mozilla.org/firefox/addon/location-guard/))
+* Microsoft Edge ([install](https://microsoftedge.microsoft.com/addons/detail/location-guard/hbgdpjpeeodeojjbeenfnpnldhahleoo))
+* Opera ([install](https://chrome.google.com/webstore/detail/location-guard/cfohepagpmnodfdmjliccbbigdkfcgia))
 
 Location Guard is available under either the [MIT/X11](https://opensource.org/licenses/mit-license.php)
 or the [CeCILL-B](http://www.cecill.info/licences.fr.html) license.
-
-## Installation
-
-To install Location Guard:
-
-* Chrome / Chromium / Opera: install it [from here](https://chrome.google.com/webstore/detail/location-guard/cfohepagpmnodfdmjliccbbigdkfcgia)
-* Firefox: install it [from here](https://addons.mozilla.org/firefox/addon/location-guard/)
-* Edge: install it [from here](https://microsoftedge.microsoft.com/addons/detail/location-guard/hbgdpjpeeodeojjbeenfnpnldhahleoo)
 
 ## Frequently Asked Questions
 
